@@ -1,6 +1,6 @@
 """M24GA 배포판 만들기 (Windows 64비트, Python이 없는 PC에서도 바로 쓰는 폴더/zip). GPL-3.0-or-later.
 
-사용:  python -X utf8 tools/build_dist.py --embed <python-3.14.x-embed-amd64.zip> [--version 0.1.0-beta]
+사용:  python -X utf8 tools/build_dist.py --embed <python-3.14.x-embed-amd64.zip> [--version X]  (기본값 = 코어 버전, loader/mods.py CORE_VERSION)
   - --embed: python.org의 "Windows embeddable package (64-bit)" zip. vendor/의 frida가 cp314용이라 3.14.x여야 해요 (--check로 확인).
   - 결과: dist/M24GA-<버전>-win64/ 와 같은 이름의 .zip
 저장소에서 **git이 추적하는 파일만** 복사해요 (키·개인 파일이 섞여 들어가지 않게). vendor/는 설치된 것을 그대로 (캐시·bin 제외).
@@ -112,9 +112,12 @@ def licenses(dst, py_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--embed", required=True, help="python-3.14.x-embed-amd64.zip")
-    ap.add_argument("--version", default="0.1.0-beta")
+    ap.add_argument("--version", default=None, help="기본값: 코어 버전 (배포판 버전 = 코어 버전)")
     ap.add_argument("--out", default=os.path.join(ROOT, "dist"))
     a = ap.parse_args()
+    if not a.version:
+        import mods
+        a.version = mods.CORE_VERSION
     if not zipfile.is_zipfile(a.embed):
         raise SystemExit("--embed가 zip 파일이 아니에요")
     name = "M24GA-%s-win64" % a.version

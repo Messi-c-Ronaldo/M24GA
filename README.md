@@ -2,7 +2,7 @@
 
 FM24(Epic 빌드)에 모드를 붙이는 오픈소스 로더예요. 모드는 `.24mod` 파일 하나이고, 앱에서 켜고 끄고 설정해요.
 
-> **베타 안내 (0.1.0-beta)**
+> **베타 안내 (0.33.0 = 코어 버전)**
 > - 지금은 **FM24 Epic판 24.4.2(2025-04-16 빌드)** 에서만 확인했어요. 빌드가 안 맞으면 로더가 아무것도 올리지 않고 멈춰요(게임은 안전해요).
 > - **Steam판은 아직 확인하지 못했어요.** 같은 코드일 가능성은 높지만 확인 전이에요. Steam판에서 "지원하지 않는 게임 버전"이 나오면 앱 홈의 **빌드 진단 보고서 복사** 버튼(또는 `m24cli build-report`)으로 보고서를 복사해 이슈에 붙여 주세요. 파일 크기, SHA-256, 서명 칸 비교만 들어가고 개인 경로는 지워져요.
 > - **Python 설치 없이 쓰려면 Releases의 `M24GA-…-win64.zip`을 받아 압축을 풀고 `M24GA.bat`을 실행하세요.** 소스에서 직접 쓰려면 Python 3.14가 필요해요(아래 쓰기 참고).
@@ -51,7 +51,7 @@ m24cli watch [--until hooked]    상태 모니터링 (JSON 스트림)
 
 ### 배포판 만들기 (개발자)
 
-`python -X utf8 tools/build_dist.py --embed python-3.14.x-embed-amd64.zip [--version 0.1.0-beta]` → `dist/M24GA-<버전>-win64.zip`. git이 추적하는 파일 + `vendor/` + 임베디드 Python을 묶고 `M24GA.bat`·`m24cli.bat`·`THIRD_PARTY_LICENSES.txt`를 만들어요.
+`python -X utf8 tools/build_dist.py --embed python-3.14.x-embed-amd64.zip` → `dist/M24GA-<코어 버전>-win64.zip`. git이 추적하는 파일 + `vendor/` + 임베디드 Python을 묶고 `M24GA.bat`·`m24cli.bat`·`THIRD_PARTY_LICENSES.txt`를 만들어요.
 
 ## 모드 만들기
 
