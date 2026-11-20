@@ -1,4 +1,4 @@
-# M24GA 기능 목록 (코어 0.34.0)
+# M24GA 기능 목록 (코어 0.35.0)
 
 > 이 파일은 `core/capabilities.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 
@@ -23,6 +23,8 @@
 | `event.socialPanel` | read | **소셜 패널 이벤트**: 소셜피드의 글 한 칸이 그려질 때 알림을 받아요. ev = { th, type, dst, text } _(화면 의존: 소셜 피드 화면)_ | `api.on('socialPanel', fn)` | 모두 |
 | `event.frame` | read | **프레임 이벤트**: 화면 스레드의 프레임이 끝날 때마다(초당 약 20번) 불려요. 화면을 다시 그리는 일은 여기서 해요 | `api.on('frame', fn)` | 모두 |
 | `event.dateChanged` | read | **게임 날짜 바뀜 이벤트**: 게임 날짜가 바뀌면(날짜 진행) 불려요. ev = { from, to, days } (from/to = {y, m, d, doy, iso}). 0.5초마다 확인하고 화면 스레드가 아니에요 | `api.on('dateChanged', fn)` | 모두 |
+| `event.newsAdded` | read | **게임 뉴스가 생길 때**: 게임이 뉴스 하나를 넣을 때마다(하루 수백 번: 경기 보고, 이적, 부상, 언론 의견…) 불려요. ev = { cls(뉴스 종류 = 클래스 이름, 예: MATCH_REPORT_NEWS), flags, toInbox, team(받는 팀), mine(내 팀 앞), text() }. text()는 게임 본문 글(평문)을 만들어요. 비싸니 필요한 뉴스만, 콜백 안에서만 불러요 (콜백이 끝나면 ''). 게임 스레드에서 불리니 짧게 하고, 긴 일은 api.send로 Python에 넘기세요. 모드가 처음 구독할 때 코어가 끼어들어요 | `api.on('newsAdded')` | 모두 |
+| `event.gameSaved` | read | **게임 저장이 끝났을 때**: 게임 저장(Ctrl+S, 메뉴 저장)이 끝나 .fm 파일 쓰기가 마무리된 뒤 불려요. ev = { ms(저장에 걸린 시간), save({id, nonce}) }. 모드가 세이브별로 따로 적어 둔 기록을 이때 확정하면, 저장하지 않고 다시 불러온 경우와 구별할 수 있어요 | `api.on('gameSaved')` | 모두 |
 | `event.saveLoaded` | read | **세이브 불러옴 이벤트**: 다른 세이브를 불러오면(또는 코어가 처음 세이브를 보면) 불려요. ev = { id, nonce, date }. 모드가 나중에 올라왔으면 이미 지나갔으니 처음에 saveInfo()로 확인하세요 | `api.on('saveLoaded', fn)` | 모두 |
 | `read.data` | read | **클럽·선수·스태프 데이터 읽기**: 데이터 표(clubs, persons, staff)와 속성 읽기(4글자 코드). mapsReady가 true일 때 써요 (세이브를 불러오면 코어가 스스로 만들어요, 화면 무관. 예전 api.prepareData는 그대로 둠). (코어 0.26.0) clubByName('토트넘') = 정식/짧은 이름이 같은 구단(db::CLUB), clubUid(구단) / clubByUid(번호) = 구단 고유 번호. (코어 0.27.0) personByName('손흥민') = {person, ref:'p95264'\|'s…', many} 또는 null, 이름 색인을 처음 만드는 동안은 {pending:true} (뒤에서 30초쯤). personByRef(ref) / personRef(사람). (코어 0.28.0) personsByName('파울리뉴') = 같은 이름의 사람 모두 (최대 8명) [{person, ref, name, age, club, role:'player'\|'staff'}] 또는 색인을 만드는 동안 {pending:true}, personInfo(사람) = 같은 정보 하나 (club ''는 무소속). personByName 결과에 count(같은 이름 수) | `api.prepareData`, `mapsReady`, `uidReady`, `clubs`, `persons`, `staff`, `lookup`, `getVal`, `getInt`, `linkIds`, `personName`, `personForm`, `formText`, `personExtra`, `mainPosition`, `topPlayer`, `clubExtra`, `clubSituation`, `staffAttrs`, `decodeVal`, `CLUB_VT`, `PERSON_VT`, `STAFF_VT`, `CLUBOBJ_VT`, `NT_VT`, `isNT`, `EMPTY_VAL`, `clubObj`, `clubFullName`, `clubShortName`, `clubByName`, `clubByUid`, `clubUid`, `personByName`, `personByRef`, `personRef`, `personsByName`, `personInfo` | 모두 |
 | `read.news` | read | **뉴스 기사 본문 읽기**: 소셜피드 글이 달린 뉴스 기사의 본문(평문)을 읽어요 _(화면 의존: 소셜 피드 화면)_ | `newsBody` | 모두 |
@@ -73,6 +75,18 @@ var last = 0; api.on('frame', function () { if (Date.now() - last < 1000) return
 
 ```js
 api.on('dateChanged', function (ev) { if (ev.to.m !== ev.from.m) api.log('새 달: ' + ev.to.iso); });
+```
+
+**`event.newsAdded`**
+
+```js
+api.on('newsAdded', function (ev) { if (ev.mine && /MATCH/.test(ev.cls)) api.send({ news: ev.cls, text: ev.text() }); });
+```
+
+**`event.gameSaved`**
+
+```js
+api.on('gameSaved', function (ev) { api.send({ saved: ev.save, ms: ev.ms }); });
 ```
 
 **`event.saveLoaded`**

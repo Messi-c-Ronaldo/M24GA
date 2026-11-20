@@ -596,9 +596,10 @@
       "owner": "core",
       "call": true,
       "thread": "ui",
-      "desc": "뉴스 하나를 게임에 넣는다 (게임이 하루 진행 중 뉴스마다 부르는 함수). 0x80 = 상위 구단에도, 0x100 = 관련 인물에게도. 온라인 전용 fm+0x3491790은 싱글에서 부르면 접근 오류",
+      "desc": "뉴스 하나를 게임에 넣는다 (게임이 하루 진행 중 뉴스마다 부르는 함수). 0x80 = 상위 구단에도, 0x100 = 관련 인물에게도. 온라인 전용 fm+0x3491790은 싱글에서 부르면 접근 오류. 코어 0.35.0: 코어가 끼어들어 이벤트 newsAdded로 나눠 준다 (모드가 구독할 때만)",
       "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
-      "verified": true
+      "verified": true,
+      "event": "newsAdded"
     },
     "str.alloc": {
       "rva": "0x4335520",
@@ -640,6 +641,22 @@
       "thread": "ui",
       "desc": "str.alloc 블록을 놓는다 (참조 계수가 0이 될 때)",
       "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
+      "verified": true
+    },
+    "save.write": {
+      "rva": "0x31edb10",
+      "sig": {
+        "off": "0x10",
+        "hex": "080000488dac248000000048c7854008"
+      },
+      "args": [],
+      "argNames": [],
+      "ret": "ptr",
+      "owner": "core",
+      "event": "gameSaved",
+      "thread": "ui",
+      "desc": "게임 저장 한 번 (Ctrl+S, 메뉴 저장). 안에서 GAME_SAVE_PROVIDER_LOCAL(fm+0xe033240)이 .fm 파일을 열고, 이 함수가 돌아올 때 파일 쓰기가 끝나 있다 (12.7초 실측). 코어가 끼어들어 이벤트 gameSaved로 나눠 준다",
+      "source": "M53 (CreateFileW 호출 경로, 시간 측정, 실기 Ctrl+S 3번)",
       "verified": true
     }
   },

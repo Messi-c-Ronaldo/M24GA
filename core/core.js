@@ -2573,6 +2573,51 @@ function inboxSendNow(o) {
   } finally { F.free(n); gameStrRelease(F, t); gameStrRelease(F, b); }
   return { ok: true, ret: ret, title: title, chars: body.length };
 }
+// ---- 이벤트 newsAdded·gameSaved (코어 0.35.0, M53, 기능 event.newsAdded·event.gameSaved) ----
+// newsAdded: 게임이 뉴스 하나를 넣을 때마다 (news.add, 하루 수백 번: 경기 보고·이적·부상·언론 의견…). 모드가 처음 구독할 때 끼어든다.
+//   ev = { cls(뉴스 클래스 이름), flags, toInbox(flags&7), team(받는 팀, 없으면 null), mine(내 팀 앞), text() }. text()는 게임의 본문 글(평문)을
+//   만든다 (비싸서 필요한 것만, 콜백 안에서만 됨). 받는 사람의 PERSON 부분(= NEWS_CTX)을 글 문맥으로 쓴다.
+//   모드가 api.inbox.send로 넣은 메일은 화면 스레드 콜백 안에서 부르므로 Frida가 끼어들기를 건너뛰어 이 이벤트가 안 온다 (되먹임 없음).
+// gameSaved: 게임 저장(save.write)이 끝난 뒤 (파일 쓰기 완료). ev = { ms(걸린 시간), save }.
+var EVENT_HOOKS = {};
+function newsPlainText(n) {
+  var ctx = personPart(myHuman()); if (!ctx || !ctx.readPointer().equals(NEWS_CTX_VT)) return '';
+  var nv = n.readPointer(); if (nv.compare(B) < 0 || nv.compare(MEND) >= 0) return '';
+  var o = Memory.alloc(0x10); o.writePointer(ptr(0));
+  buildBody(n, o, ctx, 1, 1);
+  var h = o.readPointer(); if (h.isNull()) return '';
+  var len = h.readU32(), s = (len > 0 && len < 40000) ? stripMarkup(h.add(4).readUtf8String(len)).trim() : '';
+  // 만든 글의 참조는 놓지 않는다 (newsBody와 같음, 짧은 글이 조금 남을 뿐: 잘못 놓으면 나중에 튕길 수 있다)
+  return s;
+}
+function newsAddedEmit(n, t, f) {
+  var cls = className(n); if (!cls) return;
+  var myT = myTeamObj(), live = true, cache = null;
+  var ev = { cls: cls, flags: f, toInbox: (f & 7) !== 0, team: t.isNull() ? null : t, mine: !!(myT && !t.isNull() && t.equals(myT)),
+    text: function () { if (!live) return ''; if (cache === null) { try { cache = newsPlainText(n); } catch (e) { cache = ''; } } return cache; } };
+  m24gaEmit('newsAdded', ev);
+  live = false;
+}
+M24GA.eventHook = function (ev) {
+  if (EVENT_HOOKS[ev]) return true;
+  var st;
+  if (ev === 'newsAdded') {
+    st = funcCheck('news.add'); if (!st.ok) { coreErr++; return false; }
+    EVENT_HOOKS[ev] = Interceptor.attach(st.addr, {
+      onEnter: function (a) { if (!M24GA.on.newsAdded.length) return; this.go = true; this.n = a[1]; this.t = a[2]; this.f = a[3].toUInt32(); },
+      onLeave: function () { if (!this.go) return; try { newsAddedEmit(this.n, this.t, this.f); } catch (e) { coreErr++; } }
+    });
+  } else if (ev === 'gameSaved') {
+    st = funcCheck('save.write'); if (!st.ok) { coreErr++; return false; }
+    EVENT_HOOKS[ev] = Interceptor.attach(st.addr, {
+      onEnter: function () { this.t0 = Date.now(); },
+      onLeave: function () { if (!M24GA.on.gameSaved.length) return; var g = {}; try { g = M24GA.readGame() || {}; } catch (e) {}
+        try { m24gaEmit('gameSaved', { ms: Date.now() - this.t0, save: g.save || null }); } catch (e) { coreErr++; } }
+    });
+  } else return false;
+  return true;
+};
+
 M24GA.inboxSend = function (o) { return runOnUi(function () { return inboxSendNow(o || {}); }).then(function (r) { return r && r.error && r.ok === undefined ? { ok: false, error: r.error } : r; }); };
 
 // ---- 게임 안 패널 (코어 0.23.0, M45, 기능 ui.panel) ----

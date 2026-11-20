@@ -95,6 +95,8 @@ my-mod-1.0.0.24mod   (zip)
 | `api.on('socialPanel', fn)` | 소셜 패널(소셜피드 글 한 칸)이 그려질 때. `fn(ev)`, `ev = { th, type, dst, text }`: `th` 패널 객체 주소, `type` 글 종류 (0 뉴스 제목, 2·4 팬 댓글, 3·5 공식 글), `dst` 글자 칸 주소, `text` 지금 글. 화면을 그리는 스레드에서 불려요 |
 | `api.on('frame', fn)` | 화면 스레드의 매 프레임이 끝난 직후 (초당 약 20번). **오래 걸리는 일은 하지 마세요.** 간격은 모드가 직접 조절해요 (`Date.now()`로) |
 | `api.on('dateChanged', fn)` | (코어 0.5.0) 게임 날짜가 바뀔 때. `ev = { from, to, days }`, 날짜는 `{ y, m, d, doy, iso }`. 코어가 0.5초마다 확인해요 (화면 스레드 아님) |
+| `api.on('newsAdded', fn)` | (코어 0.35.0, 기능 `event.newsAdded`) 게임이 뉴스를 넣을 때마다 (하루 수백 번: 경기 보고·이적·부상·언론 의견…). `ev = { cls, flags, toInbox, team, mine, text() }`. `cls` = 뉴스 종류(클래스 이름), `mine` = 내 팀 앞, `text()` = 게임 본문 글(평문, 비싸니 필요한 것만, 콜백 안에서만). 게임 스레드라 짧게 하고 긴 일은 `api.send`로 Python에. 모드가 `api.inbox.send`로 넣은 메일에는 안 와요 |
+| `api.on('gameSaved', fn)` | (코어 0.35.0, 기능 `event.gameSaved`) 게임 저장이 끝난 뒤 (.fm 파일 쓰기 완료). `ev = { ms, save }`. 세이브별 모드 기록을 이때 확정하면 '저장 안 하고 다시 불러오기'와 구별돼요 |
 | `api.on('saveLoaded', fn)` | (코어 0.5.0) 다른 세이브를 불러왔을 때. `ev = { id, nonce, date }`. 모드가 그 뒤에 올라왔으면 이미 지나갔으니 처음에 `saveInfo()`로 확인하세요 |
 | `api.every(ms, fn)` / `api.after(ms, fn)` | (코어 0.5.0) 타이머 (최소 50ms). 반환값의 `stop()`으로 멈추고, **모드를 내리면 코어가 알아서 멈춰요** (`setInterval`을 직접 쓰지 마세요). 화면 스레드 아님 |
 | `api.setPlayerPA(uid, pa, opts)` | (코어 0.7.0, 기능 `write.player.pa`, **사용자 허용 필요**) 선수 잠재력을 바꿔요 (아래 "게임 값 쓰기") |

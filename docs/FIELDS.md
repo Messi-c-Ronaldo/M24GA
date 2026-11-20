@@ -1,4 +1,4 @@
-# M24GA 필드 목록 (코어 0.34.0)
+# M24GA 필드 목록 (코어 0.35.0)
 
 > 이 파일은 `core/fields.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 

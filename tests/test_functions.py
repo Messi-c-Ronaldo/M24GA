@@ -38,7 +38,7 @@ class Registry(unittest.TestCase):
                 if f.get("owner") == "core" and f.get("call"):
                     self.assertNotIn("hook", f, "코어가 부르기만 하는 함수 (M29)")
                 elif f.get("owner") == "core":
-                    self.assertIn(f.get("event"), ("socialPanel", "frame", "dateChanged", "saveLoaded", "panel"))   # panel = 게임 안 패널 (M45, api.panel로 나눠 줌)
+                    self.assertIn(f.get("event"), ("socialPanel", "frame", "dateChanged", "saveLoaded", "panel", "gameSaved"))   # panel = 게임 안 패널 (M45, api.panel로 나눠 줌)
                 else:
                     self.assertIn(f.get("hook", "observe"), ("observe", "modify"))
                     if f.get("hook") == "modify":

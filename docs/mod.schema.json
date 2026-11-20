@@ -213,6 +213,8 @@
           "event.socialPanel",
           "event.frame",
           "event.dateChanged",
+          "event.newsAdded",
+          "event.gameSaved",
           "event.saveLoaded",
           "read.data",
           "read.news",

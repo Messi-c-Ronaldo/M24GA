@@ -7,7 +7,7 @@
 // 그 모드의 api를 죽인다(이후 api 호출은 아무 일도 안 함). 모드가 api를 거치지 않고 직접 건 Interceptor·타이머는 모드가 onUnload에서 치워야 한다.
 
 // 훅은 코어만 건다. 같은 함수를 모드마다 걸면 꼬이므로 이벤트로 나눠 준다. 모드 오류는 모드 안에서 막는다.
-var M24GA = { mods: [], on: { socialPanel: [], frame: [], dateChanged: [], saveLoaded: [] }, statusFns: {}, recvFns: {}, errs: {}, apis: {}, unloadFns: {},
+var M24GA = { mods: [], on: { socialPanel: [], frame: [], dateChanged: [], saveLoaded: [], newsAdded: [], gameSaved: [] }, statusFns: {}, recvFns: {}, errs: {}, apis: {}, unloadFns: {},
   timers: {},                          // 모드 id -> api.every/after로 만든 타이머 (내릴 때 코어가 멈춘다)
   game: { date: null, save: null },    // 마지막으로 본 게임 날짜(해석한 값)와 세이브 {id, nonce}
   readGame: null,                      // core.js가 채운다: function () { return { date: u32 원값 또는 null, save: {id, nonce} 또는 null } }
@@ -297,7 +297,7 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
   var alive = true, talk = true;   // alive: 등록 가능, talk: log/send 가능 (내리는 중 onUnload 안에서는 talk만)
   var api = {
     id: id,
-    on: function (ev, fn) { if (!M24GA.on[ev]) throw new Error('unknown event ' + ev); if (alive) M24GA.on[ev].push({ id: id, fn: fn }); },
+    on: function (ev, fn) { if (!M24GA.on[ev]) throw new Error('unknown event ' + ev); if (alive) { M24GA.on[ev].push({ id: id, fn: fn }); if (M24GA.eventHook) M24GA.eventHook(ev); } },   // 코어 0.35.0: newsAdded·gameSaved는 처음 구독할 때 코어가 끼어든다
     status: function (fn) { if (alive) M24GA.statusFns[id] = fn; },
     // (코어 0.12.0) 이 모드의 설정 값 {key: 값} (mod.json settings, 파일에 없으면 default, 비밀번호 형식은 빠져요). 부를 때마다 새 복사본.
     // 사용자 허용이 필요 없어요. 앱에서 설정을 바꾸면 onSettings 함수가 새 값으로 불려요 (한 모드에 하나, 게임 스레드가 아닐 수 있어요)
