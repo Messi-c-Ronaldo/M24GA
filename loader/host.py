@@ -892,6 +892,9 @@ def rpc(name, *args):
         return {"error": "%s 실패: %s" % (name, e)}
 
 
+modlib.RPC["fn"] = lambda name, *args: rpc(name, *args) if name in ("props",) else {"error": "모드가 부를 수 없는 rpc: %s" % name}   # ctx.props (코어 0.39.0)
+
+
 def getfield(spec, name):
     """필드 하나 읽기 (M20, CLI get): 코어 rpc getfield."""
     sc = _cur["script"]

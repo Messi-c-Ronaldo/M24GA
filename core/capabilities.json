@@ -222,12 +222,14 @@
         "*"
       ],
       "title": "게임 속성 코드 읽기",
-      "desc": "게임 화면이 쓰는 4글자 속성 코드로 팀·구단·국가대표·선수·스태프·사람 감독·대회·상(0.39.0부터 국가·경기장·도시·대륙·언론사·계약·임대·부상도)의 값을 읽어요. 등록부 core/properties.json(2,300여 개, 종류·값 형식)을 기준으로 api.prop(대상, 코드) / api.props(대상, {re, codes, empty}) / api.propInfo(코드) / api.deref({dref}). 대상은 객체 포인터 또는 'me'·'myteam'·'myclub'·'myjob'·'p123'·'s45'·'team:<번호>'·'comp:<번호>'. 날짜는 'YYYY-MM-DD', 다른 객체 링크는 {dref}",
+      "desc": "게임 화면이 쓰는 4글자 속성 코드로 팀·구단·국가대표·선수·스태프·사람 감독·대회·상(0.39.0부터 국가·경기장·도시·대륙·언론사·계약·임대·부상도)의 값을 읽어요. 등록부 core/properties.json(2,300여 개, 종류·값 형식)을 기준으로 api.prop(대상, 코드) / api.props(대상, {re, codes, empty}) / api.propInfo(코드) / api.deref({dref}). 대상은 객체 포인터 또는 'me'·'myteam'·'myclub'·'myjob'·'p123'·'s45'·'team:<번호>'·'comp:<번호>'. 날짜는 'YYYY-MM-DD', 다른 객체 링크는 {dref}. (코어 0.39.0) Python 모드: ctx.props(대상, 정규식) / ctx.prop(대상, 코드)",
       "uses": [
         "api.prop",
         "api.props",
         "api.propInfo",
-        "api.deref"
+        "api.deref",
+        "ctx.props",
+        "ctx.prop"
       ],
       "detect": [
         "\\bapi\\.(prop|props|propInfo|deref)\\s*\\("

@@ -39,6 +39,13 @@ class ModContext:
     def game_dir(self) -> Optional[str]:
         """(코어 0.31.0) 붙은 게임의 설치 폴더 (fm.exe 폴더). 한 번도 안 붙었으면 None"""
 
+    def props(self, target: str, regex: Optional[str] = None, empty: bool = False) -> dict[str, Any]:
+        """(코어 0.39.0, 기능 read.prop) 게임 속성 코드 값 {코드: 값}. target = 'me'|'myteam'|'myclub'|'myjob'|'p123'|'s45'|'team:<번호>'|'comp:<번호>'|'0x주소'.
+        게임에 안 붙어 있거나 대상을 못 찾으면 RuntimeError, read.prop이 없으면 PermissionError"""
+
+    def prop(self, target: str, code: str) -> Any:
+        """(코어 0.39.0) 속성 하나 (없으면 None)"""
+
     def save_dir(self) -> Optional[str]:
         """(코어 0.5.0) 지금 세이브 전용 폴더 <데이터 폴더>/saves/<세이브 id>/ (만들어 줘요). 세이브가 없으면 None"""
 

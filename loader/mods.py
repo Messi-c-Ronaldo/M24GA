@@ -557,6 +557,7 @@ def save_settings(mod, changes):
 # 게임 날짜·세이브 (M12): 호스트가 코어 알림을 받아 채운다. 게임에 안 붙어 있거나 세이브가 없으면 None
 GAME = {"date": None, "save": None}
 GAME_DIR = {"dir": None}   # (코어 0.31.0) 마지막으로 붙은 fm.exe의 폴더. 게임이 꺼져도 남겨 둔다
+RPC = {"fn": None}   # (코어 0.39.0) host가 코어 rpc 부르기 함수를 넣는다 (ctx.props)
 
 
 class ModContext:
@@ -592,6 +593,25 @@ class ModContext:
         r"""(코어 0.31.0) 붙어 있는 게임의 설치 폴더 (fm.exe가 있는 폴더, 예: C:\Program Files\Epic Games\FootballManager24).
         게임에 한 번도 안 붙었으면 None. 원본 게임 자료(data\*.fmf)를 읽을 때 써요 (DynamicME)."""
         return GAME_DIR.get("dir")
+
+    def props(self, target, regex=None, empty=False):
+        """(코어 0.39.0, 기능 read.prop) 게임 속성 코드 값 {코드: 값} (JS api.props와 같음, docs/PROPERTIES.md).
+        target = 'me' | 'myteam' | 'myclub' | 'myjob' | 'p123' | 's45' | 'team:<번호>' | 'comp:<번호>' | '0x주소'(JS가 보낸 객체 주소).
+        regex = 코드 정규식 (예: '^Cc'). 게임에 안 붙어 있거나 대상을 못 찾으면 RuntimeError. 코어 스레드에서 돌아서 0.1~1초 걸려요"""
+        if "read.prop" not in (self.mod.manifest.get("capabilities") or []):
+            raise PermissionError("mod.json capabilities에 read.prop이 없어요")
+        fn = RPC.get("fn")
+        if not fn:
+            raise RuntimeError("게임에 연결돼 있지 않아요")
+        r = fn("props", str(target), regex, bool(empty))
+        if not isinstance(r, dict) or r.get("error"):
+            raise RuntimeError((r or {}).get("error") if isinstance(r, dict) else "속성 읽기 실패")
+        return r["props"]
+
+    def prop(self, target, code):
+        """(코어 0.39.0) 속성 하나. 답하지 않거나 빈 값이면 None"""
+        import re
+        return self.props(target, "^%s$" % re.escape(code), empty=True).get(code)
 
     def save_dir(self):
         """(코어 0.5.0) 지금 세이브 전용 데이터 폴더 <데이터 폴더>/saves/<세이브 id>/ (만들어서 돌려준다). 세이브가 없으면 None.

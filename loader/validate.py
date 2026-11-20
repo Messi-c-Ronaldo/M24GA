@@ -458,6 +458,14 @@ def _check_caps(mod, m, rep, names):
     except Exception:  # noqa: BLE001  (읽기 오류는 _check_js가 알린다)
         src = ""
     found = caps.detect(src, m)
+    if m.get("python"):   # (코어 0.39.0) Python 쪽 ctx.props/ctx.prop = read.prop
+        for n in names:
+            if n.endswith(".py") and "read.prop" not in found:
+                try:
+                    if re.search(r"\bctx\.props?\s*\(", mod.read_text(n)):
+                        found["read.prop"] = 0
+                except Exception:  # noqa: BLE001
+                    pass
     v = m.get("capabilities")
     if v is not None and (not isinstance(v, list) or not all(isinstance(x, str) for x in v)):
         rep.error(w, "글자 목록이어야 해요", '예: "capabilities": ["event.socialPanel", "read.data"]')
