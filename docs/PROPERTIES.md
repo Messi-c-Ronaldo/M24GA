@@ -69,7 +69,9 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Ntem` | staff, human | int | 기질 (숨은 값) — 정수 1~20 |
 | `PAap` | player | int | 통산 출전 — 정수 |
 | `PAcg` | player | int | 골 — 정수 |
+| `PCAB` | player | int | 현재 능력 CA (M58: 필드 player.ca와 같음 179) |
 | `PCRP` | player | int | 명성 — 정수 (0~10000) |
+| `PPAB` | player | int | 잠재 능력 PA (M58: 필드 player.pa와 같음 180) |
 | `Pace` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Page` | player, staff, human | int | 나이 — 정수 |
 | `Pamb` | player, staff, human | int | 야망 — 정수 1~20 |
@@ -92,6 +94,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Pfrm` | player | rec | 최근 폼 — `{Prat 평균, Pgls 골, Pfrm [최근 5경기 평점]}` |
 | `Pgls` | player | rec | 시즌 골 — `{valu, numb}` |
 | `Pgoa` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
+| `Phei` | player, staff, human | int | 키 cm (M58 화면 187) |
 | `Piap` | player, staff, human | int | 국가대표 출전 — 정수 |
 | `Pigl` | player, staff, human | int | 골 — 정수 |
 | `Pipr` | player | int | 부상 경향 (숨은 값) — 정수 1~20 |
@@ -107,6 +110,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Poyc` | player | rec | 시즌 경고 — `{valu, numb}` |
 | `Pwbl` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pwbr` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
+| `Pwei` | player, staff, human | int | 몸무게 kg (M58 화면 81) |
 | `TCst` | team, club, nation, comp, award, country | list | 팀 스태프 목록 [{dref}] (M55) |
 | `TMnR` | team, club, nation, comp, award, country | rec | 지금 팀 감독 (임시 감독 포함) — `{dref}` (0x01xxxxxx = 사람 링크 번호) |
 | `Tfrm` | team, club, nation, comp, award, country | list | 최근 5경기 — 배열, **[0]이 가장 오래된 것**, 3 승 / 1·2 무 / 0 패 |
