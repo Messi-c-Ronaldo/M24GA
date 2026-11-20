@@ -217,6 +217,7 @@
           "event.gameSaved",
           "event.saveLoaded",
           "read.data",
+          "read.prop",
           "read.news",
           "read.me",
           "read.fan",

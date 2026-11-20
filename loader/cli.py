@@ -52,6 +52,9 @@ JSON 출력(--json)으로 프로그래밍 방식으로 파싱할 수 있다.
   engine apply <팩> [--dry] / engine restore  엔진 팩 값을 게임 메모리에 바로 쓰기 / 원본으로 (재시작 없음)
   get <대상> <필드...> 필드 등록부의 칸 읽기 (필드 끝이 '.'이면 그 이름으로 시작하는 것 전부)
   fields [정규식]     필드 등록부 목록 (게임 없이 됨, docs/FIELDS.md)
+  props <대상> [정규식] [--empty]  게임 속성 코드 값 전부 (대상: me | myteam | myclub | p123 | s45 | team:<번호> | player:<uid> | 0x주소, docs/PROPERTIES.md)
+  prop-find <대상> <값>  값(숫자·글·날짜)이 든 속성 코드 찾기
+  prop-info [정규식]  속성 등록부 목록 (게임 없이 됨)
   find-field <대상>=<값> [...]  알려진 값으로 칸 찾기 (여러 대상이면 공통 칸 + fields.json 초안, 값: 숫자 | a..b | 180억)
   watch-write <대상> <칸> [크기]  그 칸에 쓰는 게임 코드 찾기 (하드웨어 감시, --secs/--max 뒤 자동 해제, show | stop)
   find-global <정규식>  전역 칸 중 그 클래스 객체를 가리키는 것 (싱글턴 찾기)
@@ -890,6 +893,77 @@ def cmd_get(args):
     for r in res:
         v = r["value"]
         print("  %-40s %s" % (r["name"], v["iso"] if isinstance(v, dict) and "iso" in v else json.dumps(v, ensure_ascii=False)))
+    return 0
+
+
+def _prop_names():
+    """개발 PC에만 있는 속성 영어 이름표 (~/m24ga_data/prop_names.tsv, 게임 파일에서 뽑은 것이라 저장소에 없음)."""
+    names = {}
+    path = os.path.join(modlib.DATA, "prop_names.tsv")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if "\t" in line:
+                    c, n = line.rstrip("\n").split("\t", 1)
+                    names[c] = n
+    return names
+
+
+def _prop_reg():
+    with open(os.path.join(modlib.ROOT, "core", "properties.json"), encoding="utf-8") as f:
+        return json.load(f)
+
+
+def cmd_props(args):
+    """게임 속성 코드 값 전부 (M55, 코어 0.36.0)."""
+    empty = bool(_opt(args, "--empty", flag=True))
+    if not args:
+        return err("사용: cli.py props <대상> [정규식] [--empty]  (예: props myteam ^C, props p12345 Pc)")
+    r = host.rpc("props", args[0], args[1] if len(args) > 1 else None, empty)
+    if not r or r.get("error"):
+        return err((r or {}).get("error") or "실패")
+    if _json_mode:
+        out(r)
+        return 0
+    reg, names = _prop_reg()["props"], _prop_names()
+    print("%s %s (%s) — %d개, %dms" % (args[0], r["cls"], r["kind"], len(r["props"]), r["ms"]))
+    for c, v in sorted(r["props"].items()):
+        p = reg.get(c, {})
+        label = p.get("ko") or names.get(c, "")
+        print("  %s %-5s %-40s %s" % (c, p.get("t", "?"), json.dumps(v, ensure_ascii=False)[:120], label[:50]))
+    return 0
+
+
+def cmd_prop_find(args):
+    """값으로 속성 코드 찾기 (M55)."""
+    if len(args) < 2:
+        return err("사용: cli.py prop-find <대상> <값>  (예: prop-find myteam 2038-06-30, prop-find me 47)")
+    r = host.rpc("propfind", args[0], " ".join(args[1:]))
+    if not r or r.get("error"):
+        return err((r or {}).get("error") or "실패")
+    if _json_mode:
+        out(r)
+        return 0
+    names = _prop_names()
+    print("%s %s — %d곳" % (args[0], r["cls"], len(r["hits"])))
+    for h in r["hits"]:
+        print("  %-30s %-20s %s" % (h["path"], json.dumps(h["value"], ensure_ascii=False)[:20], names.get(h["code"], "")))
+    return 0
+
+
+def cmd_prop_info(args):
+    """속성 등록부 목록 (게임 없이 됨)."""
+    import re
+    reg, names = _prop_reg(), _prop_names()
+    rx = re.compile(args[0], re.I) if args else None
+    rows = [(c, p) for c, p in reg["props"].items()
+            if not rx or rx.search(c) or rx.search(p.get("ko", "")) or rx.search(names.get(c, ""))]
+    if _json_mode:
+        out(dict(rows))
+        return 0
+    for c, p in rows:
+        print("  %s %-5s %-34s %s" % (c, p["t"], ",".join(p["k"]), p.get("ko") or names.get(c, "")))
+    print("(%d개, 등록부 core/properties.json, 문서 docs/PROPERTIES.md)" % len(rows))
     return 0
 
 
@@ -2032,6 +2106,9 @@ COMMANDS = {
     "classes": cmd_classes,
     "get": cmd_get,
     "fields": cmd_fields,
+    "props": cmd_props,
+    "prop-find": cmd_prop_find,
+    "prop-info": cmd_prop_info,
     "find-field": cmd_find_field,
     "watch-write": cmd_watch_write,
     "functions": cmd_functions,

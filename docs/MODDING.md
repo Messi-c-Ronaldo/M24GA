@@ -156,6 +156,25 @@ my-mod-1.0.0.24mod   (zip)
 - 무엇을 쓸지는 Python에서 `pylib/m24engine.py`로 정해요. 엔진 팩(.json/.jsb) 읽기, 원본 `simatch.fmf` 읽기(`load_game_original(ctx.game_dir())`), `plan(팩, 원본, 메모리)` → 쓰기 목록과 경고를 줘요.
 - 실제 예는 `mods/dynamic-me`예요. JS는 읽기·쓰기만 하고 Python이 계획을 만들어요.
 
+### 게임 속성 읽기 (코어 0.36.0, 기능 `read.prop`)
+
+게임 화면이 값을 물을 때 쓰는 **4글자 속성 코드**를 모드도 그대로 써요. 코어가 게임 객체 8종류(팀·구단·국가대표·선수·스태프·사람 감독·대회·상)에 코드를 전부 물어 본 등록부(`core/properties.json`, 2,100여 개)를 갖고 있어요. 목록과 뜻은 [PROPERTIES.md](PROPERTIES.md).
+
+```js
+// mod.json "capabilities": ["read.prop"]
+var rank = api.prop('myteam', 'TpoN');                 // 리그 순위
+var money = api.props('myclub', { re: '^Cc' });        // 구단 재정 코드들 {코드: 값}
+var opp = api.deref(api.prop('myteam', 'Topp'));       // 다음 경기 상대 팀 객체
+if (opp) api.log('다음 상대 순위 ' + api.prop(opp, 'TpoN'));
+api.log(JSON.stringify(api.propInfo('Pced')));         // { code: 'Pced', t: 'date', k: ['player','staff','human'] }
+```
+
+- 대상: 객체 포인터(선수 객체의 어느 칸이든 됨) 또는 `'me'`, `'myteam'`, `'myclub'`, 사람 참조 `'p123'`/`'s45'`, `'team:<번호>'`, `'comp:<번호>'`.
+- 값: 정수, 실수, 글, `true/false`, 날짜 `'2038-06-30'`, 색 `'#rrggbbaa'`, 묶음 `{키: 값}`, 목록 `[...]`. 다른 객체는 `{dref: 번호}` → `api.deref`.
+- 읽기만 해요. 게임 화면이 보여 주는 값이라 안전하지만, 등록부에 뜻(`ko`)이 없는 코드는 값의 뜻을 직접 확인하세요.
+- 개발할 때: `cli.py props myteam ^T` (값 전부), `cli.py prop-find me 2038-06-30` (값으로 코드 찾기), `cli.py prop-info 순위` (게임 없이 목록).
+- 한 번에 1,000개쯤 읽는 `api.props(대상)`은 0.5~1초 걸려요. `re`나 `codes`로 좁혀 쓰세요.
+
 ### 받은 편지함 메일 (코어 0.34.0, 기능 `ui.inbox`)
 
 게임 받은 편지함에 메일 한 통을 넣어요. 게임의 "감독끼리 보내는 메시지" 종류라 목록에 **"보낸이의 말: 제목"** 으로 보여요.

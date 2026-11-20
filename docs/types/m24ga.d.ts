@@ -79,6 +79,15 @@ interface ModApi {
     /** 이 코어가 받은 편지함 메일을 지원하는가 */
     available(): boolean;
   };
+  /** (코어 0.36.0, 기능 read.prop) 게임 속성 코드 읽기 (core/properties.json, docs/PROPERTIES.md). 대상 = 객체 포인터 또는 'me'|'myteam'|'myclub'|'p123'|'s45'|'team:<번호>'|'comp:<번호>'.
+   *  값 / null(빈 값) / undefined(이 객체가 답하지 않는 코드). 모르는 객체·막은 코드는 예외 */
+  prop(obj: Ptr | string, code: string): any;
+  /** 그 객체가 답하는 코드(등록부 기준) 전부 {코드: 값}. re = 코드 정규식, codes = 코드 목록, empty = 빈 값도 */
+  props(obj: Ptr | string, opts?: { re?: string; codes?: string[]; empty?: boolean }): { [code: string]: any };
+  /** 등록부 정보: t = 값 종류(int|u32|num|bool|str|date|color|rec|list|data|empty), k = 답하는 객체 종류 */
+  propInfo(code: string): { code: string; t: string; k: string[]; blocked: boolean } | null;
+  /** {dref} 또는 번호 -> 게임 객체 (0x01 사람, 0x03 구단, 0x18 팀, 0x19 대회). 모르면 null */
+  deref(d: { dref: number } | number): Ptr | null;
   panel: {
     open(form: PanelForm, cb?: (ev: PanelEvent) => void): PanelHandle;
     /** 게임 안 패널을 지금 쓸 수 있는가 (패널 칸 파일과 게임 함수 확인) */

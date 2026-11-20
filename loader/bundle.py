@@ -18,6 +18,21 @@ MODHOST_JS = os.path.join(ROOT, "core", "modhost.js")   # 모드 등록·동적 
 CORE_DATA = modlib.DATA
 FIELDS_JSON = os.path.join(ROOT, "core", "fields.json")   # 필드 등록부 (M20)
 FUNCS_JSON = os.path.join(ROOT, "core", "functions.json")   # 함수 등록부 (M22)
+PROPS_JSON = os.path.join(ROOT, "core", "properties.json")   # 속성 등록부 (M55, 코어 0.36.0)
+
+
+def props_compact(reg):
+    """속성 등록부의 짧은 판: { kinds: {종류: [클래스, 칸]}, block: [코드], p: {코드: [값 종류, 종류 비트]} }"""
+    kinds = list(reg["kinds"])
+    p = {}
+    for c, v in reg["props"].items():
+        if v.get("stale"):
+            continue
+        bits = 0
+        for k in v["k"]:
+            bits |= 1 << kinds.index(k)
+        p[c] = [v["t"], bits]
+    return {"kinds": {k: [reg["kinds"][k]["class"], reg["kinds"][k]["off"]] for k in kinds}, "block": sorted(reg.get("block", {})), "p": p}
 
 
 def _js_path(p):
@@ -78,6 +93,8 @@ def build(mods_to_load=None):
         core = _inject(core, "M24_FIELDS", json.dumps(json.load(f), ensure_ascii=False, separators=(",", ":")), "core.js")
     with open(FUNCS_JSON, encoding="utf-8") as f:   # 함수 등록부 (M22)
         core = _inject(core, "M24_FUNCS", json.dumps(json.load(f), ensure_ascii=False, separators=(",", ":")), "core.js")
+    with open(PROPS_JSON, encoding="utf-8") as f:   # 속성 등록부 (M55): 짧은 판만
+        core = _inject(core, "M24_PROPS", json.dumps(props_compact(json.load(f)), ensure_ascii=False, separators=(",", ":")), "core.js")
     parts.append(core)
     loaded = []
     for m in mods_to_load:

@@ -1,6 +1,6 @@
 {
   "$comment": "M24GA 기능 등록부 (M10). 코어가 모드에 열어 주는 기능마다 한 항목. 사람용 문서(docs/CAPABILITIES.md)는 tools/m24.py caps가 이 파일에서 만든다. 항목을 고치면 문서를 다시 만들고 tests를 돌린다. 'detect'는 mod.js에서 이 기능을 쓰는지 찾는 정규식(주석을 뺀 줄마다 검사). 'builds'는 지원하는 게임 빌드 이름 목록이고 [\"*\"]는 코어가 지원하는 모든 빌드. 'screen'이 있는 기능은 그 화면(스킨이 바꿀 수 있음)이 열려 있어야 동작해요 (M39). 나머지는 화면·스킨과 무관해야 해요.",
-  "core": "0.35.0",
+  "core": "0.36.0",
   "risks": {
     "read": {
       "label": "게임 데이터 읽기",
@@ -196,6 +196,26 @@
         "\\b(personsByName|personInfo)\\s*\\("
       ],
       "example": "var o = lookup(clubs, idx, CLUB_VT); if (o) api.log('리그 순위 ' + getInt(o, 'TpoN'));"
+    },
+    {
+      "name": "read.prop",
+      "risk": "read",
+      "since": "0.36.0",
+      "builds": [
+        "*"
+      ],
+      "title": "게임 속성 코드 읽기",
+      "desc": "게임 화면이 쓰는 4글자 속성 코드로 팀·구단·국가대표·선수·스태프·사람 감독·대회·상의 값을 읽어요. 등록부 core/properties.json(2,100여 개, 종류·값 형식)을 기준으로 api.prop(대상, 코드) / api.props(대상, {re, codes, empty}) / api.propInfo(코드) / api.deref({dref}). 대상은 객체 포인터 또는 'me'·'myteam'·'myclub'·'p123'·'s45'·'team:<번호>'·'comp:<번호>'. 날짜는 'YYYY-MM-DD', 다른 객체 링크는 {dref}",
+      "uses": [
+        "api.prop",
+        "api.props",
+        "api.propInfo",
+        "api.deref"
+      ],
+      "detect": [
+        "\\bapi\\.(prop|props|propInfo|deref)\\s*\\("
+      ],
+      "example": "var rank = api.prop('myteam', 'TpoN'); var opp = api.deref(api.prop('myteam', 'Topp')); if (opp) api.log('상대 순위 ' + api.prop(opp, 'TpoN'));"
     },
     {
       "name": "read.news",

@@ -2275,6 +2275,7 @@ function decodeVal(tp, vbuf, depth) {
   if (t === 'str') {   // 빈 문자열 항목은 핸들이 잘못된 값일 수 있다 (이름 묶음의 Psna 등)
     try { var p = vbuf.readPointer(), n = p.readU32(); return n > 0 && n < 400 ? p.add(4).readUtf8String(n) : ''; } catch (x) { return ''; }
   }
+  if (!t) { var et = extType(tp); return et ? decodeExt(et, vbuf) : null; }   // 코어 0.36.0: 날짜·색·u32 (묶음·목록 안에서도)
   if (depth > 3) return null;
   if (t === 'rec') {   // 항목 하나가 실패해도 나머지는 살린다
     var v = vbuf.readPointer(), b = v.readPointer(), n2 = v.add(8).readPointer().sub(b).toInt32() / 16, o = {};
@@ -2294,7 +2295,10 @@ function decodeVal(tp, vbuf, depth) {
 }
 function checkObj(obj) {   // 클럽/사람 데이터 객체가 아니면 가상 함수를 부르지 않는다 (튕김 방지)
   var vt = obj.readPointer();
-  if (!vt.equals(CLUB_VT) && !vt.equals(NT_VT) && !vt.equals(PERSON_VT) && !vt.equals(STAFF_VT)) throw new Error('not a data object');
+  if (!vt.equals(CLUB_VT) && !vt.equals(NT_VT) && !vt.equals(PERSON_VT) && !vt.equals(STAFF_VT)) {
+    var tg = propTarget(obj);   // 코어 0.36.0: 속성 등록부의 종류(구단·대회·상·사람 감독)도 허용. 속성 부분 자체여야 한다
+    if (!tg || !tg.p.equals(obj)) throw new Error('not a data object');
+  }
   return vt;
 }
 function getVal(obj, code) {
@@ -2304,6 +2308,122 @@ function getVal(obj, code) {
   if (!fn(obj, c, buf)) return null;
   return decodeVal(buf.readPointer(), buf.add(8), 0);
 }
+
+// ---- 속성 등록부 (코어 0.36.0, M55) ----
+// 게임 객체의 get_property(vtable+0x10)에 후보 코드를 모두 물어 본 결과 = core/properties.json (tools/props_catalog.py).
+// 종류(kind)는 RTTI 클래스 이름 + 속성 부분의 칸(선수 +0x278, 스태프 +0xf8, 사람 감독 +0x450)이라 객체의 어느 칸 포인터를 줘도 된다.
+// 로더가 짧은 판을 넣는다: { kinds: {종류: [클래스, 칸]}, block: [부르면 접근 오류 나는 코드], p: {코드: [값 종류, 종류 비트]} }
+var M24_PROPS = { kinds: {}, block: [], p: {} };   // 로더가 core/properties.json을 넣는다
+var PROP_KIND_NAMES = null, PROP_BY_CLASS = {}, PROP_BLOCK = {}, PROP_SUB = {};
+function propsInit() {
+  if (PROP_KIND_NAMES) return;
+  PROP_KIND_NAMES = Object.keys(M24_PROPS.kinds);
+  PROP_KIND_NAMES.forEach(function (k, i) { var v = M24_PROPS.kinds[k]; PROP_BY_CLASS[v[0]] = { kind: k, off: v[1], bit: 1 << i }; });
+  (M24_PROPS.block || []).forEach(function (c) { PROP_BLOCK[c] = true; });
+}
+function code4(code) { return ((code.charCodeAt(0) << 24) | (code.charCodeAt(1) << 16) | (code.charCodeAt(2) << 8) | code.charCodeAt(3)) >>> 0; }
+// 객체(어느 칸이든) -> { p: 속성 부분, kind, bit } 또는 null. 클래스·칸·vtable(+0x10 함수가 fm.exe 안)을 모두 확인한다
+function propTarget(obj) {
+  propsInit();
+  var r = rttiInfo(obj); if (!r) return null;
+  var k = PROP_BY_CLASS[r.name]; if (!k) return null;
+  var p = r.top.add(k.off);
+  try {
+    var vt = p.readPointer(), key = vt.toString();
+    if (!(key in PROP_SUB)) {
+      var vr = rttiOfVt(vt), f = vt.add(0x10).readPointer();
+      PROP_SUB[key] = !!vr && vr.name === r.name && vr.off === k.off && inModule(f);
+    }
+    return PROP_SUB[key] ? { p: p, kind: k.kind, bit: k.bit } : null;
+  } catch (e) { return null; }
+}
+// 대상 글 -> 객체: 'me'(내 감독), 'myteam', 'myclub', 사람 참조 'p123'/'s45', 'team:<번호>', 'comp:<번호>', '0x주소', 또는 포인터
+function propResolve(o) {
+  if (o && typeof o.add === 'function') return o;
+  var s = String(o || ''), m;
+  if (s === 'me') return myHuman();
+  if (s === 'myteam') return myTeamObj();
+  if (s === 'myclub') { var t = myTeamObj(); return t ? clubOfTeam(t) : null; }
+  if (/^[ps]\d+$/.test(s)) return personByRef(s);
+  if ((m = /^team:(\d+)$/.exec(s))) return lookup(clubs, +m[1], CLUB_VT);
+  if ((m = /^comp:(\d+)$/.exec(s))) return lookup(comps, +m[1], COMP_VT);
+  if (/^0x[0-9a-f]+$/i.test(s)) return ptr(s);
+  return null;
+}
+// 값 종류 확장 (VT 표에 없는 것): 종류 포인터의 클래스 이름으로 가린다 (실행마다 주소가 바뀜)
+var EXT_T = {};
+function extType(tp) {
+  var k = tp.toString(); if (k in EXT_T) return EXT_T[k];
+  var t = null;
+  try {
+    if (EMPTY_VAL && tp.equals(EMPTY_VAL)) t = 'empty';
+    else if (EMPTY_VAL && tp.equals(EMPTY_VAL.add(0x50))) t = 'u32';
+    else { var n = className(tp) || ''; t = /SI_DATE/.test(n) ? 'date' : /RGBA/.test(n) ? 'color' : /DATA_TYPED/.test(n) ? 'data' : null; }
+  } catch (e) {}
+  return (EXT_T[k] = t);
+}
+// 속성 날짜 u32: 연도 = >>>17, 연중 일수(1~366) = (>>>8)&0x1ff, 아래 8비트는 다른 뜻. 1900-01-01 = 빈 날짜 (M55: 계약 만료 2038 181일 = 6월 30일)
+function propDate(u) {
+  var y = u >>> 17, d = (u >>> 8) & 0x1ff;
+  if (y <= 1900) return null;
+  var dd = m24gaDecodeDate((y << 16) | d); return dd ? dd.iso : null;
+}
+function decodeExt(t, vbuf) {
+  if (t === 'u32') return vbuf.readU32();
+  if (t === 'date') return propDate(vbuf.readU32());
+  if (t === 'color') { var a = new Uint8Array(vbuf.readByteArray(4)), s = '#'; for (var i = 0; i < 4; i++) s += ('0' + a[i].toString(16)).slice(-2); return s; }
+  return null;   // empty, data(내부 자료)
+}
+// 속성 하나 읽기. 반환: 값 / null(빈 값) / undefined(이 객체가 답하지 않는 코드). 모르는 객체·막은 코드는 예외
+function propGet(obj, code) {
+  code = String(code || '');
+  if (code.length !== 4) throw new Error('속성 코드는 4글자예요: ' + code);
+  if (PROP_BLOCK[code] || (propsInit(), PROP_BLOCK[code])) throw new Error('이 코드는 게임 안에서 접근 오류가 나서 막았어요: ' + code);
+  var o = propResolve(obj); if (!o) throw new Error('대상을 찾지 못했어요: ' + obj);
+  var tg = propTarget(o); if (!tg) throw new Error('속성을 읽을 수 없는 객체예요 (' + (className(o) || '?') + ')');
+  if (!EMPTY_VAL) throw new Error('값 종류 표가 아직 없어요 (세이브를 불러온 뒤에 써요)');
+  var fn = new NativeFunction(tg.p.readPointer().add(0x10).readPointer(), 'uint8', ['pointer', 'uint32', 'pointer']);
+  var buf = Memory.alloc(0x40); buf.writePointer(EMPTY_VAL);
+  if (!fn(tg.p, code4(code), buf)) return undefined;
+  var tp = buf.readPointer();
+  if (VT[tp.toString()]) return decodeVal(tp, buf.add(8), 0);
+  return decodeExt(extType(tp), buf.add(8));
+}
+// 객체가 답하는 코드(등록부 기준) 전부: { 코드: 값 }. opts = { re: 정규식 글, codes: [코드], empty: 빈 값도 넣기 }
+function propsAll(obj, opts) {
+  opts = opts || {};
+  var o = propResolve(obj); if (!o) throw new Error('대상을 찾지 못했어요: ' + obj);
+  var tg = propTarget(o); if (!tg) throw new Error('속성을 읽을 수 없는 객체예요 (' + (className(o) || '?') + ')');
+  var rx = opts.re ? new RegExp(opts.re) : null, list = opts.codes || Object.keys(M24_PROPS.p), out = {};
+  list.forEach(function (c) {
+    var e = M24_PROPS.p[c]; if (!e || !(e[1] & tg.bit) || PROP_BLOCK[c] || (rx && !rx.test(c))) return;
+    var v; try { v = propGet(o, c); } catch (x) { return; }
+    if (v === undefined || ((v === null || v === '') && !opts.empty)) return;
+    out[c] = v;
+  });
+  return out;
+}
+function propInfo(code) {
+  propsInit();
+  var e = M24_PROPS.p[code]; if (!e) return null;
+  return { code: code, t: e[0], k: PROP_KIND_NAMES.filter(function (k, i) { return e[1] & (1 << i); }), blocked: !!PROP_BLOCK[code] };
+}
+// {dref: 번호} 또는 번호 -> 게임 객체. 위 8비트 = 종류: 0x01 사람, 0x03 구단, 0x18 팀(국가대표 포함), 0x19 대회. 모르는 종류·없는 번호는 null
+function propDeref(d) {
+  if (d && typeof d === 'object') d = d.dref;
+  if (typeof d !== 'number') return null;
+  var kind = d >>> 24, i = d & 0xffffff;
+  if (kind === 0x01) {
+    var hs = humans();   // 사람 감독은 staff 표에 없다: 사람 부분(+0x450) +8 번호로 맞춘다
+    for (var h = 0; h < hs.length; h++) { try { if (hs[h].add(0x458).readU32() === i) return hs[h]; } catch (e) {} }
+    return lookup(staff, i, STAFF_VT) || lookup(persons, i, PERSON_VT);
+  }
+  if (kind === 0x03) return clubByIndex(i);
+  if (kind === 0x18) return lookup(clubs, i, CLUB_VT);
+  if (kind === 0x19) return lookup(comps, i, COMP_VT);
+  return null;
+}
+M24GA.propGet = propGet; M24GA.propsAll = propsAll; M24GA.propInfo = propInfo; M24GA.propDeref = propDeref;   // 모드 api.prop/props/propInfo/deref
 var dbgLines = [], dbgFile = null;
 function dbg(msg) {   // 진단 기록 (처음 40줄만)
   if (dbgLines.length >= 40) return;
@@ -2962,6 +3082,27 @@ rpc.exports = {
   getfield: function (spec, name) {   // CLI get (M20)
     var t = exploreResolve(spec); if (t.error) return t;
     try { var v = getField(t.p, name); return { path: t.path, name: name, value: (v && v.add) ? v.toString() : v, cls: className(t.p) }; } catch (e) { return { error: String(e.message || e) }; }
+  },
+  props: function (spec, re, empty) {   // CLI props (M55): 대상이 답하는 속성 전부
+    try {
+      var o = propResolve(spec); if (!o) { var t = exploreResolve(spec); if (t.error) return t; o = t.p; }
+      var tg = propTarget(o); if (!tg) return { error: '속성을 읽을 수 없는 객체예요 (' + (className(o) || '?') + ')' };
+      var t0 = Date.now(), v = propsAll(o, { re: re || null, empty: !!empty });
+      return { obj: o.toString(), cls: className(o), kind: tg.kind, ms: Date.now() - t0, props: JSON.parse(JSON.stringify(v)) };
+    } catch (e) { return { error: String(e.message || e) }; }
+  },
+  propfind: function (spec, want) {   // CLI prop-find (M55): 값(숫자·글·날짜)이 들어 있는 속성 코드 찾기 (묶음·목록 안까지)
+    try {
+      var o = propResolve(spec); if (!o) { var t = exploreResolve(spec); if (t.error) return t; o = t.p; }
+      var all = propsAll(o, {}), hits = [], w = String(want).toLowerCase();
+      (function walk(v, path) {
+        if (hits.length >= 200) return;
+        if (v && typeof v === 'object') { for (var k in v) walk(v[k], path + (Array.isArray(v) ? '[' + k + ']' : '.' + k)); return; }
+        var s = String(v).toLowerCase();
+        if (s === w || (typeof v === 'string' && w.length >= 3 && s.indexOf(w) >= 0)) hits.push({ path: path, value: v });
+      })(all, '');
+      return { obj: o.toString(), cls: className(o), hits: hits.map(function (h) { return { code: h.path.slice(1, 5), path: h.path.slice(1), value: h.value }; }) };
+    } catch (e) { return { error: String(e.message || e) }; }
   },
   findglobals: function (pattern, max) { return findGlobals(pattern, max); },   // CLI find-global (M24)
   findobjects: function (rvas, max, budget) { return findObjects(rvas, max, budget); },   // CLI find-objects (M24)

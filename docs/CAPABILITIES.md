@@ -1,4 +1,4 @@
-# M24GA 기능 목록 (코어 0.35.0)
+# M24GA 기능 목록 (코어 0.36.0)
 
 > 이 파일은 `core/capabilities.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 
@@ -27,6 +27,7 @@
 | `event.gameSaved` | read | **게임 저장이 끝났을 때**: 게임 저장(Ctrl+S, 메뉴 저장)이 끝나 .fm 파일 쓰기가 마무리된 뒤 불려요. ev = { ms(저장에 걸린 시간), save({id, nonce}) }. 모드가 세이브별로 따로 적어 둔 기록을 이때 확정하면, 저장하지 않고 다시 불러온 경우와 구별할 수 있어요 | `api.on('gameSaved')` | 모두 |
 | `event.saveLoaded` | read | **세이브 불러옴 이벤트**: 다른 세이브를 불러오면(또는 코어가 처음 세이브를 보면) 불려요. ev = { id, nonce, date }. 모드가 나중에 올라왔으면 이미 지나갔으니 처음에 saveInfo()로 확인하세요 | `api.on('saveLoaded', fn)` | 모두 |
 | `read.data` | read | **클럽·선수·스태프 데이터 읽기**: 데이터 표(clubs, persons, staff)와 속성 읽기(4글자 코드). mapsReady가 true일 때 써요 (세이브를 불러오면 코어가 스스로 만들어요, 화면 무관. 예전 api.prepareData는 그대로 둠). (코어 0.26.0) clubByName('토트넘') = 정식/짧은 이름이 같은 구단(db::CLUB), clubUid(구단) / clubByUid(번호) = 구단 고유 번호. (코어 0.27.0) personByName('손흥민') = {person, ref:'p95264'\|'s…', many} 또는 null, 이름 색인을 처음 만드는 동안은 {pending:true} (뒤에서 30초쯤). personByRef(ref) / personRef(사람). (코어 0.28.0) personsByName('파울리뉴') = 같은 이름의 사람 모두 (최대 8명) [{person, ref, name, age, club, role:'player'\|'staff'}] 또는 색인을 만드는 동안 {pending:true}, personInfo(사람) = 같은 정보 하나 (club ''는 무소속). personByName 결과에 count(같은 이름 수) | `api.prepareData`, `mapsReady`, `uidReady`, `clubs`, `persons`, `staff`, `lookup`, `getVal`, `getInt`, `linkIds`, `personName`, `personForm`, `formText`, `personExtra`, `mainPosition`, `topPlayer`, `clubExtra`, `clubSituation`, `staffAttrs`, `decodeVal`, `CLUB_VT`, `PERSON_VT`, `STAFF_VT`, `CLUBOBJ_VT`, `NT_VT`, `isNT`, `EMPTY_VAL`, `clubObj`, `clubFullName`, `clubShortName`, `clubByName`, `clubByUid`, `clubUid`, `personByName`, `personByRef`, `personRef`, `personsByName`, `personInfo` | 모두 |
+| `read.prop` | read | **게임 속성 코드 읽기**: 게임 화면이 쓰는 4글자 속성 코드로 팀·구단·국가대표·선수·스태프·사람 감독·대회·상의 값을 읽어요. 등록부 core/properties.json(2,100여 개, 종류·값 형식)을 기준으로 api.prop(대상, 코드) / api.props(대상, {re, codes, empty}) / api.propInfo(코드) / api.deref({dref}). 대상은 객체 포인터 또는 'me'·'myteam'·'myclub'·'p123'·'s45'·'team:<번호>'·'comp:<번호>'. 날짜는 'YYYY-MM-DD', 다른 객체 링크는 {dref} | `api.prop`, `api.props`, `api.propInfo`, `api.deref` | 모두 |
 | `read.news` | read | **뉴스 기사 본문 읽기**: 소셜피드 글이 달린 뉴스 기사의 본문(평문)을 읽어요 _(화면 의존: 소셜 피드 화면)_ | `newsBody` | 모두 |
 | `read.me` | read | **내 감독·내 클럽**: 사용자 감독 이름과 맡은 클럽. (코어 0.24.0) myHuman() = 이 PC의 사람 감독 객체(db::HUMAN_NON_PLAYER, 소셜 화면 없이), humans() = 사람 감독 목록. 칸은 getField(myHuman(), 'human.…'). (코어 0.25.0) humanRelations(h) = 감독의 관계 목록 [{target, cls, kind, kindName(favClub·dislikedClub·favPerson·dislikedPerson), level, reason, name}] (읽기만) | `myInfo`, `myHuman`, `humans`, `humanRelations` | 모두 |
 | `read.fan` | read | **팬 응원 클럽**: 댓글 작성자(팬)가 응원하는 클럽, 그 클럽 감독과 최근 성적 _(화면 의존: 소셜 피드 화면)_ | `fanClub`, `uidReady` | 모두 |
@@ -99,6 +100,12 @@ api.on('saveLoaded', function (ev) { api.send({ t: 'save', id: ev.id }); });
 
 ```js
 var o = lookup(clubs, idx, CLUB_VT); if (o) api.log('리그 순위 ' + getInt(o, 'TpoN'));
+```
+
+**`read.prop`**
+
+```js
+var rank = api.prop('myteam', 'TpoN'); var opp = api.deref(api.prop('myteam', 'Topp')); if (opp) api.log('상대 순위 ' + api.prop(opp, 'TpoN'));
 ```
 
 **`read.news`**
