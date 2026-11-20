@@ -45,7 +45,7 @@ interface ModApi {
     /** (코어 0.37.0) 뉴스 번호, 날짜 'YYYY-MM-DD', 관련 기록 (콜백 안에서만) */
     id: number; date: string | null; refs(): { people: Ptr[]; teams: Ptr[]; clubs: Ptr[]; comps: Ptr[]; refs: number[] } | null }) => void): void;
   /** (코어 0.37.0, event.matchEnded) 경기 보고 뉴스가 나온 경기마다 한 번 (게임이 보도하는 경기만). 팀은 db::TEAM (api.prop으로 읽기) */
-  on(event: 'matchEnded', fn: (ev: { home: Ptr; away: Ptr; homeGoals: number; awayGoals: number; comp: Ptr | null; mine: boolean; date: string | null; text(): string }) => void): void;
+  on(event: 'matchEnded', fn: (ev: { home: Ptr; away: Ptr; homeGoals: number; awayGoals: number; comp: Ptr | null; stadium: Ptr | null; mine: boolean; date: string | null; text(): string }) => void): void;
   /** (코어 0.35.0, event.gameSaved) 게임 저장이 끝났을 때 (.fm 파일 쓰기 완료 뒤) */
   on(event: 'gameSaved', fn: (ev: { ms: number; save: { id: number; nonce: number } | null }) => void): void;
   /** (코어 0.5.0) ms마다 fn (최소 50ms). stop()으로 멈추고, 모드를 내리면 코어가 멈춰요. 화면 스레드 아님 */
@@ -83,7 +83,7 @@ interface ModApi {
     /** 이 코어가 받은 편지함 메일을 지원하는가 */
     available(): boolean;
   };
-  /** (코어 0.36.0, 기능 read.prop) 게임 속성 코드 읽기 (core/properties.json, docs/PROPERTIES.md). 대상 = 객체 포인터 또는 'me'|'myteam'|'myclub'|'p123'|'s45'|'team:<번호>'|'comp:<번호>'.
+  /** (코어 0.36.0, 기능 read.prop) 게임 속성 코드 읽기 (core/properties.json, docs/PROPERTIES.md). 대상 = 객체 포인터 또는 'me'|'myteam'|'myclub'|'myjob'|'p123'|'s45'|'team:<번호>'|'comp:<번호>'.
    *  값 / null(빈 값) / undefined(이 객체가 답하지 않는 코드). 모르는 객체·막은 코드는 예외 */
   prop(obj: Ptr | string, code: string): any;
   /** 그 객체가 답하는 코드(등록부 기준) 전부 {코드: 값}. re = 코드 정규식, codes = 코드 목록, empty = 빈 값도 */

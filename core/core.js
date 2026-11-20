@@ -2337,13 +2337,14 @@ function propTarget(obj) {
     return PROP_SUB[key] ? { p: p, kind: k.kind, bit: k.bit } : null;
   } catch (e) { return null; }
 }
-// 대상 글 -> 객체: 'me'(내 감독), 'myteam', 'myclub', 사람 참조 'p123'/'s45', 'team:<번호>', 'comp:<번호>', '0x주소', 또는 포인터
+// 대상 글 -> 객체: 'me'(내 감독), 'myteam', 'myclub', 'myjob'(내 감독 계약), 사람 참조 'p123'/'s45', 'team:<번호>', 'comp:<번호>', '0x주소', 또는 포인터
 function propResolve(o) {
   if (o && typeof o.add === 'function') return o;
   var s = String(o || ''), m;
   if (s === 'me') return myHuman();
   if (s === 'myteam') return myTeamObj();
   if (s === 'myclub') { var t = myTeamObj(); return t ? clubOfTeam(t) : null; }
+  if (s === 'myjob') { var h = myHuman(); if (!h) return null; var j = h.add(0x518).readPointer(); return j.isNull() ? null : j; }   // 내 감독 계약 (db::FULL_CONTRACT)
   if (/^[ps]\d+$/.test(s)) return personByRef(s);
   if ((m = /^team:(\d+)$/.exec(s))) return lookup(clubs, +m[1], CLUB_VT);
   if ((m = /^comp:(\d+)$/.exec(s))) return lookup(comps, +m[1], COMP_VT);
@@ -2699,7 +2700,7 @@ function inboxSendNow(o) {
 //   만든다 (비싸서 필요한 것만, 콜백 안에서만 됨). 받는 사람의 PERSON 부분(= NEWS_CTX)을 글 문맥으로 쓴다.
 //   모드가 api.inbox.send로 넣은 메일은 화면 스레드 콜백 안에서 부르므로 Frida가 끼어들기를 건너뛰어 이 이벤트가 안 온다 (되먹임 없음).
 //   (코어 0.37.0) ev.id(뉴스 번호), ev.date('YYYY-MM-DD'), ev.refs() = 관련 기록 { people, teams, clubs, comps, refs:[dref] } (콜백 안에서만).
-// matchEnded (코어 0.37.0): 경기 보고 뉴스가 나온 경기마다 한 번. ev = { home, away(팀), homeGoals, awayGoals, comp, mine, date, text() }
+// matchEnded (코어 0.37.0): 경기 보고 뉴스가 나온 경기마다 한 번. ev = { home, away(팀), homeGoals, awayGoals, comp, stadium(0.39.0), mine, date, text() }
 // gameSaved: 게임 저장(save.write)이 끝난 뒤 (파일 쓰기 완료). ev = { ms(걸린 시간), save }.
 var EVENT_HOOKS = {};
 function newsPlainText(n) {
@@ -2742,7 +2743,8 @@ function matchFromReport(n) {
   if (className(b) !== 'db::TEAM' && className(b) !== 'db::NATIONAL_TEAM') return null;
   var ga = n.add(0x180).readU8(), gb = n.add(0x181).readU8(); if (ga > 40 || gb > 40) return null;
   var comp = n.add(0x100).readPointer(); if (className(comp) !== 'db::COMP') comp = null;
-  return side === 1 ? { home: a, away: b, homeGoals: ga, awayGoals: gb, comp: comp, homeSide: true } : { home: b, away: a, homeGoals: gb, awayGoals: ga, comp: comp, homeSide: false };
+  var st = n.add(0x108).readPointer(); if (className(st) !== 'db::STADIUM') st = null;
+  return side === 1 ? { home: a, away: b, homeGoals: ga, awayGoals: gb, comp: comp, stadium: st, homeSide: true } : { home: b, away: a, homeGoals: gb, awayGoals: ga, comp: comp, stadium: st, homeSide: false };
 }
 function newsAddedEmit(n, t, f) {
   var cls = className(n); if (!cls) return;
@@ -2758,7 +2760,7 @@ function newsAddedEmit(n, t, f) {
     var m = null; try { m = matchFromReport(n); } catch (e) {}
     if (m && m.homeSide) {
       var mine = !!(myT && (m.home.equals(myT) || m.away.equals(myT)));
-      m24gaEmit('matchEnded', { home: m.home, away: m.away, homeGoals: m.homeGoals, awayGoals: m.awayGoals, comp: m.comp, mine: mine, date: newsDate(n),
+      m24gaEmit('matchEnded', { home: m.home, away: m.away, homeGoals: m.homeGoals, awayGoals: m.awayGoals, comp: m.comp, stadium: m.stadium, mine: mine, date: newsDate(n),
         text: function () { if (!live) return ''; if (cache === null) { try { cache = newsPlainText(n); } catch (e) { cache = ''; } } return cache; } });
     }
   }

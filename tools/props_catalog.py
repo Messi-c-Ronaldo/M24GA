@@ -30,6 +30,15 @@ KINDS = {
     "human": {"class": "db::HUMAN_NON_PLAYER", "off": 0x450, "ko": "사람 감독 (myHuman())"},
     "comp": {"class": "db::COMP", "off": 0, "ko": "대회 (코어 comps 표)"},
     "award": {"class": "db::AWARD", "off": 0, "ko": "상 (코어 awards 표)"},
+    # M58: 포인터로만 닿는 종류 (deref 표 없음)
+    "country": {"class": "db::NATION", "off": 0, "ko": "국가 (축구협회 포함, 국가대표팀과 다름)"},
+    "stadium": {"class": "db::STADIUM", "off": 0, "ko": "경기장"},
+    "city": {"class": "db::CITY", "off": 0, "ko": "도시"},
+    "continent": {"class": "db::CONTINENT", "off": 0, "ko": "대륙 (연맹)"},
+    "media": {"class": "db::MEDIA_SOURCE", "off": 0, "ko": "언론사 (뉴스 +0x98)"},
+    "contract": {"class": "db::FULL_CONTRACT", "off": 0, "ko": "계약 (사람 감독 +0x518 = 'myjob')"},
+    "loan": {"class": "db::LOAN_CONTRACT", "off": 0, "ko": "임대 계약"},
+    "injury": {"class": "db::INJURY", "off": 0, "ko": "부상 종류"},
 }
 CLASS_KIND = {v["class"]: k for k, v in KINDS.items()}
 # 조사 결과의 값 종류 → 등록부 값 종류
@@ -114,10 +123,10 @@ def docs(reg):
          "api.propInfo('Pced')                // { code, t: 'date', k: ['player', ...], ko }",
          "api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단·대회)",
          "```", "",
-         "- 대상: 객체 포인터(어느 칸을 가리켜도 됨) 또는 `'me'`(내 감독) · `'myteam'` · `'myclub'` · 사람 참조 `'p123'`/`'s45'`.",
+         "- 대상: 객체 포인터(어느 칸을 가리켜도 됨) 또는 `'me'`(내 감독) · `'myteam'` · `'myclub'` · `'myjob'`(내 감독 계약) · 사람 참조 `'p123'`/`'s45'`.",
          "- 값 종류: `int` 정수, `u32` 부호 없는 정수, `num` 실수, `bool`, `str` 글, `date` 날짜(`'2038-06-30'`, 빈 날짜는 null), "
          "`color` 색(`'#rrggbbaa'`), `rec` 묶음(`{키: 값}`), `list` 목록, `data` 내부 자료(null), `empty` 조사한 객체에서는 늘 빈 값.",
-         "- `{dref: 번호}` = 다른 게임 객체 링크. 위 8비트가 종류예요: `0x01` 사람, `0x03` 구단, `0x18` 팀, `0x19` 대회 (`api.deref`).",
+         "- `{dref: 번호}` = 다른 게임 객체 링크. 위 8비트가 종류예요: `0x01` 사람, `0x03` 구단, `0x18` 팀, `0x19` 대회 (`api.deref`). 국가·경기장 등 나머지 종류는 링크로 못 따라가고, 다른 객체가 가리키는 포인터로만 닿아요 (예: `matchEnded`의 `ev.stadium`).",
          "- 값은 **게임 화면이 보여 주는 값 그대로**예요. 뜻(ko)을 적은 것만 화면과 맞춰 봤어요. 나머지는 이름을 보고 짐작해서 쓰되, 직접 확인하세요.",
          "- 영어 이름은 게임 파일(`properties.fmf`)에만 있어서 저장소에 넣지 않았어요. 개발 PC에 `~/m24ga_data/prop_names.tsv`(`코드\\t이름`)가 있으면 CLI `props`가 같이 보여 줘요.", ""]
     if reg.get("block"):

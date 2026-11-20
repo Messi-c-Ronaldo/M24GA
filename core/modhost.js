@@ -350,7 +350,7 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
       available: function () { return !!M24GA.inboxSend; }
     },
     // (코어 0.36.0, 기능 read.prop) 게임 속성 코드 읽기 (등록부 core/properties.json, docs/PROPERTIES.md).
-    // 대상 = 객체 포인터(어느 칸이든) 또는 'me' | 'myteam' | 'myclub' | 'p123'/'s45'(사람 참조) | 'team:<번호>' | 'comp:<번호>'.
+    // 대상 = 객체 포인터(어느 칸이든) 또는 'me' | 'myteam' | 'myclub' | 'myjob'(내 감독 계약) | 'p123'/'s45'(사람 참조) | 'team:<번호>' | 'comp:<번호>'.
     // prop -> 값 / null(빈 값) / undefined(답하지 않는 코드). 모르는 객체·막은 코드는 예외. props(대상, {re, codes, empty}) -> {코드: 값}
     prop: function (obj, code) { return M24GA.propGet(obj, code); },
     props: function (obj, opts) { return M24GA.propsAll(obj, opts); },

@@ -96,7 +96,7 @@ my-mod-1.0.0.24mod   (zip)
 | `api.on('frame', fn)` | 화면 스레드의 매 프레임이 끝난 직후 (초당 약 20번). **오래 걸리는 일은 하지 마세요.** 간격은 모드가 직접 조절해요 (`Date.now()`로) |
 | `api.on('dateChanged', fn)` | (코어 0.5.0) 게임 날짜가 바뀔 때. `ev = { from, to, days }`, 날짜는 `{ y, m, d, doy, iso }`. 코어가 0.5초마다 확인해요 (화면 스레드 아님) |
 | `api.on('newsAdded', fn)` | (코어 0.35.0, 기능 `event.newsAdded`) 게임이 뉴스를 넣을 때마다 (하루 수백 번: 경기 보고·이적·부상·언론 의견…). `ev = { cls, flags, toInbox, team, mine, text() }`. `cls` = 뉴스 종류(클래스 이름), `mine` = 내 팀 앞, `text()` = 게임 본문 글(평문, 비싸니 필요한 것만, 콜백 안에서만). 게임 스레드라 짧게 하고 긴 일은 `api.send`로 Python에. 모드가 `api.inbox.send`로 넣은 메일에는 안 와요. (코어 0.37.0) `ev.id`(뉴스 번호), `ev.date`('YYYY-MM-DD'), `ev.refs()` = 관련 기록 `{ people, teams, clubs, comps, refs }` (게임이 뉴스에 붙인 사람·팀·대회 객체, 콜백 안에서만) |
-| `api.on('matchEnded', fn)` | (코어 0.37.0, 기능 `event.matchEnded`) 경기가 끝나 경기 보고 뉴스가 나올 때 경기마다 한 번. `ev = { home, away, homeGoals, awayGoals, comp, mine, date, text() }`. 팀·대회는 객체라 `api.prop(ev.home, 'Tnam').Tsna`(팀 짧은 이름), `api.prop(ev.comp, 'cnam')`(대회 이름)처럼 읽어요. 게임이 보도하는 리그·대회의 경기만 오고, 승부차기는 아직 구별하지 않아요  자세히: [NEWS.md](NEWS.md) |
+| `api.on('matchEnded', fn)` | (코어 0.37.0, 기능 `event.matchEnded`) 경기가 끝나 경기 보고 뉴스가 나올 때 경기마다 한 번. `ev = { home, away, homeGoals, awayGoals, comp, stadium, mine, date, text() }`. 팀·대회는 객체라 `api.prop(ev.home, 'Tnam').Tsna`(팀 짧은 이름), `api.prop(ev.comp, 'cnam')`(대회 이름)처럼 읽어요. 게임이 보도하는 리그·대회의 경기만 오고, 승부차기는 아직 구별하지 않아요  자세히: [NEWS.md](NEWS.md) |
 | `api.on('gameSaved', fn)` | (코어 0.35.0, 기능 `event.gameSaved`) 게임 저장이 끝난 뒤 (.fm 파일 쓰기 완료). `ev = { ms, save }`. 세이브별 모드 기록을 이때 확정하면 '저장 안 하고 다시 불러오기'와 구별돼요 |
 | `api.on('saveLoaded', fn)` | (코어 0.5.0) 다른 세이브를 불러왔을 때. `ev = { id, nonce, date }`. 모드가 그 뒤에 올라왔으면 이미 지나갔으니 처음에 `saveInfo()`로 확인하세요 |
 | `api.every(ms, fn)` / `api.after(ms, fn)` | (코어 0.5.0) 타이머 (최소 50ms). 반환값의 `stop()`으로 멈추고, **모드를 내리면 코어가 알아서 멈춰요** (`setInterval`을 직접 쓰지 마세요). 화면 스레드 아님 |
@@ -159,7 +159,7 @@ my-mod-1.0.0.24mod   (zip)
 
 ### 게임 속성 읽기 (코어 0.36.0, 기능 `read.prop`)
 
-게임 화면이 값을 물을 때 쓰는 **4글자 속성 코드**를 모드도 그대로 써요. 코어가 게임 객체 8종류(팀·구단·국가대표·선수·스태프·사람 감독·대회·상)에 코드를 전부 물어 본 등록부(`core/properties.json`, 2,100여 개)를 갖고 있어요. 목록과 뜻은 [PROPERTIES.md](PROPERTIES.md).
+게임 화면이 값을 물을 때 쓰는 **4글자 속성 코드**를 모드도 그대로 써요. 코어가 게임 객체 16종류(팀·구단·국가대표·선수·스태프·사람 감독·대회·상, 0.39.0부터 국가·경기장·도시·대륙·언론사·계약·임대·부상)에 코드를 전부 물어 본 등록부(`core/properties.json`, 2,300여 개)를 갖고 있어요. 목록과 뜻은 [PROPERTIES.md](PROPERTIES.md).
 
 ```js
 // mod.json "capabilities": ["read.prop"]
@@ -170,7 +170,7 @@ if (opp) api.log('다음 상대 순위 ' + api.prop(opp, 'TpoN'));
 api.log(JSON.stringify(api.propInfo('Pced')));         // { code: 'Pced', t: 'date', k: ['player','staff','human'] }
 ```
 
-- 대상: 객체 포인터(선수 객체의 어느 칸이든 됨) 또는 `'me'`, `'myteam'`, `'myclub'`, 사람 참조 `'p123'`/`'s45'`, `'team:<번호>'`, `'comp:<번호>'`.
+- 대상: 객체 포인터(선수 객체의 어느 칸이든 됨) 또는 `'me'`, `'myteam'`, `'myclub'`, `'myjob'`(내 감독 계약), 사람 참조 `'p123'`/`'s45'`, `'team:<번호>'`, `'comp:<번호>'`.
 - 값: 정수, 실수, 글, `true/false`, 날짜 `'2038-06-30'`, 색 `'#rrggbbaa'`, 묶음 `{키: 값}`, 목록 `[...]`. 다른 객체는 `{dref: 번호}` → `api.deref`.
 - 읽기만 해요. 게임 화면이 보여 주는 값이라 안전하지만, 등록부에 뜻(`ko`)이 없는 코드는 값의 뜻을 직접 확인하세요.
 - 개발할 때: `cli.py props myteam ^T` (값 전부), `cli.py prop-find me 2038-06-30` (값으로 코드 찾기), `cli.py prop-info 순위` (게임 없이 목록).
