@@ -4,7 +4,7 @@
   "name": "DynamicPA",
   "version": "1.1.0",
   "description": "선수의 한 시즌 활약에 따라 잠재력(PA)이 오르내린다. 평가일(기본 7/1)에 리그 기록으로 평가해 미리보기·적용·되돌리기. FM24 Dynamic PA 0.9.5 모델(GPL-3.0)을 게임 안으로 옮기고 과거 시즌·달력형 리그·장기 부상·내 팀 알림을 더함.",
-  "author": "McR",
+  "author": "McR · 원본 Dynamic PA: 도와줄께",
   "license": "GPL-3.0-or-later",
   "core": ">=0.18.0",
   "js": "mod.js",

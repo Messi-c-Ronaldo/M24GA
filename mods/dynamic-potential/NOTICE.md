@@ -4,6 +4,9 @@
 
 ## FM24 Dynamic PA 0.9.5 (GPL-3.0)
 
+- 원본 제작자: **도와줄께** (에펨코리아). 원본 글: v0.9.5 https://www.fmkorea.com/10506342571 , 최신 v1.0.6 https://www.fmkorea.com/10555327213
+- M24GA에 옮기는 것은 원작자에게 허락을 받았어요 (2026-11).
+
 1.1.0부터 이 파일들은 M24GA 공용 라이브러리 `pylib/dpa/`에 있어요 (몸값 모드도 같이 써요, `pylib/NOTICE.md`). 아래 파일은 FM24 Dynamic PA v0.9.5의 `app/` 파일이에요. **계산은 그대로**이고, 모듈끼리의 import 경로를 패키지용(`.모듈`)으로 바꾸고 `save_archive.py`가 `zstandard`가 없을 때 Python 기본 모듈을 쓰게 한 줄을 더한 것이 전부예요. 각 파일 첫 줄에 출처가 적혀 있어요.
 
 | 파일 | 하는 일 |

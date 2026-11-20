@@ -71,7 +71,7 @@ python -X utf8 tools/m24.py pack my-mod                 # 검사하고 .24mod로
 - `mods/dynamic-potential`: **DynamicPA** (포텐 유동 변화). 선수의 한 시즌 활약에 따라 잠재력(PA)이 오르내려요. 평가일(기본 7/1)에 평가하고 미리보기·적용·되돌리기. FM24 Dynamic PA 0.9.5(GPL-3.0) 모델을 옮겼어요 ([mods/dynamic-potential/README.md](mods/dynamic-potential/README.md), 출처 [NOTICE.md](mods/dynamic-potential/NOTICE.md)). 게임 값을 쓰므로 사용자 허용이 필요해요.
 - `mods/player-value`: **EnhancedFee** (몸값 보정). 사람 구단 선수도 AI 구단처럼 몸값을 매기고, 활약에 따라 몸값 배율을 줘요 ([mods/player-value/README.md](mods/player-value/README.md)).
 - `mods/dynamic-me`: **DynamicME** (매치엔진 조정). 엔진 팩을 재시작 없이 적용하고 (전술 스타일·xG 포함), 빠른 조정 58개·세부 값 950칸으로 엔진 값을 직접 바꿔요 ([mods/dynamic-me/README.md](mods/dynamic-me/README.md)).
-- 모드·로더 개발: McR.
+- 모드·로더 개발: McR. DynamicPA(와 EnhancedFee의 활약 계산)의 원본 모델 **FM24 Dynamic PA** 제작: **도와줄께** ([원본 글 v0.9.5](https://www.fmkorea.com/10506342571), [최신 v1.0.6](https://www.fmkorea.com/10555327213)). 원작자의 허락을 받아 옮겼어요.
 
 ## 주의
 

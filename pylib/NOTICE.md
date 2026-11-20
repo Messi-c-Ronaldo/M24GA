@@ -14,4 +14,6 @@
 
 **`dpa/` 파일은 고치지 마세요.** 포텐 모드 시험(`tests/test_dynamic_potential.py`)이 원본 Dynamic PA와 결과가 같은지 봐요.
 
+`dpa/` 원본 제작자: **도와줄께** (FM24 Dynamic PA, 원본 글 https://www.fmkorea.com/10506342571 , 최신 https://www.fmkorea.com/10555327213). 원작자의 허락을 받아 옮겼어요.
+
 라이선스: GPL-3.0-or-later (M24GA 저장소 `LICENSE`).

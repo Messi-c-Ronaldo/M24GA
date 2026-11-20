@@ -1,4 +1,4 @@
-"""FM24 Dynamic PA v0.9.5의 포텐 평가 모델 (GPL-3.0-or-later).
+"""FM24 Dynamic PA v0.9.5의 포텐 평가 모델 (GPL-3.0-or-later). 원본 제작자: 도와줄께 (https://www.fmkorea.com/10506342571).
 
 원본: FM24_Dynamic_PA_v0.9.5/app 의 model.py, rules.py, model_v07.py, league_strength.py,
 scouting_metrics.py, development_balance.py, transfer_evaluation.py.
