@@ -5,7 +5,7 @@ FM24(Epic 빌드)에 모드를 붙이는 오픈소스 로더예요. 모드는 `.
 > **베타 안내 (0.1.0-beta)**
 > - 지금은 **FM24 Epic판 24.4.2(2025-04-16 빌드)** 에서만 확인했어요. 빌드가 안 맞으면 로더가 아무것도 올리지 않고 멈춰요(게임은 안전해요).
 > - **Steam판은 아직 확인하지 못했어요.** 같은 코드일 가능성은 높지만 확인 전이에요. Steam판에서 "지원하지 않는 게임 버전"이 나오면 앱 홈의 **빌드 진단 보고서 복사** 버튼(또는 `m24cli build-report`)으로 보고서를 복사해 이슈에 붙여 주세요. 파일 크기, SHA-256, 서명 칸 비교만 들어가고 개인 경로는 지워져요.
-> - Python이 있어야 해요(아래 쓰기 참고). 설치 없이 쓰는 배포판은 준비 중이에요.
+> - **Python 설치 없이 쓰려면 Releases의 `M24GA-…-win64.zip`을 받아 압축을 풀고 `M24GA.bat`을 실행하세요.** 소스에서 직접 쓰려면 Python 3.14가 필요해요(아래 쓰기 참고).
 > - 문서와 화면은 지금 한국어뿐이에요.
 
 - 게임 안에는 [Frida](https://frida.re)로 코어 + 켜진 모드의 스크립트를 하나로 묶어 올려요.
@@ -48,6 +48,10 @@ m24cli watch [--until hooked]    상태 모니터링 (JSON 스트림)
 
 모든 명령에 `--json`을 붙이면 JSON으로 출력해요 (AI 파싱용). 도움말: `m24cli --help`.
 앱(또는 `m24cli run`)이 켜져 있으면 CLI 명령은 그 로더로 전달돼서 실행돼요 (게임 연결·모드 로그가 그쪽에 있어요). 자세한 것은 [docs/CLI.md](docs/CLI.md).
+
+### 배포판 만들기 (개발자)
+
+`python -X utf8 tools/build_dist.py --embed python-3.14.x-embed-amd64.zip [--version 0.1.0-beta]` → `dist/M24GA-<버전>-win64.zip`. git이 추적하는 파일 + `vendor/` + 임베디드 Python을 묶고 `M24GA.bat`·`m24cli.bat`·`THIRD_PARTY_LICENSES.txt`를 만들어요.
 
 ## 모드 만들기
 
