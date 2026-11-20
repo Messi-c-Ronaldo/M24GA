@@ -146,7 +146,7 @@ class ModHost(unittest.TestCase):
         self.wait_for(lambda m: m == "[a] bye")
         self.wait_for(lambda m: m == "mod unloaded: a")
         self.assertEqual(self.x.mods(), [])
-        self.assertEqual(self.x.counts(), {"socialPanel": 0, "frame": 0, "dateChanged": 0, "saveLoaded": 0, "newsAdded": 0, "gameSaved": 0, "status": 0, "recv": 0})
+        self.assertEqual(self.x.counts(), {"socialPanel": 0, "frame": 0, "dateChanged": 0, "saveLoaded": 0, "newsAdded": 0, "gameSaved": 0, "matchEnded": 0, "status": 0, "recv": 0})
         self.assertFalse(self.x.unload("a"))          # 두 번 내려도 괜찮다
         # 다시 올리면 상태가 새로 시작한다 (모드 JS의 변수는 새로)
         self.assertTrue(self.x.load("a", mod_src("a", COUNTER % {"k": "na", "v": "a"}))["ok"])

@@ -38,12 +38,15 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 |---|---|---|---|
 | `Ccba` | team, club | int | 잔고 — 내부 단위, ×1664.7 = 원 (M55 화면 확인: 3,604억) |
 | `Ccww` | team, club | int | 주급 총액 — 내부 단위 (M55 화면 확인: 137.17억) |
+| `Cdiv` | team, club | rec | 소속 리그(대회) {dref} (M56 확인) |
 | `Cmxp` | team, club, nation, comp, award | int | 미디어 예상 순위 — 정수 |
+| `Cnam` | team, club, nation, comp, award | str | 대륙 이름 (팀·대회에서는 소속 대륙, 예: 유럽) (M56 확인) |
 | `Ctfc` | team, club | int | 이적 예산 — 내부 단위 (M55 화면 확인: 4,144억) |
 | `Ctpr` | team, club | num | 티켓 가격 — 실수 |
 | `Cvag` | team, club, nation, comp, award | num | 스쿼드 평균 나이 — 실수 |
 | `Cwwb` | team, club | int | 주급 예산 — 내부 단위 (M55 화면 확인: 133.18억) |
 | `Ncrr` | staff, human | int | 감독 명성 — 정수 |
+| `Nnfx` | team, club, comp, award | rec | 다음 경기 묶음 {fixi {fxdt 날짜, fxtm}, home {dref}, …} (M56, 뜻 일부) |
 | `Npaf` | staff, human | int | 선호 포메이션 (1순위 / 2순위 추정 / 공격·수비 추정) — 정수 0~65 (포메이션 번호) |
 | `Npde` | staff, human | int | 결단력 — 정수 1~20 |
 | `Npdf` | staff, human | int | 선호 포메이션 (1순위 / 2순위 추정 / 공격·수비 추정) — 정수 0~65 (포메이션 번호) |
@@ -97,6 +100,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Tfrm` | team, club, nation, comp, award | list | 최근 5경기 — 배열, **[0]이 가장 오래된 것**, 3 승 / 1·2 무 / 0 패 |
 | `Tlgc` | team, club, nation, comp, award | int | 리그 실점 — 정수 |
 | `Tlgs` | team, club, nation, comp, award | int | 리그 득점 — 정수 |
+| `Tnam` | team, nation | rec | 팀 이름 묶음 {Tsna 짧은 이름, Tlna 정식 이름} (M56 확인) |
 | `Tnts` | team, nation | int | 이적 순지출 — 정수 (게임 내부 단위, 원화 환산은 ×1664.7) |
 | `Tomp` | team, nation | int | 이번 시즌 경기 수 — 정수 |
 | `Topp` | team, nation | rec | 다음 경기 상대 — `{dref}` (0x18xxxxxx = 클럽 링크 번호) |
@@ -107,6 +111,8 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `ccca` | team, club, nation | int | 구단 분위기 — 정수 |
 | `ccms` | team, club, nation | int | 감독 지지도 — 정수 |
 | `chil` | team, club, nation, player, staff, human, comp, award | list | 팀 선수 목록 [{dref}] (M55) |
+| `cnam` | team, club, comp, award | str | 대회 이름 (팀이면 소속 리그 이름) (M56 확인) |
+| `csnm` | team, club, comp, award | str | 대회 짧은 이름 (M56 확인) |
 | `duni` | team, club, nation, player, staff, human, comp, award | int | 클럽 고유 ID (팬 응원 클럽 `Salo`와 같은 번호) — 정수 |
 
 ## 전체 목록 (종류별)

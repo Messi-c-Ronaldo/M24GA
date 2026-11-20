@@ -215,6 +215,7 @@
           "event.dateChanged",
           "event.newsAdded",
           "event.gameSaved",
+          "event.matchEnded",
           "event.saveLoaded",
           "read.data",
           "read.prop",

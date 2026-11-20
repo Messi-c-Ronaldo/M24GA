@@ -7,7 +7,7 @@
 // 그 모드의 api를 죽인다(이후 api 호출은 아무 일도 안 함). 모드가 api를 거치지 않고 직접 건 Interceptor·타이머는 모드가 onUnload에서 치워야 한다.
 
 // 훅은 코어만 건다. 같은 함수를 모드마다 걸면 꼬이므로 이벤트로 나눠 준다. 모드 오류는 모드 안에서 막는다.
-var M24GA = { mods: [], on: { socialPanel: [], frame: [], dateChanged: [], saveLoaded: [], newsAdded: [], gameSaved: [] }, statusFns: {}, recvFns: {}, errs: {}, apis: {}, unloadFns: {},
+var M24GA = { mods: [], on: { socialPanel: [], frame: [], dateChanged: [], saveLoaded: [], newsAdded: [], gameSaved: [], matchEnded: [] }, statusFns: {}, recvFns: {}, errs: {}, apis: {}, unloadFns: {},
   timers: {},                          // 모드 id -> api.every/after로 만든 타이머 (내릴 때 코어가 멈춘다)
   game: { date: null, save: null },    // 마지막으로 본 게임 날짜(해석한 값)와 세이브 {id, nonce}
   readGame: null,                      // core.js가 채운다: function () { return { date: u32 원값 또는 null, save: {id, nonce} 또는 null } }

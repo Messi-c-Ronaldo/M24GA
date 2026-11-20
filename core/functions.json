@@ -601,6 +601,28 @@
       "verified": true,
       "event": "newsAdded"
     },
+    "news.related": {
+      "rva": "0x26402d0",
+      "sig": {
+        "off": "0x10",
+        "hex": "4989ce488b01ff90680100004d8b6608"
+      },
+      "args": [
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "뉴스 (db::NEWS_ITEM 계열)",
+        "결과 벡터 {시작, 끝, 용량} (게임이 채운다)"
+      ],
+      "ret": "u32",
+      "owner": "core",
+      "call": true,
+      "thread": "any",
+      "desc": "뉴스의 관련 기록 목록을 만든다 (가상 함수 +0x168을 부름). 항목마다 첫 u32 = dref (0x01 사람, 0x03 구단, 0x18 팀, 0x19 대회, 0x15 등). 반환 = 항목 수. 코어 0.37.0 newsAdded ev.refs()",
+      "source": "M51(뉴스 검사 fm+0x34944a0에서 찾음), M56 실기 (부상: 사람·팀·대회, 경기 보고: 팀 2·대회·0x15)",
+      "verified": true
+    },
     "str.alloc": {
       "rva": "0x4335520",
       "sig": {

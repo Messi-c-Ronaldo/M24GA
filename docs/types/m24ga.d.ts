@@ -41,7 +41,11 @@ interface ModApi {
   /** (코어 0.5.0) 다른 세이브를 불러왔을 때. 나중에 올라온 모드는 처음에 saveInfo()로 확인하세요 */
   on(event: 'saveLoaded', fn: (ev: { id: number; nonce: number; date: GameDate | null }) => void): void;
   /** (코어 0.35.0, event.newsAdded) 게임이 뉴스를 넣을 때마다 (하루 수백 번). 게임 스레드라 짧게. text()는 본문 평문 (비쌈, 콜백 안에서만) */
-  on(event: 'newsAdded', fn: (ev: { cls: string; flags: number; toInbox: boolean; team: Ptr | null; mine: boolean; text(): string }) => void): void;
+  on(event: 'newsAdded', fn: (ev: { cls: string; flags: number; toInbox: boolean; team: Ptr | null; mine: boolean; text(): string;
+    /** (코어 0.37.0) 뉴스 번호, 날짜 'YYYY-MM-DD', 관련 기록 (콜백 안에서만) */
+    id: number; date: string | null; refs(): { people: Ptr[]; teams: Ptr[]; clubs: Ptr[]; comps: Ptr[]; refs: number[] } | null }) => void): void;
+  /** (코어 0.37.0, event.matchEnded) 경기 보고 뉴스가 나온 경기마다 한 번 (게임이 보도하는 경기만). 팀은 db::TEAM (api.prop으로 읽기) */
+  on(event: 'matchEnded', fn: (ev: { home: Ptr; away: Ptr; homeGoals: number; awayGoals: number; comp: Ptr | null; mine: boolean; date: string | null; text(): string }) => void): void;
   /** (코어 0.35.0, event.gameSaved) 게임 저장이 끝났을 때 (.fm 파일 쓰기 완료 뒤) */
   on(event: 'gameSaved', fn: (ev: { ms: number; save: { id: number; nonce: number } | null }) => void): void;
   /** (코어 0.5.0) ms마다 fn (최소 50ms). stop()으로 멈추고, 모드를 내리면 코어가 멈춰요. 화면 스레드 아님 */
