@@ -52,6 +52,16 @@ class Game(unittest.TestCase):
             f[n]["rva"] = hex(int(f[n]["rva"], 16) + 0x40)   # 빌드가 바뀐 척
         self.assertEqual(funcmap.relocated(f, EXE), want)
 
+    def test_relocate_all_moved(self):
+        # 모든 함수 주소가 밀린 빌드라고 치면: 클래스 기반(vf) + 서명 검색(sig/find)으로 거의 다 다시 찾는다
+        f0 = funcs()
+        f = copy.deepcopy(f0)
+        for n in f:
+            f[n]["rva"] = hex(int(f[n]["rva"], 16) + 0x40)
+        got = funcmap.relocated(f, EXE)
+        self.assertEqual({n: r for n, r in got.items() if r != f0[n]["rva"]}, {})   # 틀린 주소는 하나도 없다
+        self.assertGreaterEqual(len(got), len(f0) - 2)
+
 
 if __name__ == "__main__":
     unittest.main()

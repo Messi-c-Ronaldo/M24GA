@@ -30,6 +30,23 @@ def fill(exe):
     reg = load()
     funcs = reg["functions"]
     pe, data = rtti.PE(exe), rtti.load(exe)
+    # 서명 16바이트가 코드에서 한 곳이 아니면, 같은 자리에서 시작하는 더 긴 검색용 바이트(find)를 둔다 (빌드가 바뀌면 서명 검색에 씀)
+    for name, f in funcs.items():
+        sig = f.get("sig")
+        if not sig:
+            continue
+        f.pop("find", None)
+        if funcmap.count_hits(pe, bytes.fromhex(sig["hex"])) == 1:
+            continue
+        o = pe.off(int(f["rva"], 16) + int(sig["off"], 16))
+        for n in (24, 32, 48, 64, 96):
+            pat = pe.m[o:o + n]
+            if funcmap.count_hits(pe, pat) == 1:
+                funcs[name] = collections.OrderedDict((k, v) for k, v in list(f.items()) + [("find", {"off": sig["off"], "hex": pat.hex()})])
+                print("  %-24s 검색용 바이트 %d" % (name, n))
+                break
+        else:
+            print("  %-24s 96바이트로도 한 곳이 아님" % name)
     want = {pe.image_base + int(f["rva"], 16): n for n, f in funcs.items()}
     idx = funcmap.vf_index(pe, data, set(want))
     n = 0

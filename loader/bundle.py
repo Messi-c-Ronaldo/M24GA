@@ -93,10 +93,10 @@ def build(mods_to_load=None, exe=None):
         core = _inject(core, "M24_FIELDS", json.dumps(json.load(f), ensure_ascii=False, separators=(",", ":")), "core.js")
     with open(FUNCS_JSON, encoding="utf-8") as f:   # 함수 등록부 (M22)
         funcs = json.load(f)
-    if exe:   # M57: 서명이 안 맞는 가상 함수는 클래스 vtable 칸으로 다시 찾아 rva를 바꿔 넣는다 (코어는 서명을 다시 확인)
+    if exe:   # M57: 서명이 안 맞는 함수는 클래스 vtable 칸(vf)이나 서명 검색으로 다시 찾아 rva를 바꿔 넣는다 (코어는 서명을 다시 확인)
         import funcmap
         for name, rva in funcmap.relocated(funcs["functions"], exe).items():
-            funcs["functions"][name] = dict(funcs["functions"][name], rva=rva, moved="vf")
+            funcs["functions"][name] = dict(funcs["functions"][name], rva=rva, moved=True)
     core = _inject(core, "M24_FUNCS", json.dumps(funcs, ensure_ascii=False, separators=(",", ":")), "core.js")
     with open(PROPS_JSON, encoding="utf-8") as f:   # 속성 등록부 (M55): 짧은 판만
         core = _inject(core, "M24_PROPS", json.dumps(props_compact(json.load(f)), ensure_ascii=False, separators=(",", ":")), "core.js")

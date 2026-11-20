@@ -250,7 +250,11 @@
       "call": true,
       "desc": "ui.eventNew로 만든 이벤트 객체(기록)를 정리한다",
       "source": "M37",
-      "verified": false
+      "verified": false,
+      "find": {
+        "off": "0x10",
+        "hex": "6c243048c745f8feffffff488b394885ff0f84af0000004989ce4c8b79084c39ff74764c8b2596c73d04eb0d0f1f4000"
+      }
     },
     "ui.holidayStart": {
       "rva": "0x7a19a50",
@@ -365,7 +369,11 @@
       "thread": "ui",
       "desc": "sitoolkit::DIALOG 종류 정보 (전역 fm+0x6365658, 처음 부르면 스스로 등록)",
       "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
-      "verified": true
+      "verified": true,
+      "find": {
+        "off": "0x10",
+        "hex": "65488b142558000000488b0cca3b81380000007f0c488d054c0d2a064883c428"
+      }
     },
     "ui.widgetCreate": {
       "rva": "0x120d170",
@@ -467,7 +475,11 @@
       "desc": "sitoolkit::DIALOG의 이벤트 처리기 (vtable +0x28). 안쪽 위젯의 이벤트(click_event, select_event, changed_event)가 부모로 올라와 여기를 지난다. 코어가 게임 안 패널 이벤트를 받으려고 걸어 둔다",
       "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
       "verified": true,
-      "event": "panel"
+      "event": "panel",
+      "find": {
+        "off": "0x10",
+        "hex": "0000000f29b424a00000004c89c389d54889ce40b70181fa"
+      }
     },
     "person.relationAdd": {
       "rva": "0x2164000",
@@ -586,7 +598,11 @@
       "thread": "ui",
       "desc": "뉴스 소멸자 (메모리는 놓지 않는다). 글 칸의 참조 계수를 줄인다. 스택(또는 우리 자리)에 만든 뉴스를 뉴스 추가 뒤에 정리할 때",
       "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
-      "verified": true
+      "verified": true,
+      "find": {
+        "off": "0x10",
+        "hex": "6c243048c745f8feffffff4989cc488d05a33a4203488901"
+      }
     },
     "news.humanMsgFill": {
       "rva": "0x3d65830",
@@ -612,7 +628,11 @@
       "thread": "ui",
       "desc": "HUMAN_MESSAGE_NEWS 채우기: +0xb8 보낸이, +0xc0 제목, +0xc8 본문 (글은 참조 계수 +1). 받은 편지함에 '보낸이의 말: 제목'으로 보인다",
       "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
-      "verified": true
+      "verified": true,
+      "find": {
+        "off": "0x10",
+        "hex": "8991b8000000488d99c00000004c39c37451498b10488b03"
+      }
     },
     "news.add": {
       "rva": "0x3496ac0",
@@ -639,7 +659,11 @@
       "desc": "뉴스 하나를 게임에 넣는다 (게임이 하루 진행 중 뉴스마다 부르는 함수). 0x80 = 상위 구단에도, 0x100 = 관련 인물에게도. 온라인 전용 fm+0x3491790은 싱글에서 부르면 접근 오류. 코어 0.35.0: 코어가 끼어들어 이벤트 newsAdded로 나눠 준다 (모드가 구독할 때만)",
       "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
       "verified": true,
-      "event": "newsAdded"
+      "event": "newsAdded",
+      "find": {
+        "off": "0x10",
+        "hex": "010000488dac24800000000f29b5f000000048c785e8000000feffffff44898d"
+      }
     },
     "news.related": {
       "rva": "0x26402d0",
@@ -719,7 +743,11 @@
       "thread": "ui",
       "desc": "게임 저장 한 번 (Ctrl+S, 메뉴 저장). 안에서 GAME_SAVE_PROVIDER_LOCAL(fm+0xe033240)이 .fm 파일을 열고, 이 함수가 돌아올 때 파일 쓰기가 끝나 있다 (12.7초 실측). 코어가 끼어들어 이벤트 gameSaved로 나눠 준다",
       "source": "M53 (CreateFileW 호출 경로, 시간 측정, 실기 Ctrl+S 3번)",
-      "verified": true
+      "verified": true,
+      "find": {
+        "off": "0x10",
+        "hex": "080000488dac248000000048c78540080000feffffff4889"
+      }
     }
   },
   "gates": {

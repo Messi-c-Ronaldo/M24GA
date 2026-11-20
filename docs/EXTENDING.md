@@ -116,7 +116,7 @@ m24cli watch-call fm+0x3700780 --secs 300 --wait 300     # 그동안 게임 진�
 
 - `rva`는 **함수 시작**이어야 해요 (`tests/test_functions.py`가 예외 테이블로 확인해요).
 - `sig`는 **`fm.exe` 파일에서** 함수 시작 + 0x10의 16바이트예요 (후킹이 덮어쓰는 앞 16바이트를 피해요). 다른 빌드에서는 이게 안 맞아서 코어가 그 함수에 걸지 않아요.
-- (코어 0.38.0) **가상 함수면 `vf: {class, off, index}`**(그 클래스 vtable의 몇 번째 칸)를 `python -X utf8 tools/func_vf.py fill`로 채워요. 빌드가 바뀌어 rva·서명이 안 맞으면 로더가 RTTI 클래스 이름으로 vtable을 찾아 같은 칸의 함수를 다시 확인해 써요 (`loader/funcmap.py`, 빌드 진단 보고서의 '함수 등록부' 절). 확인: `tools/func_vf.py check`.
+- (코어 0.38.0) **가상 함수면 `vf: {class, off, index}`**(그 클래스 vtable의 몇 번째 칸)를 `python -X utf8 tools/func_vf.py fill`로 채워요. 빌드가 바뀌어 rva·서명이 안 맞으면 로더가 RTTI 클래스 이름으로 vtable을 찾아 같은 칸의 함수를 다시 확인해 써요 (`loader/funcmap.py`, 빌드 진단 보고서의 '함수 등록부' 절). 서명 16바이트가 코드 안 여러 곳에 있으면 같은 `fill`이 더 긴 검색용 바이트 `find`를 둬요. 비가상 함수는 이 바이트를 코드에서 검색해(딱 한 곳 + 함수 시작이어야) 다시 찾아요. 확인: `tools/func_vf.py check`.
   ```python
   python -X utf8 -c "import sys; sys.path.insert(0,'tools'); import rtti; pe=rtti.PE(rtti.DEFAULT_EXE); o=pe.off(0x3700780+0x10); print(pe.m[o:o+16].hex())"
   ```
