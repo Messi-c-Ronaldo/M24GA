@@ -55,6 +55,21 @@ function m24gaEngine(id, cap, fn) {
   try { return fn(); } catch (e) { return { ok: false, error: String(e.message || e) }; }
 }
 
+// 받은 편지함 메일 (코어 0.34.0, 기능 ui.inbox): 확인·횟수 제한 뒤 코어(화면 스레드)로. 세이브에 남아서 1분에 M24_INBOX_MAX_PER_MIN통까지
+var M24_INBOX_MAX_PER_MIN = 10;
+function m24gaInbox(id, o) {
+  if ((M24GA.caps[id] || []).indexOf('ui.inbox') < 0) return Promise.resolve({ ok: false, error: "기능 'ui.inbox'를 mod.json capabilities에 선언하고 사용자 허용을 받아야 해요" });
+  if (!M24GA.inboxSend) return Promise.resolve({ ok: false, error: '이 코어는 받은 편지함 메일을 지원하지 않아요' });
+  if (!o || typeof o !== 'object') return Promise.resolve({ ok: false, error: '{ title, body, from }을 넘기세요' });
+  var now = Date.now(), k = 'inbox:' + id, ts = (M24GA.writeTimes[k] || []).filter(function (t) { return now - t < 60000; });
+  if (ts.length >= M24_INBOX_MAX_PER_MIN) { M24GA.writeTimes[k] = ts; return Promise.resolve({ ok: false, error: '메일이 너무 많아요 (1분에 ' + M24_INBOX_MAX_PER_MIN + '통까지)' }); }
+  ts.push(now); M24GA.writeTimes[k] = ts;
+  return M24GA.inboxSend(o).then(function (r) {
+    if (r && r.ok) { var g = m24gaReadGame(); send({ m24core: { t: 'inbox', id: id, title: r.title, chars: r.chars, save: g.save, date: g.date && g.date.iso } }); }
+    return r;
+  });
+}
+
 // 관계 쓰기 (코어 0.26.0, 기능 write.relation): 감독 h에게 구단 club을 좋아하는/싫어하는 구단으로 넣거나(on=true) 뺀다.
 // 확인·기록·되돌리기는 m24gaWrite와 같다 (값은 글 'favClub:구단번호' / '').
 function m24gaRelation(id, h, kindName, club, on, opts) {
@@ -327,6 +342,12 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
     engine: {
       dump: function (name) { return alive ? m24gaEngine(id, 'read.engine', function () { return M24GA.engineDump(name); }) : { error: '내려간 모드' }; },
       write: function (name, spec) { return alive ? m24gaEngine(id, 'write.engine', function () { return M24GA.engineWrite(name, spec, false); }) : { ok: false, error: '내려간 모드' }; }
+    },
+    // (코어 0.34.0, 기능 ui.inbox) 게임 받은 편지함에 메일 한 통: api.inbox.send({ title, body, from }) -> Promise {ok, error}.
+    // from = 사람 객체(myHuman(), personByName(이름).person 등, 없으면 내 감독). '보낸이의 말: 제목'으로 보이고 세이브에 남아요 (되돌리기 없음)
+    inbox: {
+      send: function (o) { return alive ? m24gaInbox(id, o) : Promise.resolve({ ok: false, error: '내려간 모드' }); },
+      available: function () { return !!M24GA.inboxSend; }
     },
     panel: {
       open: function (form, cb) { return alive ? m24gaPanelOpen(id, form, cb) : { ok: false, error: '내려간 모드' }; },

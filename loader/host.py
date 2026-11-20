@@ -333,6 +333,8 @@ def _core_notice(n):
         mod_log(mid, "%s 오류: %s" % (where, msg), "js", "error")
     elif t == "write":                    # 모드가 게임 값을 바꿈 (M14, modhost.js m24gaWrite)
         _write_notice(n)
+    elif t == "inbox":                    # 모드가 받은 편지함에 메일을 넣음 (코어 0.34.0, modhost.js m24gaInbox)
+        mod_log(mid, "받은 편지함 메일: '%s' (본문 %s자, 게임 날짜 %s)" % (n.get("title", ""), n.get("chars", 0), n.get("date") or "-"), "loader")
     elif t == "game":                     # 게임 날짜·세이브가 바뀜 (M12, modhost.js m24gaPollGame)
         _game_notice(n.get("date"), n.get("save"))
     elif t in ("disabled", "loadfail"):

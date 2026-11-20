@@ -2505,6 +2505,76 @@ Interceptor.attach(B.add(0x61ae70), { onEnter: function (a) {
   } catch (e) { coreErr++; }
 }});
 
+// ---- 받은 편지함 메일 (코어 0.34.0, M51·M52, 기능 ui.inbox) ----
+// 게임의 '감독끼리 보내는 메시지'(HUMAN_MESSAGE_NEWS)를 만들어 게임이 평소 뉴스를 넣는 함수(news.add)에 넘긴다 (news.add가 사본을 가져간다).
+// 받은 편지함에 '보낸이의 말: 제목'으로 보이고 저장·불러오기·진행 뒤에도 남는다 (M51 실기). 보낸이는 아무 사람(사람 감독·스태프·선수)의
+// PERSON 부분(객체 시작 + [[시작+8]+4] + 8: 사람 감독 +0x450, 스태프 +0xf8). 사람 객체 자체를 넣으면 게임 함수가 접근 오류를 낸다.
+// 글은 게임 할당기(str.alloc)로 만든다: Frida 메모리는 로더를 끄면 사라져서 게임이 나중에 글을 읽다 튕긴다.
+// 받는 사람 = 내 감독이 맡은 팀(human.job +0x10)의 감독 = 나. 무직이면 넣지 못한다. 메일의 '응답' 버튼은 싱글에서 보내도 아무 일 없다 (M52 실기).
+// 온라인 전용 fm+0x3491790(접속 감독 모두에게)은 싱글에서 부르면 접근 오류라 쓰지 않는다.
+var INBOX_FN = null, NEWS_MGR = B.add(0x63651c0), HUMAN_MSG_VT = B.add(0x5ac0d78), INBOX_TITLE_MAX = 200, INBOX_BODY_MAX = 8000;
+var INBOX_FN_NAMES = ['news.itemInit', 'news.itemFree', 'news.humanMsgFill', 'news.add', 'str.alloc', 'str.free'];
+function inboxFns() {
+  if (INBOX_FN) return INBOX_FN;
+  var a = {};
+  for (var i = 0; i < INBOX_FN_NAMES.length; i++) { var st = funcCheck(INBOX_FN_NAMES[i]); if (!st.ok) return { error: st.error }; a[INBOX_FN_NAMES[i]] = st.addr; }
+  INBOX_FN = {
+    init: new NativeFunction(a['news.itemInit'], 'void', ['pointer']),
+    free: new NativeFunction(a['news.itemFree'], 'void', ['pointer']),
+    fill: new NativeFunction(a['news.humanMsgFill'], 'void', ['pointer', 'pointer', 'pointer', 'pointer']),
+    add: new NativeFunction(a['news.add'], 'int', ['pointer', 'pointer', 'pointer', 'uint32']),
+    alloc: new NativeFunction(a['str.alloc'], 'pointer', ['uint32', 'uint32']),
+    strFree: new NativeFunction(a['str.free'], 'void', ['pointer'])
+  };
+  return INBOX_FN;
+}
+// 게임 할당기로 참조 계수 문자열을 만든다: 블록 [계수 u32][길이 u32][UTF-8][0], 반환 = 글 칸에 넣는 주소(블록+4), 계수 1 = 우리 몫
+function gameStrNew(F, s) {
+  var b = utf8Bytes(s), n = b.byteLength, blk = F.alloc(0x108, n);
+  if (blk.isNull()) throw new Error('게임 할당기가 글 자리를 주지 않았어요');
+  blk.writeU32(1); blk.add(4).writeU32(n); if (n) blk.add(8).writeByteArray(b); blk.add(8 + n).writeU8(0);
+  return blk.add(4);
+}
+function gameStrRelease(F, p) { var c = p.sub(4), v = c.readU32() - 1; c.writeU32(v); if (v === 0) F.strFree(c); }
+// 사람 객체(어느 부분을 가리켜도) -> 그 사람의 PERSON 부분 (보낸이 칸에 넣는 것). 사람이 아니면 null
+function personPart(p) {
+  try {
+    var info = rttiInfo(p); if (!info) return null;
+    if (info.name !== 'db::PERSON' && (info.bases || []).indexOf('db::PERSON') < 0) return null;
+    var top = info.top, off = top.add(8).readPointer().add(4).readS32();
+    if (off <= 0 || off > 0x4000) return null;
+    var s = top.add(off + 8), si = rttiInfo(s);
+    return (si && si.top.equals(top)) ? s : null;
+  } catch (e) { return null; }
+}
+function myTeamObj() {
+  try { var h = myHuman(); if (!h) return null; var j = h.add(0x518).readPointer(); if (j.isNull()) return null; var t = j.add(0x10).readPointer(); return className(t) === 'db::TEAM' ? t : null; } catch (e) { return null; }
+}
+// 화면 스레드에서 메일 하나를 넣는다. o = { title, body, from(사람 객체, 없으면 내 감독) } -> { ok, error? }
+function inboxSendNow(o) {
+  var F = inboxFns(); if (F.error) return { ok: false, error: F.error };
+  var title = String(o.title || '').trim().slice(0, INBOX_TITLE_MAX), body = String(o.body || '').slice(0, INBOX_BODY_MAX);
+  if (!title) return { ok: false, error: '제목(title)이 비었어요' };
+  var mgr = NEWS_MGR.readPointer();
+  if (mgr.isNull() || className(mgr) !== 'NEWS_MANAGER') return { ok: false, error: '세이브를 불러온 뒤에만 넣을 수 있어요' };
+  var team = myTeamObj(); if (!team) return { ok: false, error: '감독이 맡은 팀이 없어요 (무직이면 받은 편지함에 넣지 못해요)' };
+  var from = (o.from === undefined || o.from === null || o.from === 'me') ? myHuman() : o.from;
+  var snd = from ? personPart(from) : null;
+  if (!snd) return { ok: false, error: '보낸이(from)는 사람 객체여야 해요 (myHuman(), personByName(이름).person 등)' };
+  var n = Memory.alloc(0x400);
+  F.init(n); n.writePointer(HUMAN_MSG_VT);
+  if (className(n) !== 'HUMAN_MESSAGE_NEWS') { F.free(n); return { ok: false, error: '이 게임 빌드에서는 메시지 종류(HUMAN_MESSAGE_NEWS)를 찾지 못했어요' }; }
+  var t = gameStrNew(F, title), b = gameStrNew(F, body), slot = Memory.alloc(16), ret;
+  slot.writePointer(t); slot.add(8).writePointer(b);
+  try {
+    F.fill(n, snd, slot, slot.add(8));
+    n.add(0xa0).writeU32(GAME_DATE.readU32());
+    ret = F.add(mgr, n, team, 1);
+  } finally { F.free(n); gameStrRelease(F, t); gameStrRelease(F, b); }
+  return { ok: true, ret: ret, title: title, chars: body.length };
+}
+M24GA.inboxSend = function (o) { return runOnUi(function () { return inboxSendNow(o || {}); }).then(function (r) { return r && r.error && r.ok === undefined ? { ok: false, error: r.error } : r; }); };
+
 // ---- 게임 안 패널 (코어 0.23.0, M45, 기능 ui.panel) ----
 // 모드의 양식 -> m24gaPanelXml(modhost.js) -> FM 사용자 폴더의 패널 칸(panels/m24ga/slotNN.xml, 로더가 게임보다 먼저 만듦, loader/panels.py)에
 // 쓰기 -> 게임의 일반 대화상자(sitoolkit::DIALOG)로 띄우기. 게임은 띄울 때 파일을 다시 읽는다 (M43 실기). 파일 읽기 함수에 끼어들지 않는다.

@@ -1,4 +1,4 @@
-# M24GA 기능 목록 (코어 0.33.0)
+# M24GA 기능 목록 (코어 0.34.0)
 
 > 이 파일은 `core/capabilities.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 
@@ -37,6 +37,7 @@
 | `read.panel` | read | **소셜 패널 도우미**: 패널 주소로 다시 찾기(panelAt), 지금 글과 글자 객체(panelText, panelTextHandle), 글자 칸(panelDst), 스레드(뉴스) 객체(panelThread), 작성자 응원 클럽 고유 ID(panelFanUid). 메모리를 직접 읽지 않고 소셜 패널을 다뤄요 _(화면 의존: 소셜 피드 화면)_ | `panelAt`, `panelDst`, `panelText`, `panelTextHandle`, `panelThread`, `panelFanUid` | 모두 |
 | `ui.social.text` | ui | **소셜피드 글자 바꾸기**: 소셜 패널의 글자 칸을 새 글로 바꾸고 다시 그려요. refreshPanel은 화면 스레드(socialPanel/frame 콜백)에서만 _(화면 의존: 소셜 피드 화면)_ | `setStr`, `refreshPanel`, `uiTid` | 모두 |
 | `ui.panel` | ui | **게임 안 패널 (FM 모양 대화상자)**: 양식(제목, 글, 입력칸·숫자·체크·드롭다운·글 칸, 버튼)을 적으면 코어가 게임의 대화상자로 띄우고, 버튼·값이 바뀔 때 알려 줘요. 스킨 파일을 쓰지 않아요 (FM 사용자 폴더의 패널 칸 파일, 로더가 게임보다 먼저 만듦). 세이브는 바꾸지 않아요. 처음 한 번은 게임을 다시 켜야 할 수 있어요 (api.panel.available()) (코어 0.29.0) 칸 종류 person·club = 게임 검색칸: 치는 대로 게임이 후보(이름·포지션/직업·구단)를 띄우고, 고르면 {id, kind:'pick', value:{type, ref\|uid, name, age, club, role, label}} 이벤트가 오고 창이 고른 것을 보이며 다시 그려져요. values()에서는 고른 것, 안 골랐으면 친 글 {text}, 둘 다 없으면 null. 칸 value에 {ref}나 {uid}를 주면 '지금: …'으로 보여요. select 칸도 value를 주면 그 항목이 골라진 채로 열려요 | `api.panel` | 모두 |
+| `ui.inbox` | write | **게임 받은 편지함에 메일 넣기**: api.inbox.send({ title, body, from })로 게임 받은 편지함에 메일 한 통을 넣어요. 게임의 '감독끼리 보내는 메시지' 종류라 '보낸이의 말: 제목'으로 보이고, 보낸이는 사람(내 감독, 스태프, 선수: myHuman(), personByName(이름).person)이에요. 받는 사람은 내 감독(맡은 팀이 있어야 함). 세이브에 남고 되돌릴 수 없어서 사용자 허용이 필요하고 1분에 10통까지예요. 화면 스레드에서 넣고 Promise로 {ok, error}를 돌려줘요. 메일의 '응답' 버튼은 눌러도 아무 일도 일어나지 않아요 | `api.inbox` | 모두 |
 | `pc.python` | pc | **PC 쪽 Python 부분**: mod.json의 python 진입 파일을 이 PC에서 실행해요 (인터넷 API, 파일). 게임 쪽과는 api.send/recv ↔ ctx.recv/post로 이야기해요 | `mod.json python`, `api.send`, `api.recv` | 모두 |
 | `pc.file` | pc | **게임 안에서 파일 읽기·쓰기**: Frida File로 파일을 직접 읽고 써요. 가능하면 Python 부분과 메시지를 쓰세요 | `File` | 모두 |
 | `raw.read` | raw | **게임 메모리 직접 읽기**: 주소(ptr)를 직접 만들거나 .readPointer/.readU32 같은 읽기로 게임 메모리를 읽어요. 주소가 틀리면 예외가 나요 (코어 함수로 되는 일이면 코어 함수를 쓰세요) | `ptr()`, `NativePointer.read*`, `B`, `Memory.scan`, `Process` | 모두 |
@@ -156,6 +157,12 @@ api.on('socialPanel', function (ev) { if (ev.type === 2) setStr(ev.dst, '바꾼 
 
 ```js
 var p = api.panel.open({ title: '경력', fields: [{ id: 'club', type: 'text', label: '뛴 구단' }], buttons: [{ id: 'apply', label: '적용' }] }, function (ev) { if (ev.id === 'apply') api.log(JSON.stringify(ev.values())); });
+```
+
+**`ui.inbox`**
+
+```js
+api.inbox.send({ title: '경기 뒤 기자 질문', body: '오늘 승리의 열쇠는 무엇이었나요?', from: myHuman() }).then(function (r) { if (!r.ok) api.log(r.error); });
 ```
 
 **`pc.python`**

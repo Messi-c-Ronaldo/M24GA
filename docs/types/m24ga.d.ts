@@ -68,6 +68,13 @@ interface ModApi {
     /** 있는 칸에만 쓰기 (styles는 목록 전체, 칸이 늘면 코어가 버퍼를 새로 만듦). 게임이 진행 중이면 거절. 세이브에 안 남음 */
     write(table: 'weights' | 'physics' | 'momentum' | 'ratings' | 'styles' | 'xg', spec: any): { ok?: boolean; written?: number; missing?: any[]; error?: string };
   };
+  /** (코어 0.34.0, 기능 ui.inbox) 게임 받은 편지함에 메일 한 통. '보낸이의 말: 제목'으로 보이고 세이브에 남아요 (되돌리기 없음, 1분에 10통) */
+  inbox: {
+    /** title 200자·body 8000자까지. from = 사람 객체 (myHuman(), personByName(이름).person, 없으면 내 감독). 내 감독이 팀을 맡고 있어야 해요 */
+    send(mail: { title: string; body?: string; from?: Ptr | 'me' }): Promise<{ ok: boolean; error?: string; title?: string; chars?: number }>;
+    /** 이 코어가 받은 편지함 메일을 지원하는가 */
+    available(): boolean;
+  };
   panel: {
     open(form: PanelForm, cb?: (ev: PanelEvent) => void): PanelHandle;
     /** 게임 안 패널을 지금 쓸 수 있는가 (패널 칸 파일과 게임 함수 확인) */

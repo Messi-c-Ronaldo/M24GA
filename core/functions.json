@@ -507,6 +507,140 @@
       "source": "C09 (실기: 손흥민 p95264, 파울리뉴 s34250·p28722, 토트넘 홋스퍼 0x030001b6)",
       "verified": true,
       "event": "panel"
+    },
+    "news.itemInit": {
+      "rva": "0x263a9c0",
+      "sig": {
+        "off": "0x10",
+        "hex": "ffffff4889ce488d05bb274303488901"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "뉴스 자리 (0x400바이트, 0으로 채운 것)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "db::NEWS_ITEM 기본 생성자. 날짜 1900, 나머지 0. 종류별 vtable은 부른 뒤에 덮어쓴다 (게임 코드와 같은 순서)",
+      "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
+      "verified": true
+    },
+    "news.itemFree": {
+      "rva": "0x26496d0",
+      "sig": {
+        "off": "0x10",
+        "hex": "6c243048c745f8feffffff4989cc488d"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "뉴스"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "뉴스 소멸자 (메모리는 놓지 않는다). 글 칸의 참조 계수를 줄인다. 스택(또는 우리 자리)에 만든 뉴스를 뉴스 추가 뒤에 정리할 때",
+      "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
+      "verified": true
+    },
+    "news.humanMsgFill": {
+      "rva": "0x3d65830",
+      "sig": {
+        "off": "0x10",
+        "hex": "8991b8000000488d99c00000004c39c3"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "HUMAN_MESSAGE_NEWS",
+        "보낸이 = 사람 객체의 PERSON 부분 (객체 시작 + [[시작+8]+4] + 8: 사람 감독 +0x450, 스태프·선수 +0xf8)",
+        "제목 글 칸 주소 (참조 계수 문자열 포인터가 든 8바이트)",
+        "본문 글 칸 주소"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "HUMAN_MESSAGE_NEWS 채우기: +0xb8 보낸이, +0xc0 제목, +0xc8 본문 (글은 참조 계수 +1). 받은 편지함에 '보낸이의 말: 제목'으로 보인다",
+      "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
+      "verified": true
+    },
+    "news.add": {
+      "rva": "0x3496ac0",
+      "sig": {
+        "off": "0x10",
+        "hex": "010000488dac24800000000f29b5f000"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "ptr",
+        "u32"
+      ],
+      "argNames": [
+        "NEWS_MANAGER (fm+0x63651c0)",
+        "뉴스 (사본을 만들어 가져간다)",
+        "팀 (db::TEAM, 그 팀 감독이 받는다)",
+        "플래그 (&7이 있어야 받은 편지함, 1 = 메시지)"
+      ],
+      "ret": "i32",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "뉴스 하나를 게임에 넣는다 (게임이 하루 진행 중 뉴스마다 부르는 함수). 0x80 = 상위 구단에도, 0x100 = 관련 인물에게도. 온라인 전용 fm+0x3491790은 싱글에서 부르면 접근 오류",
+      "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
+      "verified": true
+    },
+    "str.alloc": {
+      "rva": "0x4335520",
+      "sig": {
+        "off": "0x10",
+        "hex": "c745f8feffffff89d74889ce8b05e643"
+      },
+      "args": [
+        "u32",
+        "u32"
+      ],
+      "argNames": [
+        "0x108",
+        "글 바이트 수"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "게임 할당기: 참조 계수 문자열 블록 (바이트 수 + 9). 블록 = [계수 u32][길이 u32][UTF-8][0], 글 칸에는 블록+4. 게임 코드 fm+0x1939f90(세이브에서 글 읽기)과 같은 호출",
+      "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
+      "verified": true
+    },
+    "str.free": {
+      "rva": "0x43356b0",
+      "sig": {
+        "off": "0x10",
+        "hex": "feffffff4889ce8b055b4210028b0ded"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "블록 (글 칸 - 4)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "str.alloc 블록을 놓는다 (참조 계수가 0이 될 때)",
+      "source": "M51·M52 (받은 편지함 메일 넣기, 게임 코드 fm+0x3172626 온라인 메시지 처리와 fm+0x4b7c177 뉴스 추가를 따라 함, 실기: 넣기·저장·불러오기·진행)",
+      "verified": true
     }
   },
   "gates": {

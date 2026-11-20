@@ -227,6 +227,7 @@
           "read.panel",
           "ui.social.text",
           "ui.panel",
+          "ui.inbox",
           "pc.python",
           "pc.file",
           "raw.read",
