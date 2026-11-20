@@ -1,0 +1,24 @@
+name: 게임 버전이 안 맞아요 (빌드 진단 보고서)
+description: '"지원하지 않는 게임 버전"이 뜰 때 (Steam판 등). 보고서를 붙여 주시면 그 빌드를 지원할 수 있어요.'
+title: "[빌드] "
+labels: ["build-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        앱 홈의 **빌드 진단 보고서 복사** 버튼(또는 `m24cli build-report`)을 누른 뒤 아래에 붙여 넣어 주세요.
+        보고서에는 게임 파일 크기·SHA-256·빌드 시각·서명 비교만 들어가고 개인 경로는 지워져요.
+  - type: dropdown
+    id: store
+    attributes:
+      label: 게임을 어디서 받았나요?
+      options: [Steam, Epic Games, 기타]
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: 빌드 진단 보고서
+      render: markdown
+    validations:
+      required: true

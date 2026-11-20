@@ -1,0 +1,36 @@
+name: 버그 신고
+description: 로더나 포함된 모드가 이상하게 동작할 때
+title: "[버그] "
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: M24GA 버전
+      description: 앱 홈 맨 아래에 나와요 (예 0.33.0)
+    validations:
+      required: true
+  - type: input
+    id: mod
+    attributes:
+      label: 문제가 생긴 모드 (로더 자체면 비워 두세요)
+      placeholder: 예) DynamicME 0.8.0
+  - type: textarea
+    id: what
+    attributes:
+      label: 무슨 일이 있었나요?
+      description: 어떤 순서로 무엇을 했고, 무엇을 기대했고, 실제로 어떻게 됐는지
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: 모드 보고서 (선택)
+      description: 앱에서 그 모드를 고르고 **AI에게 줄 보고서 복사**를 누르면 상태·오류·최근 로그가 복사돼요. API 키 같은 개인 정보가 없는지 한 번 확인해 주세요.
+      render: text
+  - type: checkboxes
+    id: check
+    attributes:
+      label: 확인
+      options:
+        - label: FM24 Epic판 24.4.2에서 생긴 일이에요 (다른 판이면 "게임 버전이 안 맞아요" 양식을 써 주세요)
