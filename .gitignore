@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# 사용자 데이터·실행 결과 (저장소 밖 ~/m24ga_data, ~/fm24_ai_mod_data에 둔다)
+*.log
+bundle.js
+*.tmp
+
+# 개인 정보가 든 파일은 올리지 않는다
+*.key
+*_key
+config.local.json
+
+# 분석 결과물 (게임 저작물)
+*.csv
+dump/
+
+# 의존 패키지 (pip install --target vendor frida pywebview) / 묶은 모드 파일
+vendor/
+dist/

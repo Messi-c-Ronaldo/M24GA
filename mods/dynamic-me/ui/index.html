@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>DynamicME</title>
+<style>
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  .bar input[type=text] { flex: 1; min-width: 180px; }
+  .muted { color: var(--text3); }
+  .note { font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .note:last-child { border-bottom: none; }
+  .lv { display: inline-block; min-width: 46px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+  .lv.warn { color: var(--amber); } .lv.skip { color: var(--red); } .lv.info { color: var(--text3); }
+  details.part { background: var(--card); border-radius: 16px; margin: 12px 0; padding: 4px 18px; }
+  details.part > summary, details.sub > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+  details.part > summary { font-size: 16px; font-weight: 700; padding: 12px 0; }
+  details.sub > summary { font-size: 14px; font-weight: 600; padding: 9px 0; border-top: 1px solid var(--line); }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; color: var(--text3); width: 12px; transition: transform .15s; display: inline-block; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  summary .cnt { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--blue); }
+  details.sub { margin-left: 4px; }
+  details.part > .body { padding-bottom: 12px; }
+  .knob { display: grid; grid-template-columns: 1fr 160px 52px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .knob .name, .drow .name { font-size: 14px; }
+  .knob .hint, .drow .key { font-size: 12px; color: var(--text3); }
+  .knob input[type=range] { width: 100%; }
+  .knob .val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .changed { color: var(--blue) !important; }
+  .drow { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 14px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .drow.head { font-size: 12px; color: var(--text3); border-bottom: 1px solid var(--line); }
+  .drow .num { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--text2); }
+  .dinp { width: 100%; min-width: 0; max-width: 100px; box-sizing: border-box; justify-self: end; text-align: right; margin: 0; padding: 6px 8px; font: inherit; font-size: 13px;
+          background: var(--input); color: var(--text); border: 1px solid var(--line); border-radius: 8px; outline: none; }
+  .dinp:focus { border-color: var(--blue); }
+  .dinp.changed { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+  .knob input[type=range] { margin-top: 0; }
+  .pack { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .pack:last-child { border-bottom: none; }
+  #msg { min-height: 1.2em; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+</style></head>
+<body>
+<div class="stats">
+  <div class="stat"><div class="label">게임</div><div class="value" id="vGame">-</div></div>
+  <div class="stat"><div class="label">엔진 팩</div><div class="value" id="vPack">-</div></div>
+  <div class="stat"><div class="label">빠른 조정</div><div class="value" id="vTune">-</div></div>
+  <div class="stat"><div class="label">세부 값</div><div class="value" id="vDetail">-</div></div>
+</div>
+<div class="card">
+  <div class="hint">파일은 바꾸지 않아요. 게임 메모리의 엔진 표에 바뀐 값만 써서 <b>재시작 없이</b> 다음 경기부터 반영돼요. 게임이 진행 중일 때는 쓰지 않으니, 멈춘 상태(경기 전)에서 눌러 주세요. 적용 순서: 엔진 팩 → 빠른 조정(배율) → 세부 값(직접 입력).</div>
+  <div class="bar">
+    <button class="btn grey" id="bRestore">원본 엔진으로 (전부 지움)</button>
+    <span class="hint" id="msg"></span>
+  </div>
+  <div class="hint muted" id="vLast"></div>
+</div>
+
+<details class="part" id="pPack" open>
+  <summary>엔진 팩</summary>
+  <div class="body">
+    <div class="hint" id="vPacksDir"></div>
+    <div id="packs"></div>
+    <div class="bar">
+      <input type="text" class="dinp" style="text-align:left;padding:10px 12px;max-width:none;flex:1" id="iPath" placeholder="다른 폴더나 .zip 경로 (예: C:\Users\...\Downloads\(엔진이름))">
+      <button class="btn ghost" id="bPreview">미리보기</button>
+      <button class="btn primary" id="bApply">적용</button>
+      <button class="btn ghost" id="bUnpack">팩 빼기</button>
+    </div>
+    <div id="preview"></div>
+  </div>
+</details>
+
+<details class="part" id="pPreset">
+  <summary>내 설정 저장·불러오기 (프리셋)</summary>
+  <div class="body">
+    <div class="hint">지금 적용 중인 빠른 조정·세부 값(내가 바꾼 숫자만)을 이름 붙여 저장해요. 파일 하나라서 다른 사람과 주고받을 수 있어요. 게임 원본 값이나 엔진 팩은 들어 있지 않아요. 불러오면 지금 팩은 그대로 두고 조정만 바뀌어요.</div>
+    <div id="presets"></div>
+    <div class="bar">
+      <input type="text" class="dinp" style="text-align:left;padding:10px 12px;max-width:none;flex:1" id="iPresetName" placeholder="저장할 이름">
+      <button class="btn primary" id="bPresetSave">현재 설정 저장</button>
+    </div>
+    <div class="bar">
+      <input type="text" class="dinp" style="text-align:left;padding:10px 12px;max-width:none;flex:1" id="iPresetPath" placeholder="받은 프리셋 파일 경로 (.json)">
+      <button class="btn ghost" id="bPresetImport">가져오기</button>
+    </div>
+    <div class="hint muted" id="vPresetDir"></div>
+  </div>
+</details>
+<details class="part" id="pQuick" open>
+  <summary>빠른 조정 · 기본 <span class="cnt" id="cQuick"></span></summary>
+  <div class="body">
+    <div class="hint">고른 팩(없으면 원본) 위에 배율을 곱해요. 1.00 = 그대로. 기본과 고급은 겹쳐서 곱해져요.</div>
+    <div id="knobs"></div>
+    <div class="bar">
+      <button class="btn primary" id="bTune">빠른 조정 적용</button>
+      <button class="btn ghost" id="bTuneReset">모두 1.00으로</button>
+    </div>
+  </div>
+</details>
+
+<details class="part" id="pAdv">
+  <summary>빠른 조정 · 고급 <span class="cnt" id="cAdv"></span></summary>
+  <div class="body">
+    <div id="knobsAdv"></div>
+    <div class="bar">
+      <button class="btn primary" id="bTune2">빠른 조정 적용</button>
+    </div>
+  </div>
+</details>
+
+<details class="part" id="pDetail">
+  <summary>세부 값 (엔진 값 하나하나) <span class="cnt" id="cDetail"></span></summary>
+  <div class="body">
+    <div class="hint">원하는 묶음만 펼쳐서 값을 직접 넣어요. 빈칸 = 바꾸지 않음. "기준"은 고른 팩의 값(팩이 없으면 원본)이에요. 세부 값은 빠른 조정보다 나중에 적용돼서 그 값 그대로 들어가요.</div>
+    <div class="bar">
+      <input type="text" class="dinp" style="text-align:left;padding:10px 12px;max-width:none;flex:1" id="iSearch" placeholder="값 이름 검색 (예: 프리킥, 속도, 압박, 태클)">
+      <button class="btn ghost" id="bSearch">검색</button>
+      <button class="btn ghost" id="bSearchClear">닫기</button>
+    </div>
+    <div id="searchRes"></div>
+    <div id="sections"></div>
+    <div class="bar">
+      <button class="btn primary" id="bDetail">세부 값 적용</button>
+      <button class="btn ghost" id="bDetailClear">세부 값 모두 지우기</button>
+    </div>
+  </div>
+</details>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+let knobs = [], tune = {}, detail = {}, sections = [], busy = false;
+const loaded = {};
+
+function say(t, bad) { $('msg').textContent = t || ''; $('msg').style.color = bad ? 'var(--red)' : ''; }
+const fmt = (v) => v == null ? '-' : (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : Number(v).toFixed(4).replace(/0+$/, ''));
+
+async function act(label, fn) {
+  if (busy) return;
+  busy = true; say(label + ' 중...');
+  try { const r = await fn(); say(label + ' 끝' + (r && r.written != null ? ' (칸 ' + r.written + '개)' : '')); if (r && r.notes && r.notes.length) showNotes($('preview'), r.notes); await refresh(); }
+  catch (e) { say(String(e.message || e), true); }
+  finally { busy = false; }
+}
+
+function showNotes(box, notes, changes, highlights) {
+  box.textContent = '';
+  if (highlights && highlights.length) {
+    const h = el('table');
+    highlights.forEach(x => { const tr = el('tr'); tr.appendChild(el('td', '', x.label)); tr.appendChild(el('td', 'num', fmt(x.orig) + ' → ' + fmt(x.new))); h.appendChild(tr); });
+    box.appendChild(el('div', 'hint', '대표 값 (원본 → 이 팩)')); box.appendChild(h);
+  }
+  if (changes) {
+    const t = el('table');
+    Object.keys(changes).forEach(k => { const tr = el('tr'); tr.appendChild(el('td', '', k)); tr.appendChild(el('td', 'num', '바뀐 값 ' + changes[k])); t.appendChild(tr); });
+    box.appendChild(t);
+  }
+  (notes || []).forEach(n => {
+    const d = el('div', 'note');
+    d.appendChild(el('span', 'lv ' + n[0], { info: '안내', warn: '주의', skip: '못 넣음' }[n[0]] || n[0]));
+    d.appendChild(document.createTextNode(n[1]));
+    box.appendChild(d);
+  });
+}
+
+// ---- 세부 값 검색: 묶음을 펼치지 않고 이름으로 바로 찾는다
+async function doSearch() {
+  const q = $('iSearch').value.trim(), box = $('searchRes'); box.textContent = '';
+  if (!q) return;
+  box.appendChild(el('div', 'empty', '찾는 중...'));
+  let items;
+  try { items = await m24.call('search', q); } catch (e) { box.textContent = String(e.message || e); return; }
+  box.textContent = '';
+  box.appendChild(el('div', 'hint', items.length ? ("'" + q + "' 결과 " + items.length + '개' + (items.length >= 80 ? ' (앞의 80개만)' : '') + ' · 값을 넣고 아래 "세부 값 적용"을 눌러요') : ("'" + q + "'에 맞는 값이 없어요")));
+  let last = null;
+  items.forEach(it => { if (it.section !== last) { last = it.section; box.appendChild(el('div', 'hint', it.section)); } box.appendChild(detailRow(it)); });
+}
+$('bSearch').onclick = doSearch;
+$('iSearch').onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
+$('bSearchClear').onclick = () => { $('iSearch').value = ''; $('searchRes').textContent = ''; };
+
+// ---- 빠른 조정
+function knobRow(k) {
+  const row = el('div', 'knob');
+  const left = el('div'); left.appendChild(el('div', 'name', k.label)); left.appendChild(el('div', 'hint', k.help));
+  const r = document.createElement('input'); r.type = 'range'; r.min = k.min; r.max = k.max; r.step = 0.01;
+  const v = tune[k.key] != null ? tune[k.key] : 1; r.value = v;
+  const out = el('div', 'val' + (Math.abs(v - 1) > 1e-9 ? ' changed' : ''), Number(v).toFixed(2));
+  r.oninput = () => { const x = Number(r.value); out.textContent = x.toFixed(2); out.className = 'val' + (Math.abs(x - 1) > 1e-9 ? ' changed' : ''); if (Math.abs(x - 1) < 1e-9) delete tune[k.key]; else tune[k.key] = x; counts(); };
+  row.appendChild(left); row.appendChild(r); row.appendChild(out);
+  return row;
+}
+
+function renderKnobs() {
+  const basic = $('knobs'); basic.textContent = '';
+  const adv = $('knobsAdv'); const openGroups = new Set([...adv.querySelectorAll('details[open]')].map(d => d.dataset.g)); adv.textContent = '';
+  let grp = null, box = null;
+  knobs.forEach(k => {
+    if (k.level !== 'adv') {
+      if (k.group !== grp) { grp = k.group; basic.appendChild(el('div', 'sec-title', grp)); }
+      basic.appendChild(knobRow(k));
+    } else {
+      if (k.group !== grp) {
+        grp = k.group;
+        const d = el('details', 'sub'); d.dataset.g = grp; if (openGroups.has(grp)) d.open = true;
+        const sm = el('summary', '', grp.replace('고급 · ', '')); sm.appendChild(el('span', 'cnt')); d.appendChild(sm);
+        adv.appendChild(d); box = d;
+      }
+      box.appendChild(knobRow(k));
+    }
+  });
+  counts();
+}
+
+// ---- 세부 값
+function renderSections() {
+  const box = $('sections'); box.textContent = '';
+  sections.forEach(s => {
+    const d = el('details', 'sub'); d.dataset.s = s.id;
+    const sm = el('summary', '', s.label); sm.appendChild(el('span', 'cnt')); d.appendChild(sm);
+    const body = el('div'); d.appendChild(body);
+    d.addEventListener('toggle', () => { if (d.open && !loaded[s.id]) loadSection(s, body); });
+    box.appendChild(d);
+  });
+  counts();
+}
+
+function detailRow(it) {
+    const row = el('div', 'drow');
+    const left = el('div'); left.appendChild(el('div', 'name', it.label));
+    const meta = el('div', 'key'); meta.appendChild(document.createTextNode(it.key + ' · 원본 ' + fmt(it.orig)));
+    if (it.base !== it.orig) { meta.appendChild(document.createTextNode(' / 기준 ')); meta.appendChild(el('span', 'changed', fmt(it.base))); }
+    left.appendChild(meta); row.appendChild(left);
+    const inp = document.createElement('input'); inp.type = 'number'; inp.className = 'dinp';
+    inp.step = it.kind === 'mul' ? '0.01' : (it.kind === 'int' ? '1' : 'any');
+    inp.placeholder = fmt(it.base);
+    if (detail[it.id] != null) { inp.value = detail[it.id]; inp.classList.add('changed'); }
+    inp.onchange = () => { const v = inp.value.trim(); if (v === '') { delete detail[it.id]; inp.classList.remove('changed'); } else { detail[it.id] = Number(v); inp.classList.add('changed'); } counts(); };
+    row.appendChild(inp);
+    return row;
+}
+
+async function loadSection(s, body) {
+  body.textContent = '';
+  body.appendChild(el('div', 'hint', s.hint));
+  body.appendChild(el('div', 'empty', '불러오는 중...'));
+  let items;
+  try { items = await m24.call('detail', s.id); } catch (e) { body.lastChild.textContent = String(e.message || e); return; }
+  loaded[s.id] = items;
+  body.removeChild(body.lastChild);
+  const head = el('div', 'drow head'); head.appendChild(el('div', '', '이름 · 원본 / 기준')); head.appendChild(el('div', 'num', '새 값')); body.appendChild(head);
+  items.forEach(it => body.appendChild(detailRow(it)));
+  const bar = el('div', 'bar'); const clr = el('button', 'btn ghost', '이 묶음 비우기');
+  clr.onclick = () => { items.forEach(it => delete detail[it.id]); loaded[s.id] = null; loadSection(s, body); counts(); };
+  bar.appendChild(clr); body.appendChild(bar);
+}
+
+function counts() {
+  const nb = knobs.filter(k => k.level !== 'adv' && tune[k.key] != null).length;
+  const na = knobs.filter(k => k.level === 'adv' && tune[k.key] != null).length;
+  $('cQuick').textContent = nb ? '바꾼 것 ' + nb : '';
+  $('cAdv').textContent = na ? '바꾼 것 ' + na : '';
+  document.querySelectorAll('#knobsAdv details.sub').forEach(d => { const n = knobs.filter(k => k.group === d.dataset.g && tune[k.key] != null).length; d.querySelector('.cnt').textContent = n ? n : ''; });
+  const ids = Object.keys(detail);
+  $('cDetail').textContent = ids.length ? '바꾼 것 ' + ids.length : '';
+  document.querySelectorAll('#sections details.sub').forEach(d => {
+    const sec = sections.find(x => x.id === d.dataset.s) || {};
+    const n = (sec.ids || []).filter(i => detail[i] != null).length;
+    d.querySelector('.cnt').textContent = n ? n : '';
+  });
+}
+
+async function refresh() {
+  const s = await m24.call('status');
+  $('vGame').textContent = s.connected ? (s.date || '연결됨') : '연결 안 됨';
+  $('vPack').textContent = s.pack ? s.pack.name : '원본';
+  $('vTune').textContent = Object.keys(s.tune || {}).length ? Object.keys(s.tune).length + '개' : '없음';
+  $('vDetail').textContent = Object.keys(s.detail || {}).length ? Object.keys(s.detail).length + '개' : '없음';
+  $('vLast').textContent = (s.last && s.last.result) || '';
+  loadPresets().catch(() => {});
+  if (!busy) { tune = Object.assign({}, s.tune || {}); detail = Object.assign({}, s.detail || {}); renderKnobs(); }
+  // 팩이 바뀌면 "기준" 값이 바뀌니 펼친 세부 묶음을 다시 불러온다
+  Object.keys(loaded).forEach(k => loaded[k] = null);
+  document.querySelectorAll('#sections details.sub[open]').forEach(d => { const s2 = sections.find(x => x.id === d.dataset.s); loadSection(s2, d.lastChild); });
+  counts();
+  const p = await m24.call('packs');
+  $('vPacksDir').textContent = '팩 폴더: ' + p.dir + ' (팩마다 폴더 하나를 넣어 두면 여기에 나와요)';
+  const box = $('packs'); box.textContent = '';
+  if (!p.packs.length) box.appendChild(el('div', 'empty', '팩 폴더가 비어 있어요. 아래에 경로를 직접 넣어도 돼요.'));
+  p.packs.forEach(pk => {
+    const row = el('div', 'pack'); row.appendChild(el('div', 'name', pk.name));
+    const b = el('div');
+    const pv = el('button', 'btn ghost', '미리보기'); pv.onclick = () => { $('iPath').value = pk.path; preview(); };
+    const ap = el('button', 'btn primary', '적용'); ap.onclick = () => act("'" + pk.name + "' 적용", () => m24.call('apply', pk.path));
+    b.appendChild(pv); b.appendChild(ap); row.appendChild(b); box.appendChild(row);
+  });
+}
+
+async function loadPresets() {
+  const r = await m24.call('presets');
+  $('vPresetDir').textContent = '프리셋 폴더: ' + r.dir + ' (이 폴더의 .json 파일을 다른 사람에게 주면 돼요)';
+  const box = $('presets'); box.textContent = '';
+  if (!r.presets.length) box.appendChild(el('div', 'empty', '저장한 프리셋이 없어요.'));
+  r.presets.forEach(pr => {
+    const row = el('div', 'pack'); row.appendChild(el('div', 'name', pr.name + '  (조정 ' + pr.tune + ' · 세부 값 ' + pr.detail + ')'));
+    const b = el('div');
+    const ap = el('button', 'btn primary', '불러오기'); ap.onclick = () => act("프리셋 '" + pr.name + "'", () => m24.call('preset_apply', pr.name));
+    const dl = el('button', 'btn ghost', '삭제'); dl.onclick = async () => { await m24.call('preset_delete', pr.name); await loadPresets(); };
+    b.appendChild(ap); b.appendChild(dl); row.appendChild(b); box.appendChild(row);
+  });
+}
+$('bPresetSave').onclick = () => act('프리셋 저장', async () => { await m24.call('preset_save', $('iPresetName').value); $('iPresetName').value = ''; await loadPresets(); return {}; });
+$('bPresetImport').onclick = () => act('프리셋 가져오기', async () => { await m24.call('preset_import', $('iPresetPath').value); $('iPresetPath').value = ''; await loadPresets(); return {}; });
+
+async function preview() {
+  const path = $('iPath').value.trim(); if (!path) { say('경로를 넣어 주세요', true); return; }
+  say('미리보기 중...');
+  try { const r = await m24.call('preview', path); showNotes($('preview'), r.notes, r.changes, r.highlights); say('미리보기: 들어 있는 표 ' + r.tables.join(', ')); }
+  catch (e) { say(String(e.message || e), true); }
+}
+
+$('bPreview').onclick = preview;
+$('bApply').onclick = () => { const p = $('iPath').value.trim(); if (!p) { say('경로를 넣어 주세요', true); return; } act('팩 적용', () => m24.call('apply', p)); };
+$('bUnpack').onclick = () => act('팩 빼기', () => m24.call('unpack'));
+$('bRestore').onclick = () => act('원본으로', () => m24.call('restore'));
+$('bTune').onclick = $('bTune2').onclick = () => act('빠른 조정 적용', () => m24.call('tune', tune));
+$('bTuneReset').onclick = () => { tune = {}; renderKnobs(); };
+$('bDetail').onclick = () => act('세부 값 적용', () => m24.call('detail_set', detail));
+$('bDetailClear').onclick = () => { detail = {}; Object.keys(loaded).forEach(k => loaded[k] = null); renderSections(); };
+
+(async () => { knobs = await m24.call('knobs'); sections = await m24.call('sections'); renderSections(); await refresh(); })();
+</script>
+</body>
+</html>

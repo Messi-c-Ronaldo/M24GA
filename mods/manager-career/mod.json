@@ -1,0 +1,32 @@
+{
+  "$schema": "../../docs/mod.schema.json",
+  "id": "manager-career",
+  "name": "감독 커리어",
+  "version": "0.6.0",
+  "description": "내 감독의 선수 시절 경력(뛴 구단·기간·출전·골·A매치·포지션·좋아하는 구단)을 게임 안 창에서 자세히 적어요. 고른 '과거 선수 경력' 단계를 게임에 반영하고(구단 면접 등이 이 값을 씀), 적은 경력과 단계가 크게 다르면 알려 줘요. 적은 경력은 세이브마다 보관해요.",
+  "author": "McR",
+  "license": "GPL-3.0-or-later",
+  "core": ">=0.29.0",
+  "js": "mod.js",
+  "python": "python/main.py",
+  "default_enabled": false,
+  "capabilities": [
+    "ui.panel",
+    "read.me",
+    "read.field",
+    "read.save",
+    "read.date",
+    "event.saveLoaded",
+    "event.frame",
+    "write.field",
+    "write.relation",
+    "read.data",
+    "pc.python"
+  ],
+  "settings": [
+    {"key": "open", "type": "int", "label": "경력 창 열기 (숫자를 바꾸면 열림)", "default": 0, "min": 0, "max": 1000000, "group": "창", "help": "값을 바꿀 때마다 게임 안에 경력 창을 열어요. 게임이 멈춘 화면에서 열려요 (CLI: set manager-career open 1)"},
+    {"key": "auto_open", "type": "bool", "label": "새 세이브에서 자동으로 열기", "default": true, "group": "창", "help": "이 세이브에 적은 경력이 없으면, 게임을 불러온 뒤 한 번 자동으로 창을 열어요"},
+    {"key": "apply_level", "type": "bool", "label": "고른 단계를 게임에 반영", "default": true, "group": "게임 반영", "help": "저장할 때 '과거 선수 경력' 단계를 감독에게 써요 (쓰기 기록이 남고 앱에서 되돌릴 수 있어요). 끄면 경력만 보관해요"},
+    {"key": "apply_clubs", "type": "bool", "label": "좋아하는/싫어하는 구단·사람을 게임에 반영", "default": true, "group": "게임 반영", "help": "저장할 때 적은 좋아하는/싫어하는 구단과 사람(옛 동료)을 감독의 관계로 넣어요 (구단은 정식/짧은 이름, 사람은 게임에 나오는 이름). 감독 만들 때 고른 구단은 건드리지 않아요. 기록이 남고 되돌릴 수 있어요"}
+  ]
+}

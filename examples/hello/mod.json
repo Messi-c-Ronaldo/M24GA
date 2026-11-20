@@ -1,0 +1,24 @@
+{
+  "id": "hello-example",
+  "name": "Hello 예제",
+  "version": "1.0.0",
+  "description": "모드 만드는 법을 보여 주는 예제예요. 게임은 건드리지 않고, 소셜 패널이 그려진 횟수를 세고 인사말을 만들어요.",
+  "author": "McR",
+  "license": "GPL-3.0-or-later",
+  "core": ">=0.5.0",
+  "js": "mod.js",
+  "python": "python/main.py",
+  "ui": "ui/index.html",
+  "default_enabled": false,
+  "capabilities": ["event.socialPanel", "event.dateChanged", "read.date", "read.save", "pc.python"],
+  "settings": [
+    {"key": "greeting", "type": "text", "label": "인사말", "default": "안녕하세요", "group": "인사", "help": "text 항목: 한 줄 입력"},
+    {"key": "shout", "type": "bool", "label": "크게 외치기", "default": false, "group": "인사", "help": "bool 항목: 스위치. 켜면 끝에 느낌표가 붙어요"},
+    {"key": "repeat", "type": "int", "label": "반복 횟수", "default": 1, "min": 1, "max": 5, "group": "인사", "help": "int 항목: 숫자 입력 (범위 검사)"},
+    {"key": "tone", "type": "select", "label": "말투", "default": "plain", "group": "모양",
+      "options": [{"value": "plain", "label": "평범"}, {"value": "polite", "label": "공손"}, {"value": "casual", "label": "친근"}],
+      "help": "select 항목: 4개 이하면 분할 버튼"},
+    {"key": "mood", "type": "number", "label": "기분", "default": 0.5, "min": 0, "max": 1, "percent": true, "group": "모양", "help": "min/max가 있는 number 항목: 슬라이더 (percent면 %로 표시)"},
+    {"key": "note", "type": "text", "label": "메모", "default": "", "multiline": true, "group": "모양", "help": "multiline: 여러 줄 입력"}
+  ]
+}

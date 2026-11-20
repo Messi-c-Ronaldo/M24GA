@@ -1,0 +1,554 @@
+{
+  "$comment": "M24GA 함수 등록부 (M22). 게임 함수를 이름으로 등록해 모드가 api.hook('이름', {before, after})로 끼어든다. FM24 Epic 2026-10-24 빌드 기준. rva = fm.exe 기준 함수 시작, sig = 시작 + off 위치의 바이트(16진 글, 후킹이 덮어쓰는 앞 16바이트는 피해 off 0x10) — 다르면 그 함수는 걸지 않는다. args = 인자 형식(ptr/i32/u32/i64/bool, 앞에서부터, x64 정수 인자: rcx rdx r8 r9 그 뒤 스택), argNames = 인자 뜻, ret = 반환 형식(void/ptr/i32/u32/i64/bool; 실수 반환은 다루지 않음), hook = observe(보기만) / modify(ev.setArg·ev.setRet 허용), owner = core면 코어가 이미 걸어 둔 함수라 모드는 api.on 이벤트를 쓴다, thread = 불리는 스레드, verified = 인자 뜻을 확인했나, source = 근거 로그. 찾는 법: CLI watch-write(그 칸에 쓰는 함수), watch-call(인자·호출자 관찰), REA 디컴파일. docs/FUNCTIONS.md는 tools/m24.py caps로 만든다",
+  "build": "FM24 Epic, fm.exe 2026-10-24 빌드",
+  "functions": {
+    "ui.socialPanelUpdate": {
+      "rva": "0x61ae70",
+      "sig": {
+        "off": "0x10",
+        "hex": "0100004889ce31d2e85362b00084c00f"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "소셜 패널 (this)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "event": "socialPanel",
+      "thread": "ui",
+      "desc": "소셜피드 글 한 칸을 갱신(그리기)한다. 코어가 걸어 둔 함수라 모드는 api.on('socialPanel')을 쓴다",
+      "source": "소셜피드 로그 10, 27",
+      "verified": true
+    },
+    "ui.frameTick": {
+      "rva": "0x1049430",
+      "sig": {
+        "off": "0x10",
+        "hex": "4889cfe8e8d58600488b0d21ba3105e8"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "전역 앱 객체 (fm+0x6365198)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "event": "frame",
+      "thread": "ui",
+      "desc": "화면 스레드의 메인 루프가 매 프레임 부른다 (초당 약 20번). 코어가 걸어 둔 함수라 모드는 api.on('frame')을 쓴다",
+      "source": "소셜피드 로그 27",
+      "verified": true
+    },
+    "ui.continueGlobal": {
+      "rva": "0xbaa390",
+      "sig": {
+        "off": "0x10",
+        "hex": "544e4f434531c0e8f42e4a00488d7c24"
+      },
+      "args": [],
+      "argNames": [],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "전역 'conE' 알림(CONT, evtg 'glob')을 큐에 넣는다 = 순수 \"계속\"(진행하기) 상태에서만 진행된다. M37부터 코어는 쓰지 않는다 (`act continue`는 ui.continueHandler로 게임의 계속 처리 전체를 부른다)",
+      "source": "M28 (Antigravity, 디컴파일), M29 등록·서명 ('CONT' 상수가 서명 안에 있음)",
+      "verified": true
+    },
+    "match.clientTacticEvent": {
+      "rva": "0x223200",
+      "sig": {
+        "off": "0x10",
+        "hex": "4d89c789d64889cf4c8d71c881fa6b64"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "ptr"
+      ],
+      "argNames": [
+        "CLIENT_TACTIC +0x38 (이벤트 처리 부분)",
+        "이벤트 4글자 코드",
+        "이벤트 기록 (INST는 안 씀)"
+      ],
+      "ret": "bool",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "CLIENT_TACTIC(경기 전 팀 선발의 전술 객체)의 이벤트 처리기 (+0x38 부분 vtable +0x28). 'INST'를 받으면 즉석 결과(fm+0x277b10, 이 경로에서만 불림)를 실행한다. 스킨의 '즉석 결과'(id INST) 버튼이 결국 보내는 이벤트라서, 코어가 CLI `act instant`에서 직접 보내면 버튼이 없는 스킨에서도 된다",
+      "source": "M33 ('INST' 상수 2곳: cmp esi,'INST' @fm+0x223a73 이 함수 / mov r8d,'INST' @fm+0xb0dcfd 이벤트 보내는 쪽)",
+      "verified": false
+    },
+    "player.value": {
+      "rva": "0x21953e0",
+      "sig": {
+        "off": "0x10",
+        "hex": "0100000f29b424100100004489cd4489"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "i32",
+        "u32",
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "선수 (db::PLAYER)",
+        "평가하는 구단 (0 = 구단 없이, 요구 금액 계산은 0)",
+        "? (관찰: 늘 -1)",
+        "플래그 (관찰: 0x20, 하위 16비트만 씀)",
+        "이유 기록기 std::vector<{u32 코드, i32 값, i32 값2}> 또는 0",
+        "? (관찰: 0)"
+      ],
+      "ret": "i32",
+      "hook": "modify",
+      "thread": "game",
+      "scale": {
+        "key": 0,
+        "min": 1,
+        "max": 300000000
+      },
+      "desc": "선수 가치(몸값) 계산의 중심 함수. 요구 금액 일괄 계산(player.updateAskingPrice가 +0x1d0에 씀)과 AI 구단의 이적 평가가 모두 이 함수를 쓴다 (게임 하루 수만 번). 반환 = 내부 돈 단위 가치 (원화 = ×1664.7, 게임 상한 3억). 이유 기록기를 주면 단계별 이유 코드를 남긴다 (몸값모드 V03: 1 기본, 5 팔지 않음 3억, 11 핵심 선수 할증, 21 파는 쪽 계획 할증, 15·27 상한). 코어 playerValue()가 부르고, api.scale로 선수별 배율을 곱할 수 있다",
+      "source": "몸값모드 V03 (요구 금액 일괄 계산 fm+0x3701677에서 부름, 이유 기록기 fm+0x26e0ab0 36곳), V05 (이유 코드 표)",
+      "verified": true
+    },
+    "player.updateAskingPrice": {
+      "rva": "0x3700780",
+      "sig": {
+        "off": "0x10",
+        "hex": "01000066440f7fbc24a001000066440f"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "SHORTLIST_MANAGER 객체 (this로 보임)",
+        "? (관찰: 0)",
+        "? (관찰: 0)",
+        "? (관찰: 2035, 0x10100, 0x7f3 — 매번 다름)"
+      ],
+      "ret": "void",
+      "hook": "observe",
+      "thread": "game",
+      "desc": "선수들의 요구 금액(player.askingPrice, +0x1d0)을 한꺼번에 다시 계산하는 함수 (게임 하루에 한 번쯤, 관찰 5분에 2번, 한 번에 10~13ms, 게임 스레드). 안쪽 반복에서 선수 하나마다 기본값을 쓴 뒤 할증(예: ×1.1)을 다시 쓴다 (그때 레지스터: 선수, db::CLUB, db::FULL_CONTRACT). 선수 한 명 단위로 바꾸려면 안쪽 처리 함수를 찾아야 한다",
+      "source": "M21 watch-write (쓴 곳 fm+0x3701691), M22 watch-call (rcx SHORTLIST_MANAGER, 부른 곳 fm+0x372e8db), M22 api.hook 실기(before/after 2번)",
+      "verified": false
+    },
+    "ui.continueKind": {
+      "rva": "0x21a230",
+      "sig": {
+        "off": "0x10",
+        "hex": "0000004989cf488b0d7ba214064885c9"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "CONTINUE_MANAGER (fm+0x6364ea0)"
+      ],
+      "ret": "i32",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "계속 버튼이 지금 어떤 상태인지(종류 번호) 계산한다. 게임이 상태가 바뀔 때마다 부르고(fm+0x79e56f0에서) 결과를 전역 속성 'cont'로 알린다 (스킨은 그 속성으로 버튼을 그린다). 코어가 화면 스레드에서 직접 불러 `ui state`의 kind로 준다 — 버튼 id(GCNT/MDSB)에 기대지 않는다",
+      "source": "M37 (계속 버튼 클릭 때 fm+0x1053920으로 나가는 'cttx'/'ctic'/'cont' 추적 -> fm+0x79e56f0 -> 이 함수)",
+      "verified": false
+    },
+    "ui.continueHandler": {
+      "rva": "0x217e30",
+      "sig": {
+        "off": "0x10",
+        "hex": "8d59f831f681fa535351520f8faf0000"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "ptr"
+      ],
+      "argNames": [
+        "CONTINUE_MANAGER +0x8 (이벤트 처리 부분)",
+        "이벤트 4글자 코드",
+        "이벤트 객체"
+      ],
+      "ret": "bool",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "CONTINUE_MANAGER의 이벤트 처리기 (+0x8 부분 vtable +0x28). 'CONT'를 받으면 handle_continue_game_action(fm+0x2194f0)을 실행한다 = 계속 버튼을 누른 것과 같은 일 (종류에 따라 진행 / 다음 읽기 / 수신함 / 답할 메일 열기). 코어가 CLI `act continue`에서 직접 보낸다 — 버튼 위젯(id GCNT/MDSB)을 찾지 않는다",
+      "source": "M37 (CONTINUE_MANAGER vtable fm+0x5603a28 +0x28, 'CONT' -> fm+0x2194f0 \"handle_continue_game_action\" 문자열)",
+      "verified": false
+    },
+    "ui.eventNew": {
+      "rva": "0x104d2a0",
+      "sig": {
+        "off": "0x10",
+        "hex": "4889cb4c8d7424404c89f1e810019300"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "u32"
+      ],
+      "argNames": [
+        "이벤트 객체를 만들 자리 (0x38바이트 이상)",
+        "이벤트 4글자 코드",
+        "0"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "desc": "sitoolkit 이벤트 객체를 만든다 (기록 + 이벤트 코드 +0x30). 코어가 내부 이벤트를 보낼 때 쓴다. 다 쓰면 ui.eventFree",
+      "source": "M37 (fm+0xbaa390 전역 계속이 쓰는 생성자)",
+      "verified": false
+    },
+    "ui.eventFree": {
+      "rva": "0x19732f0",
+      "sig": {
+        "off": "0x10",
+        "hex": "6c243048c745f8feffffff488b394885"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "이벤트 객체 (ui.eventNew로 만든 것)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "desc": "ui.eventNew로 만든 이벤트 객체(기록)를 정리한다",
+      "source": "M37",
+      "verified": false
+    },
+    "ui.holidayStart": {
+      "rva": "0x7a19a50",
+      "sig": {
+        "off": "0x10",
+        "hex": "448944242cc681c600000001448b0d3d"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "u32",
+        "ptr",
+        "i32"
+      ],
+      "argNames": [
+        "CONTINUE_MANAGER (fm+0x6364ea0)",
+        "fm+0x642fad8 (게임이 넘기는 고정 값)",
+        "휴가 옵션 비트 (0x2 모든 제의 거절, 0x4 요구 금액 맞으면 수락, 0x1000 모든 제의 수락, 0x4000 방출 대상만, 0x40 현재 전술, 0x80 현재 선발 명단, 0x200 날짜에 복귀, 0x10000 며칠 뒤 복귀, 0x20000 무기한)",
+        "복귀 날짜 u32 포인터 (연도<<16 | 연중 일수)",
+        "감독직 지원 옵션 (-1 = 안 함)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "휴가 가기. 휴가 창(GO_ON_HOLIDAY_DIALOG)의 '휴가 떠나기'가 부르는 함수로, 서버에 'GOHL' 메시지를 보낸다. 휴가 동안 수석코치가 경기·메일을 처리하며 날짜가 넘어간다. 코어가 CLI `act holiday`에서 직접 부른다 (스킨·화면 무관)",
+      "source": "M38 (휴가 창 이벤트 처리기 fm+0xeb5c0의 'hdoc' -> fm+0x21ea20(jmp) -> 이 함수, 'GOHL' 메시지. 옵션 비트는 fm+0x6f19700에서 체크 상자 id별로)",
+      "verified": false
+    },
+    "ui.strFromC": {
+      "rva": "0x197d540",
+      "sig": {
+        "off": "0x10",
+        "hex": "1cfbffff4889c748c744242000000000"
+      },
+      "args": [
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "게임 문자열 자리 (16바이트)",
+        "UTF-8 C 문자열"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "C 문자열로 게임 문자열 객체를 만든다 (참조 세는 문자열). 다 쓰면 ui.strFree",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true
+    },
+    "ui.strFree": {
+      "rva": "0x197cea0",
+      "sig": {
+        "off": "0x10",
+        "hex": "ffff4889ca488b09488b01ff50109048"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "게임 문자열 자리"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "ui.strFromC로 만든 게임 문자열을 놓는다",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true
+    },
+    "ui.recordWith": {
+      "rva": "0x19735e0",
+      "sig": {
+        "off": "0x10",
+        "hex": "00feffffff4c8945f889d74889ce4883"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "ptr"
+      ],
+      "argNames": [
+        "속성 묶음 자리 (0x18바이트 이상)",
+        "속성 4글자 코드 (예: file)",
+        "값 (게임 문자열)"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "속성 하나짜리 속성 묶음을 만든다. 다 쓰면 ui.eventFree(같은 정리 함수)",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true
+    },
+    "ui.dialogClass": {
+      "rva": "0xc48e0",
+      "sig": {
+        "off": "0x10",
+        "hex": "65488b142558000000488b0cca3b8138"
+      },
+      "args": [],
+      "argNames": [],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "sitoolkit::DIALOG 종류 정보 (전역 fm+0x6365658, 처음 부르면 스스로 등록)",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true
+    },
+    "ui.widgetCreate": {
+      "rva": "0x120d170",
+      "sig": {
+        "off": "0x10",
+        "hex": "4d89cf4d89c44889d64989ce488d4c24"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "화면 (GAME_SCREEN_CLIENT)",
+        "0",
+        "종류 정보",
+        "속성 묶음 (file = 패널 경로)"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "종류 정보와 속성으로 위젯(대화상자)을 만든다. 파일은 띄울 때 읽는다",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true
+    },
+    "ui.widgetSetOwner": {
+      "rva": "0xbe36860",
+      "sig": {
+        "off": "0x10",
+        "hex": "89ce488954242048894c2428807a2200"
+      },
+      "args": [
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "대화상자",
+        "주인 위젯 (뿌리 컨테이너)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "대화상자의 주인(이벤트를 받을 곳)을 정한다 (fm+0x10a8780은 이 함수로 바로 뛰는 디딤판)",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true
+    },
+    "ui.dialogShow": {
+      "rva": "0x10aaae0",
+      "sig": {
+        "off": "0x10",
+        "hex": "89d54889cee82606000048837e48000f"
+      },
+      "args": [
+        "ptr",
+        "bool",
+        "bool"
+      ],
+      "argNames": [
+        "대화상자",
+        "1",
+        "1"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "대화상자를 띄운다 (MODAL_SHEET에 붙이고 패널 파일을 읽어 위젯을 만든다)",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true
+    },
+    "ui.dialogHandler": {
+      "rva": "0x10a97e0",
+      "sig": {
+        "off": "0x10",
+        "hex": "0000000f29b424a00000004c89c389d5"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "ptr"
+      ],
+      "argNames": [
+        "대화상자",
+        "이벤트 4글자 코드",
+        "이벤트 객체"
+      ],
+      "ret": "bool",
+      "owner": "core",
+      "call": false,
+      "thread": "ui",
+      "desc": "sitoolkit::DIALOG의 이벤트 처리기 (vtable +0x28). 안쪽 위젯의 이벤트(click_event, select_event, changed_event)가 부모로 올라와 여기를 지난다. 코어가 게임 안 패널 이벤트를 받으려고 걸어 둔다",
+      "source": "M43 (일반 대화상자 열기, 게임 코드 fm+0xae71d0·fm+0xe67b50와 같은 순서, 실기 확인), M45",
+      "verified": true,
+      "event": "panel"
+    },
+    "person.relationAdd": {
+      "rva": "0x2164000",
+      "sig": {
+        "off": "0x10",
+        "hex": "0a4883f8360f87bf00000048b9010000"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "bool"
+      ],
+      "argNames": [
+        "사람의 관계 부분 (사람 감독이면 객체 +0x478, 그 +0x58 = 관계 배열 PERSON_PREFERENCES)",
+        "16바이트 관계 항목 {+0 대상, +8 0, +0xa 이유, +0xb 종류(3 좋아하는 구단, 4 싫어하는 구단, 1/2 사람), +0xc 정도, +0xd 0x4e, +0xf 0xff}",
+        "0"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "사람에게 관계(좋아하는/싫어하는 구단·사람) 하나를 더한다. 관계 배열이 없으면 만들고(PERSON_PREFERENCES), 너무 많으면 약한 사람 관계를 지운 뒤(fm+0x47d1420), 게임 할당기로 배열 끝에 넣는다(fm+0x2164170). 반환 = 넣은 항목 주소 (실패 0). 감독 만들기의 좋아하는 팀은 fm+0x2165e20(디딤판, 감독 +0x4f0, 구단, 0/1, 정도, 0)을 쓴다",
+      "source": "감독커리어모드 C05 (watch-write: 감독 +0x4d0을 처음 쓰는 fm+0x2163c20, 그 일반형. 실기: 싫어하는 구단 토트넘을 넣으면 게임 속성 Pdsc가 인정)",
+      "verified": true
+    },
+    "ui.searchBoxHandler": {
+      "rva": "0x8441bc0",
+      "sig": {
+        "off": "0x10",
+        "hex": "696e697f2a81fa525342440f84a60000"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "ptr"
+      ],
+      "argNames": [
+        "검색칸 (DB_RECORD_SEARCH_BOX)",
+        "이벤트 4글자 코드",
+        "이벤트 객체"
+      ],
+      "ret": "bool",
+      "owner": "core",
+      "call": false,
+      "thread": "ui",
+      "desc": "게임 검색칸(DB_RECORD_SEARCH_BOX, vtable fm+0x5664208 +0x28)의 이벤트 처리기. vtable 칸은 디딤판 fm+0x3d9850(jmp)을 가리키고, 여기가 실제 함수다. 글을 칠 때마다 'SeRq'(검색 요청)를 받는다 -> 코어가 지금 쓰는 칸을 기억한다 (게임 안 패널의 person/club 칸)",
+      "source": "C09 (게임 안 패널에 넣은 검색칸, 실기: 손흥·파울리·토트 검색)",
+      "verified": true,
+      "event": "panel"
+    },
+    "ui.searchListHandler": {
+      "rva": "0x400170",
+      "sig": {
+        "off": "0x10",
+        "hex": "89cf81fa6d64736d7e3731ed81fb6b73"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "ptr"
+      ],
+      "argNames": [
+        "후보 목록 (GAME_PREDICTIVE_SEARCH_LIST)",
+        "이벤트 4글자 코드",
+        "이벤트 객체"
+      ],
+      "ret": "bool",
+      "owner": "core",
+      "call": false,
+      "thread": "ui",
+      "desc": "검색칸이 띄우는 후보 목록(GAME_PREDICTIVE_SEARCH_LIST, vtable fm+0x566c488 +0x28)의 이벤트 처리기. 줄을 고르면 'itsl'이 오고 이벤트 기록 slct.item 값(+0x68)에 고른 줄의 ID가 있다 (사람 0x01xxxxxx, 구단 0x03xxxxxx = 구단 번호, 머리 줄은 'NULL')",
+      "source": "C09 (실기: 손흥민 p95264, 파울리뉴 s34250·p28722, 토트넘 홋스퍼 0x030001b6)",
+      "verified": true,
+      "event": "panel"
+    }
+  },
+  "gates": {
+    "valuation.squadPremiumHumanAsAi": {
+      "desc": "선수 가치 계산의 '핵심 선수 할증'(이유 코드 11, fm+0x21ac5f0) 안에서만, 구단 감독이 사람인지 묻는 캐스트(db::HUMAN_NON_PLAYER vtable +0x6e0)가 null(= AI 감독)을 돌려주게 한다. AI 구단 선수는 구단의 스쿼드 계획에 따라 ×1.1~×2.0 할증을 받는데, 사람 구단 선수는 이 검사에서 빠져서 할증이 없다 (FM24 버그). 할증 함수 밖과 다른 스레드는 그대로",
+      "scope": {
+        "rva": "0x21ac5f0",
+        "sig": {
+          "off": "0x10",
+          "hex": "200f84460200004889cf488b084885c9"
+        }
+      },
+      "vtable": "0x5a6a388",
+      "cls": "db::HUMAN_NON_PLAYER",
+      "slot": "0x6e0",
+      "impl": {
+        "rva": "0x258f630",
+        "hex": "31c02b41fc4898488d8401b0fbffffc3"
+      },
+      "answer": "null",
+      "source": "몸값모드 V03 (이유 코드 기록기로 할증 함수 찾기, 분기 추적, 실험 4: 내 구단 1군 7명 ×1.5~×2.0, AI 선수 변화 없음)",
+      "verified": true
+    },
+    "valuation.sellerPlanHumanAsAi": {
+      "desc": "다른 구단이 선수 가치를 매길 때(가치 계산 2번째 인자 = 평가하는 구단) 파는 구단의 스쿼드 계획 할증(이유 코드 21, fm+0x21ad890) 안에서만, 파는 구단 감독이 사람인지 묻는 캐스트(db::HUMAN_NON_PLAYER vtable +0x6e0)가 null(= AI 감독)을 돌려주게 한다. AI 구단 선수는 계획상 핵심이면 ×1.5를 받는데, 사람 구단 선수는 이 검사에서 빠진다 (FM24 버그, AI 이적 제안 금액에 들어감). 같은 칸의 다른 게이트와 함께 걸 수 있다",
+      "scope": {
+        "rva": "0x21ad890",
+        "sig": {
+          "off": "0x10",
+          "hex": "4885d20f84220200004889cb488b4108"
+        }
+      },
+      "vtable": "0x5a6a388",
+      "cls": "db::HUMAN_NON_PLAYER",
+      "slot": "0x6e0",
+      "impl": {
+        "rva": "0x258f630",
+        "hex": "31c02b41fc4898488d8401b0fbffffc3"
+      },
+      "answer": "null",
+      "source": "몸값모드 V05 (이유 코드 비교: AI 구매 구단이 평가할 때 내 선수만 21에서 그대로, 실험 E2: 내 1군 ×1.5, 이 함수의 0x6e0 검사 하나)",
+      "verified": true
+    }
+  }
+}

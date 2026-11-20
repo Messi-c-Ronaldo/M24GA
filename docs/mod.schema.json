@@ -1,0 +1,251 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "M24GA mod.json",
+  "description": "M24GA 모드의 mod.json. 편집기(VS Code 등)에서 자동완성과 오류 표시를 받으려면 mod.json 맨 위에 \"$schema\": \"<이 파일 경로>\"를 적으세요. 더 자세한 검사는 python tools/m24.py validate <모드폴더>.",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+      "description": "소문자·숫자·-·_, 최대 64자. 설정과 데이터 폴더 이름에 쓰이니 정한 뒤에는 바꾸지 마세요."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "앱에 보이는 이름"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?([-+].+)?$",
+      "description": "예: 1.0.0"
+    },
+    "description": {
+      "type": "string",
+      "description": "앱 정보 탭에 보이는 한 줄 설명"
+    },
+    "author": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string",
+      "description": "예: GPL-3.0-or-later (코어가 GPL-3.0이라 호환 라이선스를 권장)"
+    },
+    "core": {
+      "type": "string",
+      "pattern": "^\\s*(>=|==|=)?\\s*\\d+(\\.\\d+){0,2}\\s*$",
+      "description": "필요한 코어 버전. 예: \">=0.2.0\". api.send/recv와 ctx.recv/post는 0.2.0부터, api.onUnload/alive는 0.3.0부터."
+    },
+    "js": {
+      "type": "string",
+      "default": "mod.js",
+      "description": "게임 안에서 도는 JS 파일 (registerMod를 쓰지 않는다)"
+    },
+    "python": {
+      "type": "string",
+      "pattern": "\\.py$",
+      "description": "PC 쪽 Python 진입 파일. run(ctx)가 있어야 한다. 예: python/main.py"
+    },
+    "ui": {
+      "type": "string",
+      "description": "앱 안 모드창 HTML. Python의 ui_<이름>() 함수와 m24.call('<이름>')으로만 통신한다. python이 필요하다."
+    },
+    "default_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "처음 설치했을 때 켜질지"
+    },
+    "data_dir": {
+      "type": "string",
+      "description": "모드 데이터 폴더 (기본 ~/m24ga_data/<id>)"
+    },
+    "migrate_from": {
+      "type": "string",
+      "description": "옛 데이터 폴더. 새 데이터 폴더가 비어 있으면 처음 켤 때 한 번 복사해 온다 (옛 폴더는 그대로 둔다)"
+    },
+    "settings_file": {
+      "type": "string",
+      "pattern": "^[^/\\\\]+\\.json$",
+      "default": "settings.json",
+      "description": "설정을 저장할 파일 이름 (데이터 폴더 안)"
+    },
+    "requires": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "필요한 Python 패키지 (없으면 앱이 경고)"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "socialPanel",
+          "frame"
+        ]
+      },
+      "description": "쓰는 이벤트 (참고용). 지금 있는 이벤트는 socialPanel, frame뿐이다."
+    },
+    "settings": {
+      "type": "array",
+      "description": "설정 항목. 앱의 설정 탭이 이 목록에서 자동으로 만들어진다.",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[^.]+(\\.[^.]+)*$",
+            "description": "점(.)으로 중첩 가능. 예: style.swear. 'a'와 'a.b'를 같이 둘 수 없다"
+          },
+          "type": {
+            "enum": [
+              "bool",
+              "int",
+              "number",
+              "text",
+              "password",
+              "select"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "화면에 보이는 이름"
+          },
+          "default": {
+            "description": "type에 맞는 기본값 (bool=true/false, int/number=숫자, text/password=글자, select=options 중 하나)"
+          },
+          "group": {
+            "type": "string",
+            "description": "같은 group끼리 한 카드로 묶인다 (기본 \"설정\")"
+          },
+          "help": {
+            "type": "string",
+            "description": "이름 아래 회색 설명"
+          },
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          },
+          "step": {
+            "type": "number",
+            "description": "슬라이더 간격 (number에 min과 max가 있을 때)"
+          },
+          "percent": {
+            "type": "boolean",
+            "description": "number(min=0, max=1)을 %로 보여 준다"
+          },
+          "multiline": {
+            "type": "boolean",
+            "description": "text를 여러 줄 입력으로"
+          },
+          "placeholder": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "minItems": 1,
+            "description": "select의 선택지. 글자 목록 또는 {value, label} 목록. 4개 이하는 분할 버튼.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "select"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "required": [
+                "options"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "event.socialPanel",
+          "event.frame",
+          "event.dateChanged",
+          "event.saveLoaded",
+          "read.data",
+          "read.news",
+          "read.me",
+          "read.fan",
+          "read.manager",
+          "read.date",
+          "read.save",
+          "read.player",
+          "read.rtti",
+          "read.field",
+          "read.panel",
+          "ui.social.text",
+          "ui.panel",
+          "pc.python",
+          "pc.file",
+          "raw.read",
+          "raw.call",
+          "hook.function",
+          "hook.gate",
+          "read.player.value",
+          "read.award",
+          "hook.scale",
+          "raw.hook",
+          "write.player.pa",
+          "write.field",
+          "write.relation",
+          "raw.write",
+          "read.engine",
+          "write.engine"
+        ]
+      },
+      "description": "쓰는 기능 (docs/CAPABILITIES.md). 코드에서 쓰는데 없으면 validate 오류. pc/raw/hook/write 등급은 사용자가 앱에서 허용해야 켜진다. 코어 0.4.0부터."
+    }
+  }
+}

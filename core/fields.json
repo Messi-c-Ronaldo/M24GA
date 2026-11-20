@@ -1,0 +1,1050 @@
+{
+  "$comment": "M24GA 필드 등록부 (M20). 게임 객체의 칸을 이름으로 읽고(getField) 쓴다(api.setField). FM24 Epic 2026-10-24 빌드 기준. kinds: 객체 종류 (cls = RTTI 클래스 이름, 물려받은 클래스도 맞음. key = 객체를 다시 찾는 필드, find = 코어가 key로 찾는 방법, check = 쓰기 전후로 같은지 확인하는 필드, name = 기록에 남길 이름 필드). fields: off = 객체 맨 앞에서의 위치(16진 글), via = 먼저 따라갈 포인터 칸들, alt = 하위 클래스별 다른 위치(null이면 그 클래스에는 없음), type = i8/u8/i16/u16/i32/u32/f32/f64/ptr/date/str/strref, map = 읽을 때 바꾸기(t20: 1~100 -> 1~20), to = ptr이 가리키는 종류, write = no(읽기만)/safe(api.setField로 쓰기, 확인·기록·되돌리기), cap = 쓰기에 필요한 기능(기본 write.field), range = 쓸 수 있는 범위, gte/lte = 다른 필드보다 크거나 같게/작거나 같게, verified = 게임 화면·다른 값과 맞춰 봤나, source = 근거 로그. docs/FIELDS.md는 tools/m24.py caps로 여기서 만든다",
+  "build": "FM24 Epic, fm.exe 2026-10-24 빌드",
+  "kinds": {
+    "player": {
+      "cls": "db::ACTUAL_PLAYER",
+      "label": "선수",
+      "key": "player.uid",
+      "find": "player",
+      "name": "player.name",
+      "check": [
+        "player.uid",
+        "player.dob"
+      ],
+      "desc": "선수 객체 (playerByUid/playerOf). 선수 겸 감독·스태프(db::ACTUAL_PLAYER_AND_NON_PLAYER)는 일부 칸 위치가 달라 alt에 적는다. 사람 데이터 객체(personOf, +0x278)를 넘겨도 된다"
+    },
+    "team": {
+      "cls": "db::TEAM",
+      "label": "팀",
+      "desc": "클럽의 팀(1군·리저브·유스) 또는 대표팀이 아닌 팀. clubs 표의 객체(CLUB_VT)와 같은 종류"
+    },
+    "club": {
+      "cls": "db::CLUB",
+      "label": "클럽",
+      "name": "club.name",
+      "desc": "클럽 객체 (myInfo().co, team.club)"
+    },
+    "human": {
+      "cls": "db::HUMAN_NON_PLAYER",
+      "label": "사람 감독",
+      "name": "human.firstName",
+      "desc": "사람이 조종하는 감독. findObj('human', 0) = 이 PC의 감독 (코어 0.24.0: 전역 HUMAN_NON_PLAYER_MANAGER fm+0x6365118 +0x18 목록, 쓰기 기록의 열쇠도 이 순번). 코어 newsCtx는 이 객체의 +0x450 위치",
+      "find": "human"
+    }
+  },
+  "fields": {
+    "player.uid": {
+      "kind": "player",
+      "off": "0x284",
+      "alt": {
+        "db::ACTUAL_PLAYER_AND_NON_PLAYER": "0x374"
+      },
+      "type": "u32",
+      "desc": "선수 고유 ID (UID). 게임 화면 ID와 같다",
+      "source": "M11, M13",
+      "verified": true,
+      "write": "no"
+    },
+    "player.dob": {
+      "kind": "player",
+      "off": "0x2bc",
+      "alt": {
+        "db::ACTUAL_PLAYER_AND_NON_PLAYER": "0x3ac"
+      },
+      "type": "date",
+      "desc": "생년월일",
+      "source": "M11, M13",
+      "verified": true,
+      "write": "no"
+    },
+    "player.name": {
+      "kind": "player",
+      "off": "0x2d0",
+      "alt": {
+        "db::ACTUAL_PLAYER_AND_NON_PLAYER": null
+      },
+      "type": "strref",
+      "desc": "이름 (게임 언어)",
+      "source": "M11, M13",
+      "verified": true,
+      "write": "no"
+    },
+    "player.ca": {
+      "kind": "player",
+      "off": "0x200",
+      "type": "i16",
+      "unit": "1~200",
+      "desc": "현재 능력 (CA). 히든 패널의 '현재 능력'과 같다 ('추천 현재 능력치'가 아님)",
+      "source": "M11, 몸값모드 V02",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pa": {
+      "kind": "player",
+      "off": "0x202",
+      "type": "i16",
+      "unit": "1~200",
+      "range": [
+        1,
+        200
+      ],
+      "gte": "player.ca",
+      "desc": "잠재 능력 (PA). 음수면 범위로 지정된 잠재력(-10 등)",
+      "source": "M11, M14 (쓰기 실기 149->150->149)",
+      "verified": true,
+      "write": "safe",
+      "cap": "write.player.pa"
+    },
+    "player.link": {
+      "kind": "player",
+      "off": "0x280",
+      "alt": {
+        "db::ACTUAL_PLAYER_AND_NON_PLAYER": null
+      },
+      "type": "u32",
+      "desc": "사람 링크 번호 (persons 표 번호, 글 링크의 idx). 사람 데이터 객체(+0x278)의 +8과 같다",
+      "source": "M13, M19",
+      "verified": true,
+      "write": "no"
+    },
+    "player.team": {
+      "kind": "player",
+      "off": "0x130",
+      "type": "ptr",
+      "to": "team",
+      "desc": "소속 팀 (없으면 null)",
+      "source": "P04 (playerTeam), M19 RTTI",
+      "verified": true,
+      "write": "no"
+    },
+    "player.intlData": {
+      "kind": "player",
+      "off": "0x120",
+      "type": "ptr",
+      "desc": "국가대표 자료 객체 (db::INTERNATIONAL_PLAYER_DATA)",
+      "source": "M19 RTTI",
+      "verified": false,
+      "write": "no"
+    },
+    "player.askingPrice": {
+      "kind": "player",
+      "off": "0x1d0",
+      "type": "i32",
+      "unit": "money",
+      "desc": "이적 시 요구 금액 / 몸값 (게임 내부 돈 단위, 원화 = ×1664.7). 0 이하면 없음. 몸값인지 요구 금액인지는 아직 확정 전",
+      "source": "몸값모드 V02 (화면 값 3/3 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.ambition": {
+      "kind": "player",
+      "off": "0x2f1",
+      "alt": {
+        "db::ACTUAL_PLAYER_AND_NON_PLAYER": "0x3e1"
+      },
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "야망 (숨은 성격)",
+      "source": "P03, P04 (playerTraits)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.professionalism": {
+      "kind": "player",
+      "off": "0x2f4",
+      "alt": {
+        "db::ACTUAL_PLAYER_AND_NON_PLAYER": "0x3e4"
+      },
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "프로의식 (숨은 성격)",
+      "source": "P03, P04 (playerTraits)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.determination": {
+      "kind": "player",
+      "off": "0x24a",
+      "type": "u8",
+      "map": "t20",
+      "unit": "1~20 (저장은 1~100)",
+      "desc": "결단력 (게임은 1~100으로 저장, (v+2)/5로 1~20에 맞춤)",
+      "source": "P03, P04 (playerTraits)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.workRate": {
+      "kind": "player",
+      "off": "0x234",
+      "type": "u8",
+      "map": "t20",
+      "unit": "1~20 (저장은 1~100)",
+      "desc": "활동량 (게임은 1~100으로 저장, (v+2)/5로 1~20에 맞춤)",
+      "source": "P03, P04 (playerTraits)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.flair": {
+      "kind": "player",
+      "off": "0x231",
+      "type": "u8",
+      "map": "t20",
+      "unit": "1~20 (저장은 1~100)",
+      "desc": "창의성 (게임은 1~100으로 저장, (v+2)/5로 1~20에 맞춤)",
+      "source": "P03, P04 (playerTraits)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.GK": {
+      "kind": "player",
+      "off": "0x208",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 GK",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.SW": {
+      "kind": "player",
+      "off": "0x209",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 SW",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.DL": {
+      "kind": "player",
+      "off": "0x20a",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 DL",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.DC": {
+      "kind": "player",
+      "off": "0x20b",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 DC",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.DR": {
+      "kind": "player",
+      "off": "0x20c",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 DR",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.DM": {
+      "kind": "player",
+      "off": "0x20d",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 DM",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.ML": {
+      "kind": "player",
+      "off": "0x20e",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 ML",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.MC": {
+      "kind": "player",
+      "off": "0x20f",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 MC",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.MR": {
+      "kind": "player",
+      "off": "0x210",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 MR",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.AML": {
+      "kind": "player",
+      "off": "0x211",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 AML",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.AMC": {
+      "kind": "player",
+      "off": "0x212",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 AMC",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.AMR": {
+      "kind": "player",
+      "off": "0x213",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 AMR",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.ST": {
+      "kind": "player",
+      "off": "0x214",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 ST",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.WBL": {
+      "kind": "player",
+      "off": "0x215",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 WBL",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.pos.WBR": {
+      "kind": "player",
+      "off": "0x216",
+      "type": "u8",
+      "unit": "1~20",
+      "desc": "포지션 숙련도 WBR",
+      "source": "P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.ratingSum": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0x8",
+      "type": "u16",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): 평점 합 ×10 (평균 = 합 / 평점 받은 경기 / 10)",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.minutes": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0xa",
+      "type": "u16",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): 출전 분",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.starts": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0xc",
+      "type": "u8",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): 선발 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.subs": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0xd",
+      "type": "u8",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): 교체 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.rated": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0xe",
+      "type": "u8",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): 평점 받은 경기",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.goals": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0xf",
+      "type": "u8",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.assists": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0x10",
+      "type": "u8",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): 도움",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.club.pens": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x48"
+      ],
+      "off": "0x13",
+      "type": "u8",
+      "desc": "이번 시즌 클럽 공식전 합계(리그+컵+대륙컵): PK 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.ratingSum": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0x8",
+      "type": "u16",
+      "desc": "이번 시즌 리그: 평점 합 ×10 (평균 = 합 / 평점 받은 경기 / 10)",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.minutes": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0xa",
+      "type": "u16",
+      "desc": "이번 시즌 리그: 출전 분",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.starts": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0xc",
+      "type": "u8",
+      "desc": "이번 시즌 리그: 선발 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.subs": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0xd",
+      "type": "u8",
+      "desc": "이번 시즌 리그: 교체 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.rated": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0xe",
+      "type": "u8",
+      "desc": "이번 시즌 리그: 평점 받은 경기",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.goals": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0xf",
+      "type": "u8",
+      "desc": "이번 시즌 리그: 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.assists": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0x10",
+      "type": "u8",
+      "desc": "이번 시즌 리그: 도움",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.league.pens": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x28"
+      ],
+      "off": "0x13",
+      "type": "u8",
+      "desc": "이번 시즌 리그: PK 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.ratingSum": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0x8",
+      "type": "u16",
+      "desc": "이번 시즌 국내 컵: 평점 합 ×10 (평균 = 합 / 평점 받은 경기 / 10)",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.minutes": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0xa",
+      "type": "u16",
+      "desc": "이번 시즌 국내 컵: 출전 분",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.starts": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0xc",
+      "type": "u8",
+      "desc": "이번 시즌 국내 컵: 선발 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.subs": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0xd",
+      "type": "u8",
+      "desc": "이번 시즌 국내 컵: 교체 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.rated": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0xe",
+      "type": "u8",
+      "desc": "이번 시즌 국내 컵: 평점 받은 경기",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.goals": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0xf",
+      "type": "u8",
+      "desc": "이번 시즌 국내 컵: 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.assists": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0x10",
+      "type": "u8",
+      "desc": "이번 시즌 국내 컵: 도움",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.cup.pens": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x30"
+      ],
+      "off": "0x13",
+      "type": "u8",
+      "desc": "이번 시즌 국내 컵: PK 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.ratingSum": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0x8",
+      "type": "u16",
+      "desc": "이번 시즌 대륙컵: 평점 합 ×10 (평균 = 합 / 평점 받은 경기 / 10)",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.minutes": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0xa",
+      "type": "u16",
+      "desc": "이번 시즌 대륙컵: 출전 분",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.starts": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0xc",
+      "type": "u8",
+      "desc": "이번 시즌 대륙컵: 선발 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.subs": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0xd",
+      "type": "u8",
+      "desc": "이번 시즌 대륙컵: 교체 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.rated": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0xe",
+      "type": "u8",
+      "desc": "이번 시즌 대륙컵: 평점 받은 경기",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.goals": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0xf",
+      "type": "u8",
+      "desc": "이번 시즌 대륙컵: 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.assists": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0x10",
+      "type": "u8",
+      "desc": "이번 시즌 대륙컵: 도움",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.continental.pens": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x38"
+      ],
+      "off": "0x13",
+      "type": "u8",
+      "desc": "이번 시즌 대륙컵: PK 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.ratingSum": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0x8",
+      "type": "u16",
+      "desc": "이번 시즌 국가대표: 평점 합 ×10 (평균 = 합 / 평점 받은 경기 / 10)",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.minutes": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0xa",
+      "type": "u16",
+      "desc": "이번 시즌 국가대표: 출전 분",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.starts": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0xc",
+      "type": "u8",
+      "desc": "이번 시즌 국가대표: 선발 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.subs": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0xd",
+      "type": "u8",
+      "desc": "이번 시즌 국가대표: 교체 출전",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.rated": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0xe",
+      "type": "u8",
+      "desc": "이번 시즌 국가대표: 평점 받은 경기",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.goals": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0xf",
+      "type": "u8",
+      "desc": "이번 시즌 국가대표: 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.assists": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0x10",
+      "type": "u8",
+      "desc": "이번 시즌 국가대표: 도움",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.season.international.pens": {
+      "kind": "player",
+      "via": [
+        "0x108",
+        "0x40"
+      ],
+      "off": "0x13",
+      "type": "u8",
+      "desc": "이번 시즌 국가대표: PK 골",
+      "source": "P03, P04 (playerSeason, 합계가 Poav·Pgls와 896/896 일치)",
+      "verified": true,
+      "write": "no"
+    },
+    "team.club": {
+      "kind": "team",
+      "off": "0x30",
+      "type": "ptr",
+      "to": "club",
+      "desc": "이 팀의 클럽",
+      "source": "P04, M19 RTTI",
+      "verified": true,
+      "write": "no"
+    },
+    "team.comp": {
+      "kind": "team",
+      "off": "0x50",
+      "type": "ptr",
+      "desc": "이 팀이 뛰는 대회(리그) 객체",
+      "source": "P04",
+      "verified": true,
+      "write": "no"
+    },
+    "team.compUid": {
+      "kind": "team",
+      "via": [
+        "0x50"
+      ],
+      "off": "0xc",
+      "type": "u32",
+      "desc": "이 팀이 뛰는 대회(리그) UID",
+      "source": "P04 (playerTeam.compUid)",
+      "verified": true,
+      "write": "no"
+    },
+    "club.name": {
+      "kind": "club",
+      "off": "0xc0",
+      "type": "str",
+      "desc": "클럽 정식 이름",
+      "source": "소셜피드 로그 18 (clubFullName)",
+      "verified": true,
+      "write": "no"
+    },
+    "club.short": {
+      "kind": "club",
+      "off": "0xc8",
+      "type": "str",
+      "desc": "클럽 짧은 이름",
+      "source": "소셜피드 로그 18 (clubShortName)",
+      "verified": true,
+      "write": "no"
+    },
+    "human.name": {
+      "kind": "human",
+      "off": "0x4b8",
+      "type": "strref",
+      "desc": "사람 감독 이름 (myInfo().mgr)",
+      "source": "소셜피드 로그 21 (newsCtx +0x68), M19",
+      "verified": true,
+      "write": "no"
+    },
+    "human.firstName": {
+      "kind": "human",
+      "off": "0x4a8",
+      "type": "strref",
+      "desc": "사람 감독 이름 (예: 라온). 생성 직후에도 있다 (human.name은 비어 있을 수 있음)",
+      "source": "감독커리어모드 C02",
+      "verified": true,
+      "write": "no"
+    },
+    "human.lastName": {
+      "kind": "human",
+      "off": "0x4b0",
+      "type": "strref",
+      "desc": "사람 감독 성 (예: 윤)",
+      "source": "감독커리어모드 C02",
+      "verified": true,
+      "write": "no"
+    },
+    "human.job": {
+      "kind": "human",
+      "off": "0x518",
+      "type": "ptr",
+      "desc": "지금 직장(계약) 객체. +0x10 = 클럽 데이터 객체(db::TEAM)",
+      "source": "myInfo (newsCtx +0xc8), M19",
+      "verified": true,
+      "write": "no"
+    },
+    "human.pastPlayingExperience": {
+      "kind": "human",
+      "off": "0x410",
+      "type": "u16",
+      "desc": "과거 선수 경력 값: 0 없음, 2750 조기 축구회, 3250 세미프로, 4500 프로(지역 수준), 5250 프로(해당 지역에서 유명), 6000 프로(국가에서 유명), 7000 국제(대륙간 대회 수준), 8000 국제(글로벌 수준). 감독 생성 때 정해지고 구단 면접 질문(GAME_JOB_INTERVIEW)이 국내 명성과의 비율로 읽는다",
+      "source": "감독커리어모드 C01 (fm+0x302e380 감독 생성 설정 적용: +0x410=경력 값, +0xd0/+0xd2/+0xd4 시작 명성 계산), M43 7절 (윤라온 +0x410=8000, 명성 10000/10000/10000); 확인: 새 게임에서 국제(글로벌 수준)로 만든 감독 = 8000 (C02); 쓰기 실기 C03: 8000->3250->되돌리기 8000, 7000으로 쓰고 게임 저장 -> 모드 끄고 다시 불러와도 7000 (세이브에 남음)",
+      "verified": true,
+      "write": "safe",
+      "unit": "0, 2750~8000",
+      "range": [
+        0,
+        10000
+      ]
+    },
+    "human.repCurrent": {
+      "kind": "human",
+      "off": "0xd0",
+      "type": "i16",
+      "desc": "(추정) 현재 명성 0~10000. 생성 코드상 경력 값을 현재 능력(+0xd6)x50 기준 범위로 조정해 넣음 (실측: 경력 8000으로 만든 감독 = 현재 8000, 국내 7999, 세계 5000. 생성 뒤 다른 단계가 조금 바꿈) (화면에 숫자로 보이는 속성을 찾지 못해 이름은 추정, C06)",
+      "source": "감독커리어모드 C01 (fm+0x302e380 감독 생성 설정 적용: +0x410=경력 값, +0xd0/+0xd2/+0xd4 시작 명성 계산), M43 7절 (윤라온 +0x410=8000, 명성 10000/10000/10000)",
+      "verified": false,
+      "write": "no"
+    },
+    "human.repHome": {
+      "kind": "human",
+      "off": "0xd2",
+      "type": "i16",
+      "desc": "(추정) 국내 명성 0~10000. 생성 코드상 경력 값 그대로 (실측: 경력 8000으로 만든 감독 = 현재 8000, 국내 7999, 세계 5000. 생성 뒤 다른 단계가 조금 바꿈) (화면에 숫자로 보이는 속성을 찾지 못해 이름은 추정, C06)",
+      "source": "감독커리어모드 C01 (fm+0x302e380 감독 생성 설정 적용: +0x410=경력 값, +0xd0/+0xd2/+0xd4 시작 명성 계산), M43 7절 (윤라온 +0x410=8000, 명성 10000/10000/10000)",
+      "verified": false,
+      "write": "no"
+    },
+    "human.repWorld": {
+      "kind": "human",
+      "off": "0xd4",
+      "type": "i16",
+      "desc": "세계(글로벌) 명성 0~10000. 감독 미니 프로필의 세계 명성 별(속성 Prsa)의 srto 값과 같다. 생성 코드상 min(경력/2, 경력-4000)을 능력 기준 상한으로 (실측: 경력 8000 감독 = 5000)",
+      "source": "감독커리어모드 C01 (fm+0x302e380 감독 생성 설정 적용: +0x410=경력 값, +0xd0/+0xd2/+0xd4 시작 명성 계산), M43 7절 (윤라온 +0x410=8000, 명성 10000/10000/10000); C06: 속성 Prsa = {valu 별, srto 5000} = +0xd4",
+      "verified": true,
+      "write": "no"
+    },
+    "human.favClub": {
+      "kind": "human",
+      "off": "0x588",
+      "type": "ptr",
+      "desc": "(추정) 선호 구단 (db::CLUB). 감독 생성 화면 favo. 선호 구단을 안 고른 새 감독은 null. 바로 앞 +0x570~+0x580은 언어 목록(db::LANGUAGE)",
+      "source": "M43 7절 (윤라온 객체 +0x588 = db::CLUB, 빈 사람 감독은 0)",
+      "verified": false,
+      "write": "no"
+    },
+    "player.intlCaps": {
+      "kind": "player",
+      "off": "0x3dc",
+      "type": "u8",
+      "desc": "A매치(성인 국가대표) 통산 출전 (사람 데이터 객체 기준 +0x164. 선수 겸 감독 객체(db::ACTUAL_PLAYER_AND_NON_PLAYER)는 확인 안 함)",
+      "source": "몸값모드 V10 (사람 데이터 객체 +0x164~0x167, 화면 값: 사카 A매치 156경기 66골·청소년 1경기, 홀란 98경기 86골·청소년 3경기, 다른 선수 25명 값도 그럴듯함)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.youthCaps": {
+      "kind": "player",
+      "off": "0x3dd",
+      "type": "u8",
+      "desc": "청소년 국가대표 통산 출전 (사람 데이터 객체 기준 +0x165. 선수 겸 감독 객체(db::ACTUAL_PLAYER_AND_NON_PLAYER)는 확인 안 함)",
+      "source": "몸값모드 V10 (사람 데이터 객체 +0x164~0x167, 화면 값: 사카 A매치 156경기 66골·청소년 1경기, 홀란 98경기 86골·청소년 3경기, 다른 선수 25명 값도 그럴듯함)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.intlGoals": {
+      "kind": "player",
+      "off": "0x3de",
+      "type": "u8",
+      "desc": "A매치 통산 골 (사람 데이터 객체 기준 +0x166. 선수 겸 감독 객체(db::ACTUAL_PLAYER_AND_NON_PLAYER)는 확인 안 함)",
+      "source": "몸값모드 V10 (사람 데이터 객체 +0x164~0x167, 화면 값: 사카 A매치 156경기 66골·청소년 1경기, 홀란 98경기 86골·청소년 3경기, 다른 선수 25명 값도 그럴듯함)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.youthGoals": {
+      "kind": "player",
+      "off": "0x3df",
+      "type": "u8",
+      "desc": "청소년 국가대표 통산 골 (사람 데이터 객체 기준 +0x167. 선수 겸 감독 객체(db::ACTUAL_PLAYER_AND_NON_PLAYER)는 확인 안 함)",
+      "source": "몸값모드 V10 (사람 데이터 객체 +0x164~0x167, 화면 값: 사카 A매치 156경기 66골·청소년 1경기, 홀란 98경기 86골·청소년 3경기, 다른 선수 25명 값도 그럴듯함)",
+      "verified": true,
+      "write": "no"
+    },
+    "player.recordList": {
+      "kind": "player",
+      "off": "0x388",
+      "type": "u32",
+      "desc": "경력 사건 기록 목록 번호 (사람 데이터 객체 기준 +0x110. 세이브 person_record_history의 목록 번호, Python 공용 라이브러리 m24career.load(...).of(번호)). 사람 번호(player.link)와 다르다 (홀란 45806 -> 32192). 기록이 없으면 0xffffffff. 스태프의 사람 데이터 객체도 +0x110 (선수 겸 감독 객체는 확인 안 함)",
+      "source": "몸값모드 V17 (사람 117,442명 중 116,099개가 서로 다름, 목록 4,235개 중 82%에 현재 팀이 나옴, 홀란·사카·카마빙가·야말 이적·우승·데뷔 기록이 실제와 맞음)",
+      "verified": true,
+      "write": "no"
+    }
+  }
+}

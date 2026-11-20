@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>DynamicPA</title>
+<style>
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  .bar input { flex: 1; min-width: 140px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--text3); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--card); }
+  td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .up { color: var(--blue); font-weight: 700; }
+  .down { color: var(--red); font-weight: 700; }
+  .why { color: var(--text2); font-size: 12px; }
+  .muted { color: var(--text3); }
+  .done { opacity: .55; }
+  #msg { min-height: 1.2em; }
+</style></head>
+<body>
+<div class="stats">
+  <div class="stat"><div class="label">게임 날짜</div><div class="value" id="vDate">-</div></div>
+  <div class="stat"><div class="label">평가</div><div class="value" id="vEval">-</div></div>
+  <div class="stat"><div class="label">오름 / 내림</div><div class="value" id="vUpDown">-</div></div>
+  <div class="stat"><div class="label">적용</div><div class="value" id="vApplied">-</div></div>
+</div>
+<div class="card">
+  <div class="hint" id="vInfo">평가일이 지나면 지난 시즌 리그 기록으로 한 번 평가해요.</div>
+  <div class="bar">
+    <button class="btn ghost" id="bPreview">지금 기록으로 미리보기 (시험)</button>
+    <button class="btn primary" id="bApply">바뀐 선수 모두 적용</button>
+    <button class="btn grey" id="bStop" style="display:none">적용 멈추기</button>
+    <button class="btn ghost" id="bCheck">게임의 지금 값 확인</button>
+  </div>
+  <div class="hint" id="msg"></div>
+</div>
+<div class="card" id="notice" style="display:none">
+  <div class="sec-title">이번 평가 소식</div>
+  <div id="noticeBody"></div>
+</div>
+<div class="card">
+  <div class="bar">
+    <div class="seg" id="seg" style="flex:1;margin-top:0">
+      <button data-k="changed" class="sel">바뀐 선수</button><button data-k="up">오름</button><button data-k="down">내림</button><button data-k="mine">내 팀</button><button data-k="all">전체</button>
+    </div>
+    <input class="field" id="q" placeholder="선수·팀 이름 검색">
+  </div>
+  <table><thead><tr><th>선수</th><th>나이</th><th>포지션</th><th>팀</th><th class="num">CA</th><th class="num">PA</th><th class="num">변화</th><th class="num">평점</th><th class="num">출전</th></tr></thead>
+  <tbody id="tb"></tbody></table>
+  <div class="empty" id="empty" style="display:none">아직 미리보기가 없어요.</div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let kind = 'changed', confirmApply = false, lastCreated = null;
+function td(text, cls) { const e = document.createElement('td'); e.textContent = text; if (cls) e.className = cls; return e; }
+function msg(t) { $('msg').textContent = t || ''; }
+
+async function loadRows() {
+  let rows = [];
+  try { rows = await m24.call('rows', kind, $('q').value, 300); } catch (e) { return; }
+  const tb = $('tb'); tb.textContent = '';
+  $('empty').style.display = rows.length ? 'none' : '';
+  for (const r of rows) {
+    const tr = document.createElement('tr'); if (r.applied) tr.className = 'done';
+    const name = document.createElement('td');
+    const b = document.createElement('div'); b.textContent = r.name + (r.event === 'breakout' ? ' ⚡' : r.event === 'injury' ? ' 🩹' : '') + (r.calendar ? ' 📅' : '') + (r.mine ? ' ★' : '') + (r.applied ? ' (적용됨)' : ''); name.appendChild(b);
+    const w = document.createElement('div'); w.className = 'why'; w.textContent = r.why; name.appendChild(w);
+    tr.appendChild(name);
+    tr.appendChild(td(String(r.age), 'num')); tr.appendChild(td(r.pos)); tr.appendChild(td(r.team || '', 'muted'));
+    tr.appendChild(td(String(r.ca), 'num'));
+    tr.appendChild(td(r.old + (r.delta ? ' → ' + r.new : ''), 'num'));
+    tr.appendChild(td(r.delta ? (r.delta > 0 ? '+' : '') + r.delta : '0', 'num ' + (r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : 'muted')));
+    tr.appendChild(td(r.rating.toFixed(2), 'num')); tr.appendChild(td(r.minutes.toLocaleString() + '분', 'num'));
+    tb.appendChild(tr);
+  }
+}
+
+let noticeKey = null;
+function line(t) { const d = document.createElement('div'); d.className = 'why'; d.textContent = t; return d; }
+function showNotice(sm) {
+  const key = sm ? sm.created : null; if (key === noticeKey) return; noticeKey = key;
+  const box = $('noticeBody'); box.textContent = '';
+  if (!sm) { $('notice').style.display = 'none'; return; }
+  const mine = sm.mine || [], hi = sm.highlights || [];
+  if (mine.length) {
+    const up = mine.filter(m => m.delta > 0).length, down = mine.filter(m => m.delta < 0).length;
+    const h = document.createElement('div'); h.textContent = '★ 내 팀: ' + up + '명 오름, ' + down + '명 내림'; box.appendChild(h);
+    for (const m of mine.slice(0, 8)) box.appendChild(line(m.name + ' (' + m.age + '세 ' + m.pos + ') ' + m.old + ' → ' + m.new + ' (' + (m.delta > 0 ? '+' : '') + m.delta + ')'));
+  } else box.appendChild(line('내 팀에는 바뀐 선수가 없어요.'));
+  if (hi.length) {
+    const h = document.createElement('div'); h.style.marginTop = '8px'; h.textContent = '⚡ 급성장 ' + hi.length + '명'; box.appendChild(h);
+    for (const m of hi.slice(0, 5)) box.appendChild(line(m.name + ' (' + m.age + '세, ' + (m.team || '') + ') ' + m.old + ' → ' + m.new));
+  }
+  $('notice').style.display = '';
+}
+
+async function tick() {
+  let s; try { s = await m24.call('state'); } catch (e) { return; }
+  $('vDate').textContent = s.date || '세이브 없음';
+  const sm = s.summary;
+  $('vEval').textContent = sm ? sm.evaluated.toLocaleString() + '명' : '-';
+  $('vUpDown').textContent = sm ? sm.up + ' / ' + sm.down : '-';
+  $('vApplied').textContent = sm ? s.applied + ' (남음 ' + s.pending + ')' : '-';
+  let info = '평가일 ' + s.evalDay + ' · 반영 방식: ' + (s.mode === 'auto' ? '자동 적용' : '미리보기 후 직접 적용');
+  if (sm) info += ' · 마지막 평가: ' + (sm.official ? sm.due + ' 평가일' : sm.evaluated_on + ' 시험 미리보기') + ' (' + sm.created + ', 순변화 ' + (sm.net > 0 ? '+' : '') + sm.net + ')';
+  if (sm && sm.history_players !== undefined) info += ' · 과거 시즌 반영 ' + sm.history_players.toLocaleString() + '명' + (sm.save_file ? ' (' + sm.save_file + ')' : '') + ' · 장기 부상 ' + (sm.injury || 0) + '명';
+  if (sm && sm.calendar) info += ' · 달력형 리그 ' + sm.calendar.toLocaleString() + '명은 직전 완료 시즌으로';
+  if (sm && sm.cup_weight) info += ' · 대륙컵·국가대표 ' + Math.round(sm.cup_weight * 100) + '% 반영';
+  if (sm && sm.kind === 'half') info += ' · 반기 점검(절반 크기)';
+  info += ' · 부상 기록 ' + (s.injuries || 0).toLocaleString() + '명';
+  showNotice(sm);
+  $('vInfo').textContent = info;
+  const op = s.op;
+  $('bStop').style.display = op && op.kind === 'apply' ? '' : 'none';
+  $('bPreview').disabled = $('bApply').disabled = !!op || !s.date;
+  if (op && op.kind === 'collect') msg('자료 모으는 중… ' + op.rows.toLocaleString() + '명 (' + op.s + '초)');
+  else if (op && op.kind === 'apply') msg('적용 중… ' + op.done + ' / ' + op.total + ' (실패 ' + op.fail + ')');
+  else if (s.phase) msg(s.phase + '…');
+  else if (s.error) msg(s.error);
+  if (sm && sm.created !== lastCreated) { lastCreated = sm.created; loadRows(); }
+  if (op && op.kind === 'apply' && op.done % 45 === 0) loadRows();
+}
+
+$('bPreview').onclick = async () => {
+  const r = await m24.call('preview');
+  msg(r.ok ? '자료 모으기를 시작했어요 (1~2분)' : (r.error || '시작하지 못했어요'));
+};
+$('bApply').onclick = async () => {
+  if (!confirmApply) { confirmApply = true; $('bApply').textContent = '한 번 더 누르면 적용 (되돌리기는 앱 정보 탭)'; setTimeout(() => { confirmApply = false; $('bApply').textContent = '바뀐 선수 모두 적용'; }, 5000); return; }
+  confirmApply = false; $('bApply').textContent = '바뀐 선수 모두 적용';
+  const r = await m24.call('apply', 'all');
+  msg(r.ok ? r.n + '명 적용을 시작했어요 (초당 9명)' : (r.error || '적용할 변화가 없어요'));
+};
+$('bStop').onclick = () => m24.call('stop');
+$('bCheck').onclick = async () => { await m24.call('check'); msg('게임의 지금 PA로 적용 표시를 맞췄어요'); setTimeout(loadRows, 2000); };
+for (const b of $('seg').querySelectorAll('button')) b.onclick = () => {
+  kind = b.dataset.k; for (const x of $('seg').querySelectorAll('button')) x.classList.toggle("sel", x === b); loadRows();
+};
+let qt; $('q').oninput = () => { clearTimeout(qt); qt = setTimeout(loadRows, 300); };
+tick(); setInterval(tick, 1500);
+</script>
+</body>
+</html>

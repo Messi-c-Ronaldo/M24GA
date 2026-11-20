@@ -1,0 +1,36 @@
+{
+  "$schema": "../../docs/mod.schema.json",
+  "id": "dynamic-me",
+  "name": "DynamicME (매치엔진 조정)",
+  "version": "0.8.0",
+  "description": "게임을 켠 채로 매치엔진을 바꿔요. 남이 만든 엔진 팩(simatch 폴더)을 골라 재시작 없이 적용하거나, 선수 속도·슛 세기·선발 성향 같은 값을 직접 조정해요. 파일을 바꾸지 않고 게임 메모리의 엔진 표에 바뀐 값만 써서, 언제든 원본으로 돌아가요.",
+  "author": "McR",
+  "license": "GPL-3.0-or-later",
+  "core": ">=0.33.0",
+  "js": "mod.js",
+  "python": "python/main.py",
+  "ui": "ui/index.html",
+  "capabilities": [
+    "read.engine",
+    "write.engine",
+    "pc.python"
+  ],
+  "settings": [
+    {
+      "key": "packs_dir",
+      "type": "text",
+      "label": "엔진 팩 폴더",
+      "default": "",
+      "group": "기본",
+      "help": "엔진 팩을 모아 두는 폴더예요. 비우면 문서\\M24GA\\engines 를 써요. 팩마다 폴더 하나(안에 simatch 폴더나 엔진 파일)를 넣어 두면 모드창 목록에 나와요"
+    },
+    {
+      "key": "reapply",
+      "type": "bool",
+      "label": "게임을 켤 때 다시 적용",
+      "default": true,
+      "group": "기본",
+      "help": "엔진 값은 세이브에 남지 않아서 게임을 다시 켜면 원본으로 돌아가요. 켜 두면 모드가 게임에 붙을 때 마지막으로 고른 팩·조정을 다시 넣어요"
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "id": "ai-social-feed",
+  "name": "DynamicAiFeed",
+  "version": "0.2.0",
+  "description": "게임 소셜피드의 팬 댓글을 게임 데이터와 기사 본문을 읽은 AI 댓글로 바꾼다.",
+  "author": "McR",
+  "license": "GPL-3.0-or-later",
+  "core": ">=0.6.0",
+  "js": "mod.js",
+  "python": "python/main.py",
+  "events": [
+    "socialPanel",
+    "frame"
+  ],
+  "capabilities": ["event.socialPanel", "event.frame", "read.data", "read.news", "read.me", "read.fan", "read.manager", "read.panel", "ui.social.text", "pc.python"],
+  "migrate_from": "~/fm24_ai_mod_data",
+  "settings_file": "config.json",
+  "settings": [
+    {
+      "key": "enabled",
+      "type": "bool",
+      "label": "AI 댓글 켜기",
+      "default": true,
+      "group": "기본",
+      "help": "끄면 원래 댓글이 그대로 보이고 요청도 보내지 않아요"
+    },
+    {
+      "key": "hook.auto_refresh",
+      "type": "bool",
+      "label": "자동 갱신",
+      "default": true,
+      "group": "기본",
+      "help": "문장이 준비되면 '생성 중' 댓글을 바로 바꿔 그려요"
+    },
+    {
+      "key": "api.url",
+      "type": "text",
+      "label": "API 주소",
+      "default": "https://api.deepseek.com/chat/completions",
+      "group": "API"
+    },
+    {
+      "key": "api.model",
+      "type": "text",
+      "label": "모델",
+      "default": "deepseek-flash",
+      "group": "API",
+      "help": "Flash가 빠르고 저렴해요"
+    },
+    {
+      "key": "api.key_file",
+      "type": "text",
+      "label": "API 키 파일",
+      "default": "~/.deepseek_key",
+      "group": "API",
+      "help": "키 한 줄이 든 파일이에요. 키 자체는 모드창에서 넣어요"
+    },
+    {
+      "key": "api.thinking",
+      "type": "bool",
+      "label": "사고 모드",
+      "default": false,
+      "group": "API",
+      "help": "AI가 생각한 뒤 써요 · 댓글당 4~10초, 비용 약 2배"
+    },
+    {
+      "key": "tokens.use_article_body",
+      "type": "bool",
+      "label": "기사 본문 참고",
+      "default": true,
+      "group": "토큰 관리",
+      "help": "뉴스 내용을 보고 반응해요 · 댓글당 약 +600 토큰"
+    },
+    {
+      "key": "tokens.use_club_finances",
+      "type": "bool",
+      "label": "구단 재정 반영",
+      "default": true,
+      "group": "토큰 관리",
+      "help": "이적 예산·잔고를 '큰손', '재정 적자' 같은 말로만 반영해요 · 금액은 안 알려줘요"
+    },
+    {
+      "key": "tokens.use_hidden_attributes",
+      "type": "bool",
+      "label": "숨은 능력치 반영",
+      "default": false,
+      "group": "토큰 관리",
+      "help": "충성심·야망·부상 경향 같은 정보를 댓글이 흘려요 · 스카우트 힌트가 될 수 있어요"
+    },
+    {
+      "key": "tokens.sibling_hint",
+      "type": "bool",
+      "label": "겹침 방지",
+      "default": true,
+      "group": "토큰 관리",
+      "help": "같은 글 댓글끼리 표현이 겹치지 않게 해요"
+    },
+    {
+      "key": "tokens.game_data_rate",
+      "type": "number",
+      "label": "게임 데이터 넣는 비율",
+      "default": 0.35,
+      "group": "토큰 관리",
+      "min": 0,
+      "max": 1,
+      "percent": true,
+      "help": "순위·폼 같은 숫자를 언급하는 댓글 비율이에요"
+    },
+    {
+      "key": "tokens.player_mention_rate",
+      "type": "number",
+      "label": "선수 언급 비율",
+      "default": 0.5,
+      "group": "토큰 관리",
+      "min": 0,
+      "max": 1,
+      "percent": true
+    },
+    {
+      "key": "tokens.max_chars",
+      "type": "int",
+      "label": "댓글 최대 길이",
+      "default": 100,
+      "group": "토큰 관리",
+      "min": 20,
+      "max": 300
+    },
+    {
+      "key": "tokens.max_calls_per_session",
+      "type": "int",
+      "label": "한 번 켤 때 최대 호출",
+      "default": 400,
+      "group": "토큰 관리",
+      "min": 1,
+      "max": 100000,
+      "help": "비용 안전장치예요"
+    },
+    {
+      "key": "style.swear",
+      "type": "select",
+      "label": "욕설",
+      "default": "normal",
+      "group": "말투",
+      "options": [
+        {
+          "value": "none",
+          "label": "없음"
+        },
+        {
+          "value": "mild",
+          "label": "순하게"
+        },
+        {
+          "value": "normal",
+          "label": "기본"
+        },
+        {
+          "value": "wild",
+          "label": "야생"
+        }
+      ],
+      "help": "야생: 욕설과 개드립이 난무해요 · 혐오·성적 표현은 어떤 모드에서도 안 써요"
+    },
+    {
+      "key": "style.allow_k",
+      "type": "bool",
+      "label": "'ㅋ' 허용",
+      "default": false,
+      "group": "말투",
+      "help": "끄면 AI가 써도 지워요"
+    },
+    {
+      "key": "style.extra_instructions",
+      "type": "text",
+      "label": "추가 지침",
+      "default": "",
+      "group": "말투",
+      "multiline": true,
+      "placeholder": "예: 축구 용어를 좀 더 많이 써 줘",
+      "help": "AI에게 더 하고 싶은 말이 있으면 적어 주세요"
+    }
+  ],
+  "ui": "ui/index.html"
+}

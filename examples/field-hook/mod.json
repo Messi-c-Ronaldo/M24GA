@@ -1,0 +1,35 @@
+{
+  "id": "field-hook-example",
+  "name": "필드·끼어들기 예제",
+  "version": "1.0.0",
+  "description": "게임 값을 이름으로 읽고(getField), 게임 함수가 불릴 때 알아차리는(api.hook) 방법을 보여 줘요. 게임 값은 바꾸지 않아요 (읽기만).",
+  "author": "McR",
+  "license": "GPL-3.0-or-later",
+  "core": ">=0.12.0",
+  "js": "mod.js",
+  "default_enabled": false,
+  "capabilities": [
+    "event.dateChanged",
+    "read.field",
+    "hook.function"
+  ],
+  "settings": [
+    {
+      "key": "uid",
+      "type": "int",
+      "label": "지켜볼 선수 UID",
+      "default": 2002122126,
+      "min": 1,
+      "group": "선수",
+      "help": "선수 UID는 게임 화면 이름 옆 ID (예: 쿠스쿠에타 2002122126). 날짜가 바뀔 때 이 선수의 값을 로그에 남겨요"
+    },
+    {
+      "key": "watchValue",
+      "type": "bool",
+      "label": "요구 금액 계산 감시",
+      "default": true,
+      "group": "감시",
+      "help": "게임이 선수들의 요구 금액을 다시 계산할 때마다 로그에 남겨요 (api.hook, 코어 0.11.0). 끄면 끼어들기를 떼요"
+    }
+  ]
+}

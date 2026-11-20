@@ -1,0 +1,125 @@
+/* M24GA 공통 테마 (토스 다크 느낌). 로더 화면과 모드창(iframe)이 같이 쓴다. GPL-3.0-or-later.
+   모드창은 로더가 이 파일을 <style>로 넣어 주므로 따로 불러올 필요가 없다. 색은 전부 변수라 라이트 테마를 넣기 쉽다. */
+:root {
+  --bg: #101013; --card: #1C1C21; --blue: #3182F6; --blue-press: #1B64DA; --blue-soft: rgba(49,130,246,.16);
+  --text: #F2F4F6; --text2: #B0B8C1; --text3: #7E8691; --line: #2C2C34; --grey: #26262D;
+  --red: #F04452; --red-soft: rgba(240,68,82,.16); --amber: #F5A524; --amber-soft: rgba(245,165,36,.16);
+  --track-off: #34343D; --knob: #F2F4F6; --input: #24242A; --sel: #3A3A44; --pending: #2B5FB0; --err-track: #5C2730;
+  --toast: #3A3A44; --side: #17171B; --shadow: rgba(0,0,0,.45);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: Pretendard, "Pretendard Variable", -apple-system, "Malgun Gothic", "맑은 고딕", sans-serif;
+  font-size: 15px; letter-spacing: -0.01em; user-select: none;
+}
+::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: var(--track-off); border-radius: 4px; } ::-webkit-scrollbar-track { background: transparent; }
+h1 { font-size: 24px; font-weight: 700; margin: 8px 4px 4px; }
+.sub { color: var(--text3); font-size: 14px; margin: 0 4px 20px; }
+.card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 12px; }
+.card.list { padding: 6px 20px; }
+.group-title { color: var(--text2); font-size: 14px; font-weight: 600; margin: 18px 6px 8px; }
+.sec-title { display: flex; justify-content: space-between; align-items: baseline; margin: 6px 4px 12px; }
+.sec-title b { font-size: 17px; }
+.sec-title a { color: var(--text3); font-size: 14px; cursor: pointer; text-decoration: none; }
+.empty { color: var(--text3); text-align: center; padding: 26px 0; font-size: 14px; line-height: 1.6; }
+.foot { color: var(--text3); font-size: 12px; text-align: center; margin: 18px 0 6px; line-height: 1.6; }
+
+/* 숫자 카드 */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat { background: var(--card); border-radius: 18px; padding: 16px 14px; min-width: 0; }
+.stat .label { color: var(--text3); font-size: 13px; margin-bottom: 6px; }
+.stat .value { font-size: 19px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat.tap { cursor: pointer; } .stat.tap:active { background: var(--grey); }
+
+/* 줄 */
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+.row + .row { border-top: 1px solid var(--grey); }
+.row .l { flex: 1; min-width: 0; }
+.row .name { font-size: 16px; font-weight: 500; }
+.row .hint { color: var(--text3); font-size: 13px; margin-top: 3px; line-height: 1.4; }
+.row .hint.warn { color: var(--red); }
+.row .val { color: var(--text2); font-size: 14px; text-align: right; word-break: break-all; user-select: text; max-width: 62%; }
+.row.col { flex-direction: column; align-items: stretch; gap: 0; }
+
+/* 스위치 */
+.switch { position: relative; width: 50px; height: 30px; flex: none; display: inline-block; }
+.switch input { display: none; }
+.switch span { position: absolute; inset: 0; background: var(--track-off); border-radius: 15px; transition: background .2s; cursor: pointer; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--knob); box-shadow: 0 1px 4px var(--shadow); transition: left .2s; }
+.switch input:checked + span { background: var(--blue); }
+.switch input:checked + span::after { left: 23px; }
+.switch.mini { width: 40px; height: 24px; }
+.switch.mini span { border-radius: 12px; }
+.switch.mini span::after { top: 3px; left: 3px; width: 18px; height: 18px; }
+.switch.mini input:checked + span::after { left: 19px; }
+.switch input:disabled + span { opacity: .45; cursor: default; }
+
+/* 분할 버튼, 입력 */
+.seg { display: flex; background: var(--grey); border-radius: 12px; padding: 3px; margin-top: 10px; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 9px 0; border-radius: 10px; font: inherit; font-size: 14px; color: var(--text2); cursor: pointer; }
+.seg button.sel { background: var(--sel); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px var(--shadow); }
+input[type=range] { width: 100%; margin-top: 12px; accent-color: var(--blue); }
+.rng-val { color: var(--blue); font-weight: 600; }
+.field { display: flex; gap: 8px; margin-top: 10px; }
+.field input, .field select, textarea {
+  flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--input); border-radius: 12px; padding: 12px 14px;
+  font: inherit; font-size: 15px; color: var(--text); outline: none; user-select: text;
+}
+.field input:focus, textarea:focus, .field select:focus { border-color: var(--blue); }
+textarea { width: 100%; resize: none; height: 76px; margin-top: 10px; line-height: 1.45; }
+.num { width: 110px; text-align: right; flex: none !important; }
+.btn { border: 0; border-radius: 12px; padding: 0 16px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; flex: none; height: 44px; }
+.btn.primary { background: var(--blue); color: #fff; } .btn.primary:active { background: var(--blue-press); }
+.btn.ghost { background: var(--blue-soft); color: var(--blue); }
+.btn.grey { background: var(--grey); color: var(--text2); }
+.btn.wide { width: 100%; height: 50px; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* 큰 토글 */
+.hero { text-align: center; padding: 36px 20px 30px; }
+.big-toggle {
+  width: 176px; height: 100px; border-radius: 50px; border: 0; padding: 0; margin: 0 auto 26px;
+  display: block; position: relative; cursor: pointer; background: var(--track-off);
+  transition: background .35s ease, box-shadow .35s ease;
+}
+.big-toggle .knob {
+  position: absolute; top: 8px; left: 8px; width: 84px; height: 84px; border-radius: 50%; background: var(--knob);
+  box-shadow: 0 4px 14px var(--shadow); transition: left .35s cubic-bezier(.2,.8,.2,1);
+  display: flex; align-items: center; justify-content: center;
+}
+.big-toggle .knob svg { width: 34px; height: 34px; color: var(--text3); transition: color .35s; }
+.big-toggle.on { background: var(--blue); box-shadow: 0 10px 34px rgba(49,130,246,.45); }
+.big-toggle.on .knob, .big-toggle.wait .knob, .big-toggle.build .knob, .big-toggle.error .knob { left: 84px; }
+.big-toggle.on .knob svg { color: var(--blue); }
+.big-toggle.wait, .big-toggle.build { background: var(--pending); animation: breathe 1.6s ease-in-out infinite; }
+.big-toggle.wait .knob svg, .big-toggle.build .knob svg { color: var(--pending); }
+.big-toggle.error { background: var(--err-track); }
+.big-toggle.error .knob svg { color: var(--red); }
+.big-toggle:active .knob { transform: scale(.96); }
+@keyframes breathe { 0%,100% { box-shadow: 0 0 0 0 rgba(49,130,246,.35); } 50% { box-shadow: 0 0 0 14px rgba(49,130,246,0); } }
+.state-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.state-desc { color: var(--text2); font-size: 15px; line-height: 1.5; min-height: 22px; }
+
+/* 상태 표시 */
+.pill { display: inline-block; border-radius: 8px; padding: 3px 9px; font-size: 12px; font-weight: 600; background: var(--grey); color: var(--text2); }
+.pill.running { background: var(--blue-soft); color: var(--blue); }
+.pill.ready { background: var(--blue-soft); color: #7FB0F8; }
+.pill.build, .pill.safe { background: var(--amber-soft); color: var(--amber); }
+.pill.problem, .pill.error, .pill.auto_off { background: var(--red-soft); color: var(--red); }
+.badge { display: inline-block; background: var(--blue-soft); color: var(--blue); border-radius: 6px; padding: 1px 6px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+
+/* 댓글 목록 같은 줄 목록 */
+.cmt { padding: 14px 0; border-bottom: 1px solid var(--grey); }
+.cmt:last-child { border-bottom: 0; padding-bottom: 0; } .cmt:first-child { padding-top: 0; }
+.cmt .new { font-size: 15px; line-height: 1.5; font-weight: 500; user-select: text; }
+.cmt .meta { color: var(--text3); font-size: 13px; margin-top: 6px; line-height: 1.45; user-select: text; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 50;
+  background: var(--toast); color: var(--text); padding: 12px 18px; border-radius: 14px; font-size: 14px;
+  box-shadow: 0 6px 20px var(--shadow); transition: all .25s ease; max-width: 86%; text-align: center; line-height: 1.45;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
