@@ -92,6 +92,33 @@ def setup_python(embed_zip, dst):
     return stem
 
 
+MIT_TEXT = """Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+EXTRA_NOTICES = [
+    ("proxy_tools 0.1.0 (MIT License, Jonathan Tushman, https://github.com/jtushman/proxy_tools)",
+     "패키지 메타데이터에 MIT License로 적혀 있지만 라이선스 파일이 들어 있지 않아 표준 MIT 문구를 붙여요.\n\n"
+     "Copyright (c) Jonathan Tushman\n\n" + MIT_TEXT),
+    ("소스 코드 위치",
+     "- frida 17.24.3 (wxWindows Library Licence 3.1): https://github.com/frida/frida , https://github.com/frida/frida-python\n"
+     "- pywebview 6.2: https://github.com/r0x0r/pywebview\n"
+     "- pythonnet 3.2.1 / clr_loader 0.3.1: https://github.com/pythonnet/pythonnet , https://github.com/pythonnet/clr-loader\n"
+     "- cffi, pycparser, bottle, typing_extensions: PyPI 각 프로젝트 페이지\n"
+     "- Python 3.14.6 (embeddable package, 수정 없이 포함): https://www.python.org/downloads/ , 포함된 다른 라이브러리 목록 https://docs.python.org/3.14/license.html\n"
+     "- M24GA 자체 (GPL-3.0-or-later): 이 배포판에 소스가 그대로 들어 있고, 공개 저장소에서도 받을 수 있어요.\n"),
+]
+
+
 def licenses(dst, py_dir):
     parts = []
     found = set(glob.glob(os.path.join(ROOT, "vendor", "*.dist-info", "licenses", "**", "*"), recursive=True))
@@ -100,6 +127,8 @@ def licenses(dst, py_dir):
         pkg = os.path.relpath(lic, os.path.join(ROOT, "vendor")).split(os.sep)[0]
         with open(lic, encoding="utf-8", errors="replace") as f:
             parts.append("=" * 72 + "\n%s  (%s)\n" % (pkg, os.path.basename(lic)) + "=" * 72 + "\n" + f.read())
+    for name, text in EXTRA_NOTICES:   # 패키지에 라이선스 파일이 없거나 소스 위치를 알려야 하는 것
+        parts.append("=" * 72 + "\n%s\n" % name + "=" * 72 + "\n" + text)
     pl = os.path.join(py_dir, "LICENSE.txt")
     if os.path.isfile(pl):
         with open(pl, encoding="utf-8", errors="replace") as f:
