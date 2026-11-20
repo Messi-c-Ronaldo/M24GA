@@ -8,6 +8,11 @@
         "off": "0x10",
         "hex": "0100004889ce31d2e85362b00084c00f"
       },
+      "vf": {
+        "class": "NEWS_FEED_ITEM_PANEL",
+        "off": 0,
+        "index": 60
+      },
       "args": [
         "ptr"
       ],
@@ -27,6 +32,11 @@
       "sig": {
         "off": "0x10",
         "hex": "4889cfe8e8d58600488b0d21ba3105e8"
+      },
+      "vf": {
+        "class": "sitoolkit::APPLICATION",
+        "off": 0,
+        "index": 3
       },
       "args": [
         "ptr"
@@ -48,6 +58,11 @@
         "off": "0x10",
         "hex": "544e4f434531c0e8f42e4a00488d7c24"
       },
+      "vf": {
+        "class": "TEAM_CONTAINER_SETTINGS_PANEL",
+        "off": 0,
+        "index": 52
+      },
       "args": [],
       "argNames": [],
       "ret": "void",
@@ -63,6 +78,11 @@
       "sig": {
         "off": "0x10",
         "hex": "4d89c789d64889cf4c8d71c881fa6b64"
+      },
+      "vf": {
+        "class": "CLIENT_TACTIC",
+        "off": 56,
+        "index": 5
       },
       "args": [
         "ptr",
@@ -166,6 +186,11 @@
       "sig": {
         "off": "0x10",
         "hex": "8d59f831f681fa535351520f8faf0000"
+      },
+      "vf": {
+        "class": "CONTINUE_MANAGER",
+        "off": 8,
+        "index": 5
       },
       "args": [
         "ptr",
@@ -327,6 +352,11 @@
         "off": "0x10",
         "hex": "65488b142558000000488b0cca3b8138"
       },
+      "vf": {
+        "class": "sitoolkit::DIALOG",
+        "off": 64,
+        "index": 1
+      },
       "args": [],
       "argNames": [],
       "ret": "ptr",
@@ -415,6 +445,11 @@
         "off": "0x10",
         "hex": "0000000f29b424a00000004c89c389d5"
       },
+      "vf": {
+        "class": "sitoolkit::DIALOG",
+        "off": 0,
+        "index": 5
+      },
       "args": [
         "ptr",
         "u32",
@@ -488,6 +523,11 @@
       "sig": {
         "off": "0x10",
         "hex": "89cf81fa6d64736d7e3731ed81fb6b73"
+      },
+      "vf": {
+        "class": "GAME_PREDICTIVE_SEARCH_LIST",
+        "off": 0,
+        "index": 5
       },
       "args": [
         "ptr",

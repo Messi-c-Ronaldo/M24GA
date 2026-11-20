@@ -52,7 +52,7 @@ def file_facts(exe):
     return f
 
 
-def build_text(info, why, builds, core_version, mod_off=None, mod_rows=None, with_file=True):
+def build_text(info, why, builds, core_version, mod_off=None, mod_rows=None, with_file=True, func_lines=None):
     """보고서 글. info = host.read_signature 결과, builds = 알려진 빌드 목록."""
     L = []
     L.append("# M24GA 빌드 진단 보고서")
@@ -100,6 +100,11 @@ def build_text(info, why, builds, core_version, mod_off=None, mod_rows=None, wit
                 L.append("- vtable %s 다름: 기대 %s / 실제 %s" % (o, v, got))
         L.append("- 서명·vtable %d칸 중 다른 것 %d칸" % (len(rows) + len(b.get("vt") or {}), bad))
     L.append("")
+    if func_lines:   # M57: 함수 등록부 서명 + 클래스 기반 찾기 (loader/funcmap.py)
+        L.append("## 함수 등록부")
+        for line in func_lines:
+            L.append("- " + line)
+        L.append("")
     if mod_off:
         L.append("## 이 빌드에서 꺼진 모드")
         for mid, w in sorted(mod_off.items()):

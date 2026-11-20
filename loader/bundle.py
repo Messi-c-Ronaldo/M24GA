@@ -70,7 +70,7 @@ def mod_source(m, settings=True):
     return "registerMod(%s, function (api) {\n%s\n}, %s);" % (json.dumps(m.id), src, json.dumps(meta))
 
 
-def build(mods_to_load=None):
+def build(mods_to_load=None, exe=None):
     """mods_to_load: Mod 목록, 또는 모드 id 목록(문자열), None이면 켜진 모드 전부.
     반환: (스크립트 문자열, 올린 모드 id 목록)"""
     if mods_to_load is None or any(isinstance(x, str) for x in mods_to_load):
@@ -92,7 +92,12 @@ def build(mods_to_load=None):
     with open(FIELDS_JSON, encoding="utf-8") as f:   # 필드 등록부 (M20): 한 줄 JSON으로 넣는다
         core = _inject(core, "M24_FIELDS", json.dumps(json.load(f), ensure_ascii=False, separators=(",", ":")), "core.js")
     with open(FUNCS_JSON, encoding="utf-8") as f:   # 함수 등록부 (M22)
-        core = _inject(core, "M24_FUNCS", json.dumps(json.load(f), ensure_ascii=False, separators=(",", ":")), "core.js")
+        funcs = json.load(f)
+    if exe:   # M57: 서명이 안 맞는 가상 함수는 클래스 vtable 칸으로 다시 찾아 rva를 바꿔 넣는다 (코어는 서명을 다시 확인)
+        import funcmap
+        for name, rva in funcmap.relocated(funcs["functions"], exe).items():
+            funcs["functions"][name] = dict(funcs["functions"][name], rva=rva, moved="vf")
+    core = _inject(core, "M24_FUNCS", json.dumps(funcs, ensure_ascii=False, separators=(",", ":")), "core.js")
     with open(PROPS_JSON, encoding="utf-8") as f:   # 속성 등록부 (M55): 짧은 판만
         core = _inject(core, "M24_PROPS", json.dumps(props_compact(json.load(f)), ensure_ascii=False, separators=(",", ":")), "core.js")
     parts.append(core)

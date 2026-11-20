@@ -409,7 +409,7 @@ def _load_script():
     모드를 켜고 끌 때는 apply_mods()가 코어를 그대로 두고 모드만 바꾼다 (M09 핫 리로드)."""
     session = _cur["session"]
     targets = _targets(session)
-    src, loaded = bundle.build([m for m, _ in targets])
+    src, loaded = bundle.build([m for m, _ in targets], exe=((_cur.get("last") or {}).get("info") or {}).get("path"))
     script = session.create_script(src)
     script.on("message", on_message)
     # load() 도중에 모드 JS가 보낸 hello에 모드 Python이 바로 답하므로, 올리기 전에 등록해 둔다 (안 그러면 post_to_game이 그 답을 버린다)
@@ -816,7 +816,26 @@ def build_report():
     build = _cur["build"]
     off = _mods["build_off"] if build else None
     rows = [{"id": m.id, "version": m.manifest.get("version"), "state": (_mods["build_off"].get(m.id) and "빌드 안 맞음") or "ok"} for m in _mods["list"]] if build else None
-    return buildreport.build_text(last["info"], last["why"], load_builds(), modlib.CORE_VERSION, off, rows)
+    return buildreport.build_text(last["info"], last["why"], load_builds(), modlib.CORE_VERSION, off, rows, func_lines=_func_lines(last["info"]))
+
+
+def _func_lines(info):
+    """M57: 함수 등록부 서명 확인 + 클래스 기반 찾기. RTTI 표 캐시가 있을 때만 클래스 기반까지 (없으면 처음 30초 걸려서)."""
+    exe = (info or {}).get("path")
+    if not exe or not os.path.exists(exe):
+        return None
+    try:
+        import funcmap
+        rtti = funcmap._rtti()
+        deep = os.path.exists(rtti.cache_path(os.path.getsize(exe)))
+        with open(bundle.FUNCS_JSON, encoding="utf-8") as f:
+            funcs = json.load(f)["functions"]
+        lines = funcmap.summary(funcs, exe, deep)
+        if not deep:
+            lines.append("클래스 기반 찾기는 RTTI 표가 있어야 해요 (cli.py classes . 한 번 실행 → 다시 보고서)")
+        return lines
+    except Exception as e:  # noqa: BLE001
+        return ["확인 실패: %r" % e]
 
 
 def save_build_report():
