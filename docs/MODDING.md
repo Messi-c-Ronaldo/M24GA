@@ -362,7 +362,7 @@ m24.toast('저장했어요');                      // 앱 아래에 토스트
 
 ### 게임 값 쓰기 (코어 0.7.0, 필드 등록부 0.10.0)
 
-쓸 수 있는 값은 [`FIELDS.md`](FIELDS.md)에서 **쓰기: safe**인 칸이에요 (지금은 **선수 잠재력(PA)** 하나). `api.setField(obj, '이름', value, { expect, reason })` → `{ ok, before, after, name, error }`. `obj`는 게임 객체 또는 그 종류의 key(선수는 UID)예요. PA는 예전처럼 `api.setPlayerPA(uid, pa, { expect, reason })`로도 써요 (같은 확인·기록).
+쓸 수 있는 값은 [`FIELDS.md`](FIELDS.md)에서 **쓰기: safe**인 칸이에요 (선수 잠재력(PA), 감독 과거 경력 값, **선수 능력치 54개** `player.attr.*`(코어 0.42.0, M72): 능력치는 **저장 값 1~100**으로 써요 = 화면 값 × 5. 읽기 `getField`는 화면 값 1~20). `api.setField(obj, '이름', value, { expect, reason })` → `{ ok, before, after, name, error }`. `obj`는 게임 객체 또는 그 종류의 key(선수는 UID)예요. PA는 예전처럼 `api.setPlayerPA(uid, pa, { expect, reason })`로도 써요 (같은 확인·기록).
 
 - 칸마다 필요한 기능이 있어요 (기본 `write.field`, PA는 `write.player.pa`). `mod.json`에 선언해야 하고, 사용자가 앱에서 허용해야 모드가 켜져요. 선언하지 않은 모드가 부르면 `ok: false`예요. `validate`는 없는 필드 이름과 읽기만 되는 칸 쓰기를 오류로 알려 줘요.
 - 코어가 확인하는 것: 세이브를 불러왔는지, 같은 객체인지(종류의 key와 `check` 칸이 쓰기 전후 그대로인지, 선수는 UID·생년월일), 형식 범위와 칸의 `range`(PA 1~200), `gte`/`lte`(PA는 **CA보다 낮지 않게**), 정수 칸에는 정수만, `expect`를 줬다면 지금 값이 그 값인지, 모드마다 1분에 600번 이하인지. 하나라도 안 맞으면 쓰지 않고 이유를 `error`로 돌려줘요.

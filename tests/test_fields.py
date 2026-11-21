@@ -53,7 +53,9 @@ class Registry(unittest.TestCase):
                 self.assertIn("verified", f)
                 if f.get("write") == "safe":
                     self.assertIn(f["type"], WRITABLE)
-                    self.assertFalse(f.get("map"), "바꿔 읽는 칸은 쓸 수 없다")
+                    if f.get("map"):   # 바꿔 읽는 칸(능력치 t20, M72)은 저장 값으로 쓴다: 저장 값 범위와 단위 설명이 있어야 한다 (되돌리기가 정확하게)
+                        self.assertTrue(f.get("range"), "바꿔 읽는 칸의 쓰기는 저장 값 range가 필요하다")
+                        self.assertIn("저장", f.get("unit", ""), "바꿔 읽는 칸은 unit에 저장 값 단위를 적는다")
                     self.assertIn(f.get("cap") or "write.field", capnames)
                     self.assertTrue(f.get("verified"), "쓰기는 확인된 칸만")
                     k = self.fr["kinds"][f["kind"]]

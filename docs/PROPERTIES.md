@@ -65,17 +65,39 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Cytv` | club | int | 유소년 코칭 수준 1~20 (M71) |
 | `Hplk` | human | int | 감독의 선수 이해도 1~20 (M71) |
 | `Natt` | team, club, staff, human, comp, award, country | int | 스태프 코칭 능력: 공격 1~20 (M71) |
+| `Nbpl` | staff, human | int | 스태프: 선수 영입(구매) 1~20 (M72 쓰기 확인) |
+| `Nbus` | staff, human | int | 스태프: 사업 수완 1~20 (M72 쓰기 확인) |
+| `Ncra` | staff, human | int | 스태프 현재 능력 CA 1~200 (M72 쓰기 확인) |
 | `Ncrr` | staff, human | int | 감독 명성 — 정수 |
+| `Ncsp` | staff, human | int | 스태프 코칭: 세트피스 1~20 (M72 쓰기 확인) |
+| `Ncta` | staff, human | int | 스태프 코칭: 전술 1~20 (M72 쓰기 확인) |
+| `Ncte` | staff, human | int | 스태프 코칭: 기술 1~20 (M72 쓰기 확인) |
 | `Ndal` | staff, human | int | 스태프 성향: 반칙 허용 1~20 (M71) |
+| `Nhmr` | staff, human | int | 스태프 고국 명성 0~10000 (M72 쓰기 확인) |
+| `Nmig` | staff, human | int | 스태프: 심리전 1~20 (M72 쓰기 확인) |
+| `Nneg` | staff, human | int | 스태프: 협상 능력 1~20 (M72 쓰기 확인) |
 | `Nnfx` | team, club, comp, award, country | rec | 다음 경기 묶음 {fixi {fxdt 날짜, fxtm}, home {dref}, …} (M56, 뜻 일부) |
+| `NpIM` | staff, human | int | 스태프 의료: 스포츠 과학 1~20 (M72 쓰기 확인) |
+| `Npad` | staff, human | int | 스태프 성격: 적응력 1~20 (M72 쓰기 확인) |
 | `Npaf` | staff, human | int | 선호 포메이션 (1순위 / 2순위 추정 / 공격·수비 추정) — 정수 0~65 (포메이션 번호) |
+| `Npat` | staff, human | int | 스태프 성격: 참을성 1~20 (M72 쓰기 확인) |
 | `Npde` | staff, human | int | 결단력 — 정수 1~20 |
 | `Npdf` | staff, human | int | 선호 포메이션 (1순위 / 2순위 추정 / 공격·수비 추정) — 정수 0~65 (포메이션 번호) |
+| `Npgd` | staff, human | int | 스태프 GK 코칭: 볼 배급 1~20 (M72 쓰기 확인) |
+| `Npgh` | staff, human | int | 스태프 GK 코칭: 볼 핸들링 1~20 (M72 쓰기 확인) |
+| `Npgs` | staff, human | int | 스태프 GK 코칭: 슈팅 막기 1~20 (M72 쓰기 확인) |
+| `Npld` | staff, human | int | 스태프 정신: 기강 유지 1~20 (M72 쓰기 확인) |
 | `Npmm` | staff, human | int | 선수 관리 — 정수 1~20 |
+| `Npmo` | staff, human | int | 스태프 정신: 동기 부여 1~20 (M72 쓰기 확인) |
 | `Nppf` | staff, human | int | 선호 포메이션 (1순위 / 2순위 추정 / 공격·수비 추정) — 정수 0~65 (포메이션 번호) |
+| `Npph` | staff, human | int | 스태프 의료: 치료 1~20 (M72 쓰기 확인) |
 | `Npsf` | staff, human | int | 선호 포메이션 (1순위 / 2순위 추정 / 공격·수비 추정) — 정수 0~65 (포메이션 번호) |
+| `Npta` | staff, human | int | 스태프 잠재 능력 PA 1~200 (M72 쓰기 확인) |
 | `Nptk` | staff, human | int | 전술 지식 — 정수 1~20 |
+| `Npwy` | staff, human | int | 스태프 코칭: 유소년 육성 1~20 (M72 쓰기 확인) |
+| `Nres` | staff, human | int | 스태프: 재원 관리 1~20 (M72 쓰기 확인) |
 | `Ntem` | staff, human | int | 기질 (숨은 값) — 정수 1~20 |
+| `Nwrr` | staff, human | int | 스태프 세계 명성 0~10000 (M72 쓰기 확인) |
 | `PAap` | player | int | 통산 출전 — 정수 |
 | `PAcg` | player | int | 골 — 정수 |
 | `PCAB` | player | int | 현재 능력 CA (M58: 필드 player.ca와 같음 179) |
@@ -221,8 +243,8 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 
 `api.setProp(대상, '코드', 값, {expect, reason})` → Promise `{ok, before, after, code, key, error}` (Python `ctx.set_prop`). 게임 자신의 setter(속성 객체 vtable +0x18)를 화면 스레드에서 불러요. 정수·불리언·실수만 되고, 기록되고 앱에서 되돌릴 수 있어요.
 
-- **safe** (29개): 쓰기 → 화면 → 하루 진행 → 저장 뒤 다시 불러오기까지 확인했어요 (M71).
-- **tested** (200개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
+- **safe** (55개): 쓰기 → 화면 → 하루 진행 → 저장 뒤 다시 불러오기까지 확인했어요 (M71).
+- **tested** (174개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
 - **쓰지 않는 코드**: `DELE`, `duni`, `dsha`, `noni`, `nsss`, `rdui`, `Ptyp` (`Ptyp`는 사람 종류를 바꿔서 게임이 객체를 새로 만들어요).
 
 | 코드 | 종류 | 범위 | 뜻 |
@@ -256,6 +278,32 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Phei` | player | 140~220 | 키 cm (M58 화면 187) |
 | `Pwei` | player | 40~140 | 몸무게 kg (M58 화면 81) |
 | `Pfit` | player | 0~10000 | 경기 감각 0~10000 (M71) |
+| `Nbpl` | staff | 1~20 | 스태프: 선수 영입(구매) 1~20 (M72 쓰기 확인) |
+| `Nbus` | staff | 1~20 | 스태프: 사업 수완 1~20 (M72 쓰기 확인) |
+| `Ncra` | staff | 1~200 (≤ Npta) | 스태프 현재 능력 CA 1~200 (M72 쓰기 확인) |
+| `Ncrr` | staff | 0~10000 | 감독 명성 — 정수 |
+| `Ncsp` | staff | 1~20 | 스태프 코칭: 세트피스 1~20 (M72 쓰기 확인) |
+| `Ncta` | staff | 1~20 | 스태프 코칭: 전술 1~20 (M72 쓰기 확인) |
+| `Ncte` | staff | 1~20 | 스태프 코칭: 기술 1~20 (M72 쓰기 확인) |
+| `Nhmr` | staff | 0~10000 | 스태프 고국 명성 0~10000 (M72 쓰기 확인) |
+| `Nmig` | staff | 1~20 | 스태프: 심리전 1~20 (M72 쓰기 확인) |
+| `Nneg` | staff | 1~20 | 스태프: 협상 능력 1~20 (M72 쓰기 확인) |
+| `NpIM` | staff | 1~20 | 스태프 의료: 스포츠 과학 1~20 (M72 쓰기 확인) |
+| `Npad` | staff | 1~20 | 스태프 성격: 적응력 1~20 (M72 쓰기 확인) |
+| `Npat` | staff | 1~20 | 스태프 성격: 참을성 1~20 (M72 쓰기 확인) |
+| `Npde` | staff | 1~20 | 결단력 — 정수 1~20 |
+| `Npgd` | staff | 1~20 | 스태프 GK 코칭: 볼 배급 1~20 (M72 쓰기 확인) |
+| `Npgh` | staff | 1~20 | 스태프 GK 코칭: 볼 핸들링 1~20 (M72 쓰기 확인) |
+| `Npgs` | staff | 1~20 | 스태프 GK 코칭: 슈팅 막기 1~20 (M72 쓰기 확인) |
+| `Npld` | staff | 1~20 | 스태프 정신: 기강 유지 1~20 (M72 쓰기 확인) |
+| `Npmm` | staff | 1~20 | 선수 관리 — 정수 1~20 |
+| `Npmo` | staff | 1~20 | 스태프 정신: 동기 부여 1~20 (M72 쓰기 확인) |
+| `Npph` | staff | 1~20 | 스태프 의료: 치료 1~20 (M72 쓰기 확인) |
+| `Npta` | staff | 1~200 (≥ Ncra) | 스태프 잠재 능력 PA 1~200 (M72 쓰기 확인) |
+| `Nptk` | staff | 1~20 | 전술 지식 — 정수 1~20 |
+| `Npwy` | staff | 1~20 | 스태프 코칭: 유소년 육성 1~20 (M72 쓰기 확인) |
+| `Nres` | staff | 1~20 | 스태프: 재원 관리 1~20 (M72 쓰기 확인) |
+| `Nwrr` | staff | 0~10000 | 스태프 세계 명성 0~10000 (M72 쓰기 확인) |
 
 <details><summary><b>tested 코드</b> (종류별)</summary>
 
@@ -265,7 +313,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 - **contract** (4): `Ceda` `Csda` `Csts` `PSJO`
 - **human** (12): `HSbr` `Hcit` `MHSP` `MHTY` `MREP` `MRSP` `MTSP` `Nnat` `mdty` `mibh` `mmCA` `mrCA`
 - **media** (3): `Mper` `Mscp` `Msty`
-- **staff** (52): `Nbpl` `Nbus` `Ncra` `Ncrr` `Ncsp` `Ncta` `Ncte` `Ndep` `Ndir` `Necc` `Nfla` `Nflx` `Nhat` `Nhmr` `Nint` `Nmig` `Nneg` `NpIM` `Npad` `Npaf` `Npat` `Npcs` `Npde` `Npdf` `Npgd` `Npgh` `Npgs` `Npld` `Npmm` `Npmo` `Nppf` `Npph` `Npre` `Npsf` `Npta` `Nptk` `Npvr` `Npwy` `Nres` `Nrot` `Ntem` `Nwid` `Nwrr` `Phes` `Pwes` `SPDm` `SPaf` `SPan` `SPdn` `SPdt` `SPpd` `Spdl`
+- **staff** (26): `Ndep` `Ndir` `Necc` `Nfla` `Nflx` `Nhat` `Nint` `Npaf` `Npcs` `Npdf` `Nppf` `Npre` `Npsf` `Npvr` `Nrot` `Ntem` `Nwid` `Phes` `Pwes` `SPDm` `SPaf` `SPan` `SPdn` `SPdt` `SPpd` `Spdl`
 - **country** (4): `Necf` `Ngct` `Nsod` `Nygn`
 - **player** (20): `Pamc` `Paml` `Pamr` `Pdce` `Pdls` `Pdmc` `Pdrs` `Phes` `Pirr` `Pjad` `Plcp` `Pmce` `Pmrs` `PnrI` `Porl` `Prid` `Psnu` `Pwbl` `Pwbr` `Pwes`
 - **stadium** (25): `Sbld` `Scov` `Scpy` `Sdah` `Sdcy` `Sdtr` `Secy` `Senv` `Slat` `Slon` `Snft` `Soty` `Sovl` `Sprr` `Sptc` `Spty` `Srbd` `Srrf` `Sscy` `SsfT` `Sste` `Su19` `Su21` `Sunt` `Sush`
