@@ -2425,6 +2425,38 @@ function propDeref(d) {
   return null;
 }
 M24GA.propGet = propGet; M24GA.propsAll = propsAll; M24GA.propInfo = propInfo; M24GA.propDeref = propDeref;   // 모드 api.prop/props/propInfo/deref
+
+// ---- 리그 경기 결과 (코어 0.40.0, M63) ----
+// 보도 안 되는 경기도: 리그(대회 속성 actm = 참가 팀)의 팀마다 다음 경기(Tnef: 경기 번호 FRfr, home, away, 날짜)와
+// 누적 리그 기록(Tomp 경기 수, Tlgs 득점, Tlgc 실점)을 기억해 두고, 다음에 부를 때 경기 수가 늘었으면 늘어난 득점·실점 = 그 경기 점수.
+// 홈 팀 기준으로 한 번만 낸다. 처음 부르면 기준만 잡고 []. 하루에 두 경기를 하거나 기록이 리그 밖(컵)이면 맞지 않을 수 있어 건너뜀.
+var LEAGUE_SNAP = {};
+function leagueTeamSnap(t) {
+  var nf = propGet(t, 'Tnef') || {}, f = nf.FRfr && nf.FRfr.dref;
+  return { omp: propGet(t, 'Tomp'), gs: propGet(t, 'Tlgs'), gc: propGet(t, 'Tlgc'), fx: f || null,
+    home: nf.home && nf.home.dref, away: nf.away && nf.away.dref, date: nf.fxdt || null, comp: nf.comp && nf.comp.dref };
+}
+function leagueResults(compSpec) {
+  var c = compSpec === 'myleague' ? propDeref(propGet('myteam', 'Cdiv')) : propResolve(compSpec);
+  if (!c || className(c) !== 'db::COMP') throw new Error('리그(대회)를 찾지 못했어요: ' + compSpec);
+  var key = c.add(8).readU32(), cdref = (0x19000000 | key) >>> 0, teams = (propGet(c, 'actm') || []).map(function (x) { return x && x.dref; }).filter(Boolean);
+  var now = {}, prev = LEAGUE_SNAP[key], out = [], seen = {};
+  teams.forEach(function (d) { var t = propDeref(d); if (t) { try { now[d] = leagueTeamSnap(t); } catch (e) {} } });
+  if (prev) {
+    teams.forEach(function (d) {
+      var a = prev[d], b = now[d]; if (!a || !b || !a.fx || a.home !== d || a.comp !== cdref) return;   // 홈 팀 쪽, 이 리그 경기만
+      if (b.omp !== a.omp + 1 || b.fx === a.fx) return;
+      var o = a.away, oa = prev[o], ob = now[o]; if (!oa || !ob || ob.omp !== oa.omp + 1 || oa.fx !== a.fx || seen[a.fx]) return;
+      var hg = b.gs - a.gs, ag = b.gc - a.gc;
+      if (hg !== ob.gc - oa.gc || ag !== ob.gs - oa.gs || hg < 0 || ag < 0) return;   // 양쪽 기록이 맞을 때만
+      seen[a.fx] = 1;
+      out.push({ home: propDeref(d), away: propDeref(o), homeGoals: hg, awayGoals: ag, date: a.date, fixture: a.fx, comp: c });
+    });
+  }
+  LEAGUE_SNAP[key] = now;
+  return out;
+}
+M24GA.leagueResults = leagueResults;
 var dbgLines = [], dbgFile = null;
 function dbg(msg) {   // 진단 기록 (처음 40줄만)
   if (dbgLines.length >= 40) return;

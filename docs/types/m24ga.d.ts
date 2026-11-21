@@ -92,6 +92,8 @@ interface ModApi {
   propInfo(code: string): { code: string; t: string; k: string[]; blocked: boolean } | null;
   /** {dref} 또는 번호 -> 게임 객체 (0x01 사람, 0x03 구단, 0x18 팀, 0x19 대회). 모르면 null */
   deref(d: { dref: number } | number): Ptr | null;
+  /** (코어 0.40.0, read.prop) 리그 경기 결과 (보도 안 되는 경기 포함). 대회 객체 또는 'myleague'. 지난번 부른 뒤 끝난 경기. 처음엔 기준만 잡고 [] */
+  leagueResults(comp: Ptr | 'myleague'): { home: Ptr; away: Ptr; homeGoals: number; awayGoals: number; date: string | null; fixture: number; comp: Ptr }[];
   panel: {
     open(form: PanelForm, cb?: (ev: PanelEvent) => void): PanelHandle;
     /** 게임 안 패널을 지금 쓸 수 있는가 (패널 칸 파일과 게임 함수 확인) */

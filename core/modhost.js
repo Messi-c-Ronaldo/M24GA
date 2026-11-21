@@ -355,7 +355,10 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
     prop: function (obj, code) { return M24GA.propGet(obj, code); },
     props: function (obj, opts) { return M24GA.propsAll(obj, opts); },
     propInfo: function (code) { return M24GA.propInfo(code); },
-    deref: function (d) { return M24GA.propDeref(d); },   // {dref} -> 객체 (사람·구단·팀·대회), 모르면 null
+    deref: function (d) { return M24GA.propDeref(d); },
+    // (코어 0.40.0, 기능 read.prop) 리그 경기 결과 (보도 안 되는 경기 포함): 대회 객체 또는 'myleague'. 지난번 부른 뒤 끝난 경기 [{home, away, homeGoals, awayGoals, date, fixture, comp}].
+    // 처음 부르면 기준만 잡고 []. dateChanged마다 부르면 그날 경기가 나와요
+    leagueResults: function (comp) { return M24GA.leagueResults(comp); },   // {dref} -> 객체 (사람·구단·팀·대회), 모르면 null
     panel: {
       open: function (form, cb) { return alive ? m24gaPanelOpen(id, form, cb) : { ok: false, error: '내려간 모드' }; },
       available: function () { return !!(M24GA.panelAvailable && M24GA.panelAvailable()); }

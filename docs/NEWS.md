@@ -55,6 +55,20 @@ api.on('matchEnded', function (ev) {
 - 게임이 보도하는 리그·대회의 경기만 보고서가 나와요 (사흘에 수십 경기). 모든 경기 결과가 필요하면 아직 방법이 없어요 (AI 경기 처리 함수 `fm+0x34632a0`은 점수 칸을 못 찾음, M53).
 - 승부차기·연장은 아직 구별하지 않아요.
 
+## 리그 경기 결과 (보도 안 되는 경기 포함, 코어 0.40.0)
+
+```js
+api.on('dateChanged', function () {
+  api.leagueResults('myleague').forEach(function (m) {   // 또는 대회 객체 (api.deref(api.prop(팀, 'Cdiv')))
+    api.log(m.date + ' ' + api.prop(m.home, 'Tnam').Tsna + ' ' + m.homeGoals + '-' + m.awayGoals + ' ' + api.prop(m.away, 'Tnam').Tsna);
+  });
+});
+```
+
+- 리그 참가 팀(대회 속성 `actm`)마다 다음 경기(`Tnef`: 경기 번호·홈·원정·날짜)와 누적 리그 기록(`Tomp` 경기 수, `Tlgs` 득점, `Tlgc` 실점)을 기억해 두고, 다음에 부를 때 늘어난 득점·실점으로 점수를 계산해요. 두 팀 기록이 서로 맞을 때만 내요.
+- 처음 부르면 기준만 잡고 `[]`. `dateChanged`마다 부르면 전날 경기가 나와요. 리그 경기만 (컵 경기는 `matchEnded`).
+- 실기 (M63): 라리가 11-09 "마요르카 2-4 레반테", "알라베스 0-1 테네리페" — 경기 보고 뉴스(`matchEnded`)와 같았어요.
+
 ## 자주 나오는 뉴스 종류
 
 M53·M56 실기(하루 약 700개)에서 많이 본 것:
