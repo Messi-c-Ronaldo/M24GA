@@ -8,6 +8,8 @@
 | `fmfdump.py` | `.fmf` 아카이브 안의 zstd 프레임을 풀어 폴더에 저장한다 | `python fmfdump.py <pylib 폴더> <파일.fmf> <출력 폴더>` |
 | `fmfgrep2.py` | `.fmf` 아카이브의 zstd 프레임을 풀면서 정규식으로 검색한다 | `python fmfgrep2.py <pylib 폴더> <정규식> <파일.fmf> [...]` |
 | `rtti.py` | `fm.exe`의 클래스 정보(MSVC RTTI)로 vtable ↔ 클래스 이름 ↔ 상속 표를 만든다 (클래스 1만여 개). 결과는 `~/m24ga_data/rtti/`에 캐시. 패키지 필요 없음. Denuvo 빌드라 섹션 이름이 뒤섞여 있어서 크기로 구역을 고른다 | `python -X utf8 rtti.py build` / `find <정규식>` / `vt <RVA>` / `stats` (CLI `classes`가 이걸 쓴다). `PE(...).func_of(rva)`: 예외 테이블로 그 주소가 든 함수의 시작·끝 (CLI `watch-write`가 쓴다) |
+| `props_catalog.py` | 속성 전수 조사 결과(scan_*.json)로 속성 등록부 `core/properties.json`과 `docs/PROPERTIES.md`를 만든다 (M55). 이미 적은 뜻(ko)은 유지 | `python -X utf8 props_catalog.py <scan 폴더>` / `--docs` (문서만) |
+| `func_vf.py` | 함수 등록부에 클래스 기반 주소 `vf`와 긴 검색 바이트 `find`를 채우고, 빌드가 바뀌었을 때 다시 찾기를 확인한다 (M57, `loader/funcmap.py`) | `python -X utf8 func_vf.py fill` / `check` |
 | `ltc_extract.py` | `data/shared.fmf` 안의 한국어 번역 `.ltc`를 CSV로 추출한다 (게임 문구 찾기용) | `python ltc_extract.py [시작 오프셋] [출력.csv]` |
 
 ## 준비
