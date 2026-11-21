@@ -898,15 +898,19 @@ def cmd_get(args):
 
 
 def _prop_names():
-    """개발 PC에만 있는 속성 영어 이름표 (~/m24ga_data/prop_names.tsv, 게임 파일에서 뽑은 것이라 저장소에 없음)."""
+    """개발 PC에만 있는 속성 이름표 (~/m24ga_data/prop_names.tsv = 코드, 영어, 게임 언어, 표시 형식, 분류 (탭으로 나눔), `tools/prop_names.py`가 게임 파일에서 만들어서 저장소에는 없음).
+    돌려주는 값 = {코드: "게임 언어 이름 (영어) [분류 · 표시 형식]"} (없는 칸은 빼고, 예전 2열 표도 읽음)."""
     names = {}
     path = os.path.join(modlib.DATA, "prop_names.tsv")
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             for line in f:
-                if "\t" in line:
-                    c, n = line.rstrip("\n").split("\t", 1)
-                    names[c] = n
+                p = line.rstrip("\n").split("\t")
+                if len(p) >= 2 and p[0]:
+                    en, loc = p[1], (p[2] if len(p) > 2 else "")
+                    label = "%s (%s)" % (loc, en) if loc and loc != en else (loc or en)
+                    extra = " · ".join(x for x in (p[4] if len(p) > 4 else "", p[3] if len(p) > 3 else "") if x)   # 분류 · 표시 형식 (예: 재정 · cash_cell)
+                    names[p[0]] = label + (" [%s]" % extra if extra else "")
     return names
 
 

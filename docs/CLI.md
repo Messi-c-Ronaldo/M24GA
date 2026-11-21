@@ -270,7 +270,7 @@ m24cli get myclub club.name
 python -X utf8 loader/cli.py props myclub "^(Ccba|Ctfc|Cwwb)$"   # 잔고·이적 예산·주급 예산
 python -X utf8 loader/cli.py props player:2002117436 "^P(ced|dob|cwg)$"
 ```
-개발 PC에 `~/m24ga_data/prop_names.tsv`(코드\t영어 이름, 게임 파일에서 뽑은 것이라 저장소에 없음)가 있으면 이름도 같이 보여요.
+`~/m24ga_data/prop_names.tsv`(코드, 영어, 게임 언어, 표시 형식, 분류)가 있으면 이름도 같이 보여요 (예: `크로스 (Crossing) [능력치 · attribute_label]`). 이 표는 게임 글이라 저장소에 없어요. **각자 `python -X utf8 tools/prop_names.py --pylib <zstandard 폴더>`로 자기 게임 파일에서 만들어요** (1,655개, 첫 실행 2~3분, 언어는 `--lang`). 등록부 2,297개 중 약 900개가 이름을 가져요 (나머지는 게임 화면에 이름이 없는 내부 코드).
 
 #### `prop-find <대상> <값>` (코어 0.36.0)
 화면에 보이는 값(숫자·글·날짜 `2038-06-30`)이 어느 속성 코드에 있는지 찾아요 (묶음·목록 안까지). 뜻을 모르는 코드를 확인할 때.

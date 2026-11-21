@@ -15,7 +15,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 - 값 종류: `int` 정수, `u32` 부호 없는 정수, `num` 실수, `bool`, `str` 글, `date` 날짜(`'2038-06-30'`, 빈 날짜는 null), `color` 색(`'#rrggbbaa'`), `rec` 묶음(`{키: 값}`), `list` 목록, `data` 내부 자료(null), `empty` 조사한 객체에서는 늘 빈 값.
 - `{dref: 번호}` = 다른 게임 객체 링크. 위 8비트가 종류예요: `0x01` 사람, `0x03` 구단, `0x18` 팀, `0x19` 대회 (`api.deref`). 국가·경기장 등 나머지 종류는 링크로 못 따라가고, 다른 객체가 가리키는 포인터로만 닿아요 (예: `matchEnded`의 `ev.stadium`).
 - 값은 **게임 화면이 보여 주는 값 그대로**예요. 뜻(ko)을 적은 것만 화면과 맞춰 봤어요. 나머지는 이름을 보고 짐작해서 쓰되, 직접 확인하세요.
-- 영어 이름은 게임 파일(`properties.fmf`)에만 있어서 저장소에 넣지 않았어요. 개발 PC에 `~/m24ga_data/prop_names.tsv`(`코드\t이름`)가 있으면 CLI `props`가 같이 보여 줘요.
+- 이름은 게임 파일(`properties.fmf` + 번역 파일)에만 있어서 저장소에 넣지 않았어요. `python -X utf8 tools/prop_names.py`가 자기 게임 파일에서 `~/m24ga_data/prop_names.tsv`(코드, 영어, 게임 언어, 표시 형식, 분류)를 만들고, 있으면 CLI `props`·`prop-info`가 이름·표시 형식을 같이 보여 줘요.
 
 **부르지 않는 코드** (게임 안에서 접근 오류): `CMli`
 
