@@ -17,7 +17,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "loader"))
 
 KEEP_DIRS = ("loader", "core", "builds", "mods", "pylib", "docs", "examples", "tools")
-KEEP_FILES = ("LICENSE", "README.md", "requirements.txt", "AGENTS.md")
+KEEP_FILES = ("LICENSE", "README.md", "README.en.md", "requirements.txt", "AGENTS.md")
 
 LAUNCH_APP = """@echo off
 rem M24GA 로더 앱 (더블클릭). 창을 닫으면 모드도 멈춰요. 이 폴더 안의 Python을 써요 (따로 설치할 필요 없음).
