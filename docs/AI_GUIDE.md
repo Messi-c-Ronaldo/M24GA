@@ -87,6 +87,7 @@ M24GA(FM24 모드 로더)용 모드를 만들어 줘.
 | 글에 나온 클럽·선수·감독의 게임 데이터 읽기 | `linkIds(text)` → `lookup(clubs/persons/staff, idx, VT)` → `getVal` / `getInt` (5절의 필드표) |
 | 선수의 현재 능력(CA)·잠재력(PA)·생년월일 | `playerInfo(playerOf(lookup(persons, idx, PERSON_VT)))` (모든 선수: `playerUids()` + `playerByUid`) |
 | 선수의 이번 시즌 기록(대회별)·xG·포지션·성격·소속 리그 | `playerSeason(p, 'league')`, `playerSeasonDetail(p)`, `playerPositions(p)`/`playerPosition(p)`, `playerTraits(p)`, `playerTeam(p)` (p = `playerByUid(uid)`) |
+| 선수 능력치 54개 (기술·정신·신체·GK·숨은 값·양발) | `getField(p, 'player.attr.crossing')` … (1~20, 목록 [`FIELDS.md`](FIELDS.md) `player.attr.*`), CLI `get player:<uid> player.attr.` |
 | 선수 객체에서 속성(`getVal`) 읽기 | `getVal(personOf(p), 'PCRP')` (코어 0.9.0) |
 | 등록된 게임 값을 이름으로 읽기 (몸값·시즌 기록·포지션·클럽 이름 …) | `getField(findObj('player', uid), 'player.askingPrice')` (코어 0.10.0, `read.field`, 목록 [`FIELDS.md`](FIELDS.md), CLI `fields`) |
 | 쓰기가 확인된 게임 값 바꾸기 | `api.setField(obj, 'player.pa', 150, { expect: 149, reason })` (FIELDS.md의 **쓰기: safe**만, 그 칸의 쓰기 기능 + 사용자 허용, 기록·되돌리기) |

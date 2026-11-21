@@ -35,6 +35,60 @@
 | `player.determination` | +0x24a | u8 (t20) | 결단력 (게임은 1~100으로 저장, (v+2)/5로 1~20에 맞춤) [1~20 (저장은 1~100)] | - | ✔ P03, P04 (playerTraits) |
 | `player.workRate` | +0x234 | u8 (t20) | 활동량 (게임은 1~100으로 저장, (v+2)/5로 1~20에 맞춤) [1~20 (저장은 1~100)] | - | ✔ P03, P04 (playerTraits) |
 | `player.flair` | +0x231 | u8 (t20) | 창의성 (게임은 1~100으로 저장, (v+2)/5로 1~20에 맞춤) [1~20 (저장은 1~100)] | - | ✔ P03, P04 (playerTraits) |
+| `player.attr.crossing` | +0x217 | u8 (t20) | 능력치 크로스 (블록 +0x217의 0번째, 화면 위젯 Pcro) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.dribbling` | +0x218 | u8 (t20) | 능력치 드리블 (블록 +0x217의 1번째, 화면 위젯 Pdri) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.finishing` | +0x219 | u8 (t20) | 능력치 골 결정력 (블록 +0x217의 2번째, 화면 위젯 Pfin) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.heading` | +0x21a | u8 (t20) | 능력치 헤더 (블록 +0x217의 3번째, 화면 위젯 Phea) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.longShots` | +0x21b | u8 (t20) | 능력치 중거리 슛 (블록 +0x217의 4번째, 화면 위젯 Plsh) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.marking` | +0x21c | u8 (t20) | 능력치 대인 마크 (블록 +0x217의 5번째, 화면 위젯 Pmar) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.offTheBall` | +0x21d | u8 (t20) | 능력치 오프 더 볼 (블록 +0x217의 6번째, 화면 위젯 Potb) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.passing` | +0x21e | u8 (t20) | 능력치 패스 (블록 +0x217의 7번째, 화면 위젯 Ppas) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.penaltyTaking` | +0x21f | u8 (t20) | 능력치 페널티 킥 (블록 +0x217의 8번째, 화면 위젯 Ppen) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.tackling` | +0x220 | u8 (t20) | 능력치 태클 (블록 +0x217의 9번째, 화면 위젯 Ptac) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.vision` | +0x221 | u8 (t20) | 능력치 시야 (블록 +0x217의 10번째, 화면 위젯 Pcre) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.handling` | +0x222 | u8 (t20) | 능력치 핸들링 (GK) (블록 +0x217의 11번째, 화면 위젯 Phan) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.aerialReach` | +0x223 | u8 (t20) | 능력치 공중 볼 처리 (GK) (블록 +0x217의 12번째, 화면 위젯 Paab) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.commandOfArea` | +0x224 | u8 (t20) | 능력치 지역 장악 (GK) (블록 +0x217의 13번째, 화면 위젯 Pcoa) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.communication` | +0x225 | u8 (t20) | 능력치 의사소통 (GK) (블록 +0x217의 14번째, 화면 위젯 Pcom) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.kicking` | +0x226 | u8 (t20) | 능력치 킥 (GK) (블록 +0x217의 15번째, 화면 위젯 Pkic) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.throwing` | +0x227 | u8 (t20) | 능력치 스로잉 (GK) (블록 +0x217의 16번째, 화면 위젯 Pthr) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.anticipation` | +0x228 | u8 (t20) | 능력치 예측력 (블록 +0x217의 17번째, 화면 위젯 Pant) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.decisions` | +0x229 | u8 (t20) | 능력치 판단력 (블록 +0x217의 18번째, 화면 위젯 Pdec) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.oneOnOnes` | +0x22a | u8 (t20) | 능력치 일대일 (GK) (블록 +0x217의 19번째, 화면 위젯 Pooo) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.positioning` | +0x22b | u8 (t20) | 능력치 위치 선정 (블록 +0x217의 20번째, 화면 위젯 Ppsn) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.reflexes` | +0x22c | u8 (t20) | 능력치 반사 신경 (GK) (블록 +0x217의 21번째, 화면 위젯 Pref) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.firstTouch` | +0x22d | u8 (t20) | 능력치 퍼스트 터치 (블록 +0x217의 22번째, 화면 위젯 Pfrs) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.technique` | +0x22e | u8 (t20) | 능력치 테크닉 (블록 +0x217의 23번째, 화면 위젯 Ptec) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.leftFoot` | +0x22f | u8 (t20) | 능력치 왼발 (블록 +0x217의 24번째, 화면 위젯 Plft) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.rightFoot` | +0x230 | u8 (t20) | 능력치 오른발 (블록 +0x217의 25번째, 화면 위젯 Prft) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.flair` | +0x231 | u8 (t20) | 능력치 창의성 (블록 +0x217의 26번째, 화면 위젯 Pfla) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.corners` | +0x232 | u8 (t20) | 능력치 코너킥 (블록 +0x217의 27번째, 화면 위젯 Pcor) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.teamwork` | +0x233 | u8 (t20) | 능력치 팀워크 (블록 +0x217의 28번째, 화면 위젯 Ptwr) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.workRate` | +0x234 | u8 (t20) | 능력치 활동량 (블록 +0x217의 29번째, 화면 위젯 Pwkr) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.longThrows` | +0x235 | u8 (t20) | 능력치 롱 스로인 (블록 +0x217의 30번째, 화면 위젯 Plth) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.eccentricity` | +0x236 | u8 (t20) | 능력치 기행 (GK) (블록 +0x217의 31번째, 화면 위젯 Pecc) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.rushingOut` | +0x237 | u8 (t20) | 능력치 전진 성향 (GK) (블록 +0x217의 32번째, 화면 위젯 Prou) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.punching` | +0x238 | u8 (t20) | 능력치 펀칭 성향 (GK) (블록 +0x217의 33번째, 화면 위젯 Pttp) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.acceleration` | +0x239 | u8 (t20) | 능력치 가속도 (블록 +0x217의 34번째, 화면 위젯 Pacc) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.freeKicks` | +0x23a | u8 (t20) | 능력치 프리킥 (블록 +0x217의 35번째, 화면 위젯 Pfrk) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.strength` | +0x23b | u8 (t20) | 능력치 몸싸움 (블록 +0x217의 36번째, 화면 위젯 Pstr) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.stamina` | +0x23c | u8 (t20) | 능력치 지구력 (블록 +0x217의 37번째, 화면 위젯 Psta) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.pace` | +0x23d | u8 (t20) | 능력치 속도 (블록 +0x217의 38번째, 화면 위젯 Ppac) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.jumpingReach` | +0x23e | u8 (t20) | 능력치 점프력 (블록 +0x217의 39번째, 화면 위젯 Pjum) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.leadership` | +0x23f | u8 (t20) | 능력치 리더십 (블록 +0x217의 40번째, 화면 위젯 Pinf) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.dirtiness` | +0x240 | u8 (t20) | 능력치 더티 플레이 (숨은 값) (블록 +0x217의 41번째, 화면 위젯 Pdir) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.balance` | +0x241 | u8 (t20) | 능력치 균형 감각 (블록 +0x217의 42번째, 화면 위젯 Pbal) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.bravery` | +0x242 | u8 (t20) | 능력치 대담성 (블록 +0x217의 43번째, 화면 위젯 Pbra) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.consistency` | +0x243 | u8 (t20) | 능력치 꾸준함 (숨은 값) (블록 +0x217의 44번째, 화면 위젯 PCON) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.aggression` | +0x244 | u8 (t20) | 능력치 공격성 (블록 +0x217의 45번째, 화면 위젯 Pagg) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.agility` | +0x245 | u8 (t20) | 능력치 민첩성 (블록 +0x217의 46번째, 화면 위젯 Pagi) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.importantMatches` | +0x246 | u8 (t20) | 능력치 큰 경기 (숨은 값) (블록 +0x217의 47번째, 화면 위젯 Pimp) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.injuryProneness` | +0x247 | u8 (t20) | 능력치 부상 경향 (숨은 값) (블록 +0x217의 48번째, 화면 위젯 Pipr) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.versatility` | +0x248 | u8 (t20) | 능력치 다재다능 (숨은 값) (블록 +0x217의 49번째, 화면 위젯 Pver) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.naturalFitness` | +0x249 | u8 (t20) | 능력치 타고난 체력 (블록 +0x217의 50번째, 화면 위젯 Pnft) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.determination` | +0x24a | u8 (t20) | 능력치 결단력 (블록 +0x217의 51번째, 화면 위젯 Pdet) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.composure` | +0x24b | u8 (t20) | 능력치 침착성 (블록 +0x217의 52번째, 화면 위젯 Pcmp) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
+| `player.attr.concentration` | +0x24c | u8 (t20) | 능력치 집중력 (블록 +0x217의 53번째, 화면 위젯 Pcnt) [1~20 (저장은 1~100)] | - | ✔ M60 (화면 ATTRIBUTE_LABEL·속성 코드와 선수 2명 54칸 모두 일치, pylib/dpa save_history 순서) |
 | `player.pos.GK` | +0x208 | u8 | 포지션 숙련도 GK [1~20] | - | ✔ P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치) |
 | `player.pos.SW` | +0x209 | u8 | 포지션 숙련도 SW [1~20] | - | ✔ P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치) |
 | `player.pos.DL` | +0x20a | u8 | 포지션 숙련도 DL [1~20] | - | ✔ P03, P04 (playerPositions, 게임 속성 Pgoa… 와 칸별 일치) |
