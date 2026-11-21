@@ -24,7 +24,7 @@ import zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import caps  # noqa: E402  (기능 등록부, M10)
 
-CORE_VERSION = "0.44.0"
+CORE_VERSION = "0.44.1"
 MOD_EXT = ".24mod"
 FROZEN = getattr(sys, "frozen", False)
 ROOT = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
