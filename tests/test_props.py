@@ -94,7 +94,7 @@ class Props(unittest.TestCase):
             core = f.read()
         with open(os.path.join(ROOT, "core", "modhost.js"), encoding="utf-8") as f:
             host = f.read()
-        for s in ("function makePropWriter(", "add(0x18).readPointer()", "M24GA.propKey = propKey", "propset:"):
+        for s in ("function makePropWriter(", "add(0x18).readPointer()", "M24GA.propKey = propKey", "propset:", "function contractOf(", "f.viaCls"):
             self.assertIn(s, core)
         for s in ("function m24gaSetProp(", "function m24gaSetProps(", "setProp: function", "setProps: function", "w.ui && M24GA.runOnUi"):
             self.assertIn(s, host)

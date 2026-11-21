@@ -2045,6 +2045,7 @@ function fieldAddr(obj, f) {
   if (f.alt && Object.prototype.hasOwnProperty.call(f.alt, r.name)) { off = f.alt[r.name]; if (off === null) return null; }
   var base = r.top;
   for (var i = 0; f.via && i < f.via.length; i++) { base = base.add(parseInt(f.via[i], 16)).readPointer(); if (base.isNull()) return null; }
+  if (f.viaCls && className(base) !== f.viaCls) return null;   // 따라간 객체 클래스 확인 (계약 주급 M74: db::FULL_CONTRACT가 아니면 쓰지도 읽지도 않는다)
   return base.add(parseInt(off, 16));
 }
 function fieldRead(a, f) {
@@ -2075,6 +2076,7 @@ function findObj(kindName, key) {
   var o = null;
   if (kind.find === 'player') o = playerByUid(Number(key) >>> 0);
   else if (kind.find === 'human' && (typeof key === 'number' || /^\d+$/.test(String(key)))) o = humans()[Number(key)] || null;   // 0 = 이 PC의 감독
+  else if (kind.find === 'staff') o = lookup(staff, Number(key) >>> 0, STAFF_VT);   // 스태프 표 번호 (+0x8, M74)
   else if (typeof key === 'string' && /^0x[0-9a-f]+$/i.test(key)) o = ptr(key);
   return o && kindMatches(rttiInfo(o), kind) ? (rttiInfo(o).top) : null;
 }
@@ -2338,12 +2340,21 @@ function propTarget(obj) {
   } catch (e) { return null; }
 }
 // 대상 글 -> 객체: 'me'(내 감독), 'myteam', 'myclub', 'myjob'(내 감독 계약), 사람 참조 'p123'/'s45', 'team:<번호>', 'comp:<번호>', '0x주소', 또는 포인터
+// 사람의 (지금) 계약 객체 (M74): 감독 +0x518, 스태프 +0x1c0(지금 구단 칸, +0x428·+0x690은 다른 팀 계약), 선수 +0x340. db::FULL_CONTRACT가 아니면 null
+function contractOf(o) {
+  var r = rttiInfo(o); if (!r) return null;
+  var off = r.name === 'db::HUMAN_NON_PLAYER' ? 0x518 : r.name === 'db::ACTUAL_NON_PLAYER' ? 0x1c0 : r.name === 'db::ACTUAL_PLAYER' ? 0x340 : null;
+  if (off === null) return null;
+  var c = r.top.add(off).readPointer();
+  return (!c.isNull() && className(c) === 'db::FULL_CONTRACT') ? c : null;
+}
 function propResolve(o) {
   if (o && typeof o.add === 'function') return o;
   var s = String(o || ''), m;
   if (s === 'me') return myHuman();
   if (s === 'myteam') return myTeamObj();
   if (s === 'myclub') { var t = myTeamObj(); return t ? clubOfTeam(t) : null; }
+  if ((m = /^contract:(me|[ps]\d+)$/.exec(s))) { var ow = m[1] === 'me' ? myHuman() : personByRef(m[1]); return ow ? contractOf(ow) : null; }   // 사람의 계약 (M74)
   if (s === 'myjob') { var h = myHuman(); if (!h) return null; var j = h.add(0x518).readPointer(); return j.isNull() ? null : j; }   // 내 감독 계약 (db::FULL_CONTRACT)
   if (/^[ps]\d+$/.test(s)) return personByRef(s);
   if ((m = /^team:(\d+)$/.exec(s))) return lookup(clubs, +m[1], CLUB_VT);
@@ -2443,18 +2454,24 @@ function propSetRaw(p, code, r, x) {
 }
 // 객체 -> 쓰기 열쇠 (dref 번호: 세이브를 다시 불러와도 같다 -> 기록·되돌리기에 쓴다)
 function propKey(obj) {
+  var m = typeof obj === 'string' && /^contract:(me|[ps]\d+)$/.exec(obj);
+  if (m || obj === 'myjob') {   // 계약(dref 없음): 'con:<사람 dref>' = 그 사람의 지금 계약 (M73 감독, M74 선수·스태프)
+    var ow = (obj === 'myjob' || m[1] === 'me') ? myHuman() : personByRef(m[1]);
+    var od = ow && propGet(ow, 'dref'); od = od && od.dref;
+    return (typeof od === 'number' && contractOf(ow)) ? 'con:' + (od >>> 0) : null;
+  }
   var o = propResolve(obj); if (!o) return null;
-  if (className(o) === 'db::FULL_CONTRACT') {   // 감독 계약(dref 없음, M73): 'job:<감독 dref>' = 그 감독의 +0x518 계약
+  if (className(o) === 'db::FULL_CONTRACT') {   // 계약 객체를 그대로 넘기면 감독 계약만 찾아 준다
     var hs = humans();
-    for (var i = 0; i < hs.length; i++) { try { if (hs[i].add(0x518).readPointer().equals(o)) { var hd = propGet(hs[i], 'dref'); if (hd && typeof hd.dref === 'number') return 'job:' + (hd.dref >>> 0); } } catch (e) {} }
+    for (var i = 0; i < hs.length; i++) { try { if (hs[i].add(0x518).readPointer().equals(o)) { var hd = propGet(hs[i], 'dref'); if (hd && typeof hd.dref === 'number') return 'con:' + (hd.dref >>> 0); } } catch (e) {} }
     return null;
   }
   var d = propGet(o, 'dref'); d = d && d.dref;
   return typeof d === 'number' && propDeref(d) ? d >>> 0 : null;
 }
-function propByKey(key) {   // propKey의 반대
-  var m = /^job:(\d+)$/.exec(String(key));
-  if (m) { var h = propDeref(+m[1]); if (!h) return null; var j = h.add(0x518).readPointer(); return j.isNull() ? null : j; }
+function propByKey(key) {   // propKey의 반대 (job:은 M73 기록 호환)
+  var m = /^(?:con|job):(\d+)$/.exec(String(key));
+  if (m) { var ow = propDeref(+m[1]); return ow ? contractOf(ow) : null; }
   return typeof key === 'number' ? propDeref(key) : null;
 }
 function makePropWriter(code) {
@@ -2478,7 +2495,8 @@ function makePropWriter(code) {
       } else if (w[2] !== null && (value < w[2] || value > w[3])) return bad(code + '는 ' + w[2] + '~' + w[3] + '이어야 해요');
       if (w[4]) { var lo = propGet(o, w[4]); if (typeof lo === 'number' && value < lo) return bad(code + '는 지금 ' + w[4] + '(' + lo + ')보다 낮을 수 없어요'); }
       if (w[5]) { var hi = propGet(o, w[5]); if (typeof hi === 'number' && value > hi) return bad(code + '는 지금 ' + w[5] + '(' + hi + ')보다 높을 수 없어요'); }
-      if (expect !== undefined && expect !== null && cur !== expect) return bad('지금 ' + code + '(' + cur + ')가 예상(' + expect + ')과 달라요');
+      var show = function (x) { return r.t === 'date' && typeof x === 'number' ? (propDate(x) || x) : x; };   // 날짜는 글로 보여 준다 (M74)
+      if (expect !== undefined && expect !== null && cur !== expect) return bad('지금 ' + code + '(' + show(cur) + ')가 예상(' + show(expect) + ')과 달라요');
       if (cur === value) return { ok: true, before: cur, after: cur, same: true };
       var cls0 = className(rttiInfo(o).top), ok = propSetRaw(tg.p, code, r, value), r1 = propRaw(tg.p, code), cls1 = className(rttiInfo(o).top);
       if (cls1 !== cls0 || propByKey(key) === null || !ptr(propByKey(key)).equals(o))

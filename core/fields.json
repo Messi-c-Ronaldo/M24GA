@@ -31,6 +31,16 @@
       "name": "human.firstName",
       "desc": "사람이 조종하는 감독. findObj('human', 0) = 이 PC의 감독 (코어 0.24.0: 전역 HUMAN_NON_PLAYER_MANAGER fm+0x6365118 +0x18 목록, 쓰기 기록의 열쇠도 이 순번). 코어 newsCtx는 이 객체의 +0x450 위치",
       "find": "human"
+    },
+    "staff": {
+      "cls": "db::ACTUAL_NON_PLAYER",
+      "label": "스태프",
+      "key": "staff.index",
+      "find": "staff",
+      "check": [
+        "staff.index"
+      ],
+      "desc": "감독·코치·스카우트 등 스태프 객체 (코어 staff 표, 참조 's<번호>'). 열쇠 = 표 번호(+0x8). 사람 감독(db::HUMAN_NON_PLAYER)도 이 클래스를 물려받지만 칸 위치가 달라 alt에 적는다 (M74)"
     }
   },
   "fields": {
@@ -1855,6 +1865,75 @@
       "source": "몸값모드 V17 (사람 117,442명 중 116,099개가 서로 다름, 목록 4,235개 중 82%에 현재 팀이 나옴, 홀란·사카·카마빙가·야말 이적·우승·데뷔 기록이 실제와 맞음)",
       "verified": true,
       "write": "no"
+    },
+    "staff.index": {
+      "kind": "staff",
+      "off": "0x100",
+      "type": "u32",
+      "desc": "스태프 표 번호 ('s<번호>' 참조). 표 객체는 맨 앞 +0xf8(사람 부분), 그 +0x8 = 맨 앞 +0x100",
+      "source": "M74 (스태프 500명: 맨 앞 +0x100 = 표 번호, 단장 s93959)",
+      "verified": true,
+      "write": "no",
+      "alt": {
+        "db::HUMAN_NON_PLAYER": null
+      }
+    },
+    "player.contract.wage": {
+      "kind": "player",
+      "via": [
+        "0x340"
+      ],
+      "desc": "선수 계약 주급 (계약 +0x340 -> +0x18, 속성 Cwwa와 같음)",
+      "source": "M74 (홀란 계약 +0x18 = 358813 = 속성 Cwwa·Cwwn·CwyF; 400000/500000으로 쓰자 속성 전부와 세후 CwwT가 따라 바뀌고 프로필 주급 6.75억/8.25억(10만당 1.5억)으로 바뀜, 하루 진행·저장 뒤 다시 불러오기 유지)",
+      "off": "0x18",
+      "type": "i32",
+      "viaCls": "db::FULL_CONTRACT",
+      "range": [
+        0,
+        100000000
+      ],
+      "unit": "내부 단위 (주급)",
+      "verified": true,
+      "write": "safe"
+    },
+    "staff.contract.wage": {
+      "kind": "staff",
+      "via": [
+        "0x1c0"
+      ],
+      "alt": {
+        "db::HUMAN_NON_PLAYER": null
+      },
+      "desc": "스태프 지금 구단 계약 주급 (+0x1c0 -> +0x18). +0x428·+0x690은 다른 팀 계약",
+      "source": "M74 (단장 +0x1c0 계약 +0x18 = Cwwa 29133)",
+      "off": "0x18",
+      "type": "i32",
+      "viaCls": "db::FULL_CONTRACT",
+      "range": [
+        0,
+        100000000
+      ],
+      "unit": "내부 단위 (주급)",
+      "verified": true,
+      "write": "safe"
+    },
+    "human.contract.wage": {
+      "kind": "human",
+      "via": [
+        "0x518"
+      ],
+      "desc": "사람 감독 계약 주급 (+0x518 -> +0x18)",
+      "source": "M74 (내 감독 +0x518 계약 +0x18 = Cwwa 117134)",
+      "off": "0x18",
+      "type": "i32",
+      "viaCls": "db::FULL_CONTRACT",
+      "range": [
+        0,
+        100000000
+      ],
+      "unit": "내부 단위 (주급)",
+      "verified": true,
+      "write": "safe"
     }
   }
 }
