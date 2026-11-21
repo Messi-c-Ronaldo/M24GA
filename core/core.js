@@ -2526,6 +2526,53 @@ M24GA.propValueIn = function (target, code, v) {
 M24GA.propValueOut = function (code, v) { var e = M24_PROPS.p[code]; return (e && e[0] === 'date' && typeof v === 'number') ? propDate(v) : v; };
 M24GA.propWriteTier = function (code) { var w = (M24_PROPS.w || {})[code]; return w ? w[0] : null; };
 M24GA.runOnUi = runOnUi;
+// ---- 반자동 API 탐색 (M78): 검증용 스냅숏·날쓰기. CLI(verify)만 부른다 ----
+function vObj(spec) {
+  var o = propResolve(spec); if (o) return o;
+  var t = exploreResolve(spec); return t && !t.error ? t.p : null;
+}
+// 객체 정체성 + 스칼라 속성 전부 (쓰기 전후 비교로 부작용을 잡는다)
+function vSnap(spec) {
+  var o = vObj(spec); if (!o) return { error: '대상을 찾지 못했어요: ' + spec };
+  var r = rttiInfo(o), out = { cls: r ? r.name : className(o), top: r ? String(r.top) : String(o), key: null, props: {} };
+  try { out.key = propKey(spec); } catch (e) {}
+  var tg = propTarget(o); out.kind = tg ? tg.kind : null;
+  if (tg) {
+    var all = propsAll(o, {});
+    for (var c in all) { var v = all[c]; if (v === null || typeof v !== 'object') out.props[c] = v; }
+  }
+  return out;
+}
+var V_TYPES = { i8: 1, u8: 1, i16: 1, u16: 1, i32: 1, u32: 1, f32: 1, f64: 1 };
+// mode 'prop': 게임 setter(vtable +0x18)로, 'field': 객체 맨 앞(+via 포인터들) + 칸에 메모리로. value가 null이면 읽기만
+function vSet(spec, mode, code, type, value, via) {
+  propsInit();
+  var o = vObj(spec); if (!o) return { error: '대상을 찾지 못했어요: ' + spec };
+  if (mode === 'prop') {
+    var tg = propTarget(o); if (!tg) return { error: '속성 객체가 아니에요' };
+    if (PROP_BLOCK[code]) return { error: '막은 코드예요: ' + code };
+    var r0 = propRaw(tg.p, code); if (!r0) return { error: '이 객체가 ' + code + '에 답하지 않아요' };
+    if (!PROP_SCALAR[r0.t]) return { error: '스칼라가 아니에요 (' + r0.t + ')', t: r0.t };
+    var res = { t: r0.t, before: r0.v };
+    if (value === null || value === undefined) return res;
+    var x = value; if (r0.t === 'date' && typeof x === 'string') { x = propDateEncode(x, r0.v); if (x === null) return { error: '날짜 형식이 아니에요' }; }
+    if (typeof x === 'boolean') x = x ? 1 : 0;
+    res.ok = propSetRaw(tg.p, code, r0, x);
+    var r1 = propRaw(tg.p, code); res.after = r1 ? r1.v : null;
+    if (r0.t === 'date') { res.beforeIso = propDate(res.before); res.afterIso = propDate(res.after); }
+    return res;
+  }
+  if (mode === 'field') {
+    if (!V_TYPES[type]) return { error: '형식은 ' + Object.keys(V_TYPES).join('/') + ' 중 하나' };
+    var r = rttiInfo(o), base = r ? r.top : o;
+    for (var i = 0; via && i < via.length; i++) { base = base.add(parseInt(via[i], 16)).readPointer(); if (base.isNull()) return { error: '따라간 포인터가 비었어요 (' + via[i] + ')' }; }
+    var a = base.add(parseInt(code, 16)), f = { type: type }, before = fieldRead(a, f), out = { t: type, before: before, viaCls: via && via.length ? className(base) : null };
+    if (value === null || value === undefined) return out;
+    fieldWrite(a, f, value); out.ok = 1; out.after = fieldRead(a, f);
+    return out;
+  }
+  return { error: "mode는 'prop' 또는 'field'" };
+}
 // {dref: 번호} 또는 번호 -> 게임 객체. 위 8비트 = 종류: 0x01 사람, 0x03 구단, 0x18 팀(국가대표 포함), 0x19 대회. 모르는 종류·없는 번호는 null
 function propDeref(d) {
   if (d && typeof d === 'object') d = d.dref;
@@ -3422,6 +3469,9 @@ rpc.exports = {
   propsset: function (id, spec, values, opts) { opts = opts || {}; opts.__py = true; return m24gaSetProps(String(id), spec, values, opts); },   // ctx.set_props
   propset: function (id, spec, code, value, opts) { opts = opts || {}; opts.__py = true; return m24gaSetProp(String(id), spec, code, value, opts); },
   actionrun: function (id, spec, opts) { return M24GA.actionRun(id, spec, opts || {}).then(function (r) { return r && r.error !== undefined && r.ok === undefined ? { ok: false, error: r.error } : r; }); },
+  // (M78) 반자동 API 탐색 검증용 — CLI 전용 (mods.py RPC 허용 목록에 없음). 화면 스레드에서
+  vsnap: function (spec) { return runOnUi(function () { return vSnap(spec); }); },
+  vset: function (spec, mode, code, type, value, via) { return runOnUi(function () { return vSet(spec, mode, code, type, value, via); }); },
   props: function (spec, re, empty) {   // CLI props (M55): 대상이 답하는 속성 전부
     try {
       var o = propResolve(spec); if (!o) { var t = exploreResolve(spec); if (t.error) return t; o = t.p; }

@@ -53,6 +53,10 @@ JSON 출력(--json)으로 프로그래밍 방식으로 파싱할 수 있다.
   get <대상> <필드...> 필드 등록부의 칸 읽기 (필드 끝이 '.'이면 그 이름으로 시작하는 것 전부)
   fields [정규식]     필드 등록부 목록 (게임 없이 됨, docs/FIELDS.md)
   props <대상> [정규식] [--empty]  게임 속성 코드 값 전부 (대상: me | myteam | myclub | p123 | s45 | team:<번호> | player:<uid> | 0x주소, docs/PROPERTIES.md)
+  vsnap <대상> / vset <대상> prop|field ...  (M78) 검증용 스냅숏·날쓰기 (쓰기는 시험 세이브만)
+  cand list|show|add|rm|import|testsave  (M78) API 후보 저장소 (~/m24ga_data/candidates.json)
+  verify <후보> <대상> [--level roundtrip|day|save] | verify resume | verify --all <정규식> <대상>  (M78) 후보 자동 검증
+  promote <후보> --tier safe|tested [--ko 뜻] [--range a b] [--name 필드]  (M78) 등록부에 쓰기
   prop-find <대상> <값>  값(숫자·글·날짜)이 든 속성 코드 찾기
   prop-info [정규식] [--writable]  속성 등록부 목록 (게임 없이 됨, --writable = 쓰기 되는 코드만)
   actions [정규식]    게임 액션(명령) 198개 목록 (id·클래스·문맥 키, 게임 없이 됨, docs/ACTIONS.md)
@@ -979,6 +983,251 @@ def cmd_prop_info(args):
         print("  %s %-5s %-34s %s %s" % (c, p["t"], ",".join(p["k"]), p.get("ko") or names.get(c, ""), wtag(c)))
     print("(%d개, 등록부 core/properties.json, 문서 docs/PROPERTIES.md)" % len(rows))
     return 0
+
+
+# ---- 반자동 API 탐색 (M78): vsnap/vset(앱 쪽) + cand/verify/promote(CLI 쪽) ----
+def cmd_vsnap(args):
+    """객체 정체성 + 스칼라 속성 전부 (verify용)."""
+    if not args:
+        return err("사용: cli.py vsnap <대상>")
+    r = host.rpc("vsnap", args[0])
+    if not r or r.get("error"):
+        return err((r or {}).get("error") or "실패")
+    if _json_mode:
+        out(r)
+    else:
+        print("%s %s kind=%s key=%s 속성 %d개" % (args[0], r.get("cls"), r.get("kind"), r.get("key"), len(r.get("props", {}))))
+    return 0
+
+
+def cmd_vset(args):
+    """등록부 검사 없이 읽기/쓰기 (verify용, 쓰기는 시험 세이브에서만)."""
+    import apiscan
+    args = list(args)
+    typ, via, val = _opt(args, "--type"), _opt(args, "--via"), _opt(args, "--value")
+    if len(args) < 3 or args[1] not in ("prop", "field"):
+        return err("사용: cli.py vset <대상> prop <코드> [--value v] | vset <대상> field <칸> --type u8 [--via 0x340,..] [--value v]")
+    if val is not None and not apiscan.save_allowed(modlib.GAME.get("save")):
+        return err("시험 세이브가 아니라서 쓰지 않았어요. 시험 세이브면: cli.py cand testsave add")
+    r = host.rpc("vset", args[0], args[1], args[2], typ, json.loads(val) if val is not None else None, via.split(",") if via else None)
+    if not r or r.get("error"):
+        return err((r or {}).get("error") or "실패")
+    if _json_mode:
+        out(r)
+    else:
+        print(json.dumps(r, ensure_ascii=False))
+    return 0
+
+
+def _remote():
+    return control.call(["version"]) is not None
+
+
+def _vcall(argv):
+    code, d = _jcall(argv, _remote())
+    if not isinstance(d, dict):
+        d = {"error": "응답 없음"}
+    if code and not d.get("error"):
+        d["error"] = d.get("message") or "실패"
+    return d
+
+
+def _wait_maps(secs):
+    """게임 데이터 표가 준비될 때까지 기다렸다가 지금 세이브를 돌려준다 (못 기다리면 None)"""
+    t0 = time.time()
+    while time.time() - t0 < secs:
+        d = _vcall(["status"])
+        h = d.get("hook") or {}
+        if h.get("mapsReady"):
+            return (d.get("game") or {}).get("save") or h.get("save")
+        time.sleep(3)
+    return None
+
+
+def _cur_save():
+    d = _vcall(["status"])
+    return (d.get("game") or {}).get("save") or (d.get("hook") or {}).get("save")
+
+
+def cmd_cand(args):
+    """후보 저장소: list [정규식] | show <id> | add prop <종류> <코드> | add field <종류> <칸> <형식> [--via ..] [--via-cls C] | rm <id> | import <scan.json> | testsave add|list"""
+    import apiscan
+    import re
+    args = list(args)
+    sub = args.pop(0) if args else "list"
+    if sub == "testsave":
+        if args[:1] == ["add"]:
+            sv = _cur_save()
+            if not sv:
+                return err("세이브를 불러온 상태여야 해요")
+            return ok("시험 세이브로 기록했어요: %s" % apiscan.add_test_save(sv["id"]))
+        return ok("시험 세이브: %s" % apiscan.test_saves(), test_saves=apiscan.test_saves())
+    if sub == "add":
+        src, note = _opt(args, "--source", "수동"), _opt(args, "--note")
+        via, vcls = _opt(args, "--via"), _opt(args, "--via-cls")
+        try:
+            if args[:1] == ["prop"] and len(args) >= 3:
+                cid, new = apiscan.add("prop", args[1], src, [note] if note else [], code=args[2])
+            elif args[:1] == ["field"] and len(args) >= 4:
+                cid, new = apiscan.add("field", args[1], src, [note] if note else [], off=args[2], type_=args[3],
+                                       via=via.split(",") if via else None, via_cls=vcls)
+            else:
+                return err("사용: cand add prop <종류> <코드> | cand add field <종류> <칸> <형식> [--via 0x340] [--via-cls db::FULL_CONTRACT]")
+        except ValueError as e:
+            return err(str(e))
+        return ok(("후보를 더했어요: " if new else "이미 있어요 (근거만 더함): ") + cid, id=cid)
+    if sub == "import":
+        if not args:
+            return err("사용: cand import <tools/api_scan.py 결과 json>")
+        a, d, sk = apiscan.import_scan(args[0])
+        return ok("후보 %d개 더함, %d개 이미 있음, %d개는 이미 쓰기 등록부에 있어서 뺌" % (a, d, sk))
+    db = apiscan.load()
+    C = db["candidates"]
+    if sub == "rm":
+        if not args or args[0] not in C:
+            return err("모르는 후보")
+        del C[args[0]]
+        apiscan.store(db)
+        return ok("지웠어요")
+    if sub == "show":
+        if not args or args[0] not in C:
+            return err("모르는 후보")
+        if _json_mode:
+            out(C[args[0]])
+        else:
+            print(json.dumps(C[args[0]], ensure_ascii=False, indent=1))
+        return 0
+    rx = re.compile(args[0], re.I) if args else None
+    rows = {k: v for k, v in C.items() if not rx or rx.search(k) or rx.search(v.get("status", ""))}
+    if _json_mode:
+        out({"candidates": rows, "pending": db.get("pending")})
+        return 0
+    names = _prop_names()
+    for k, v in sorted(rows.items()):
+        tests = " ".join("%s:%s" % (lv, "ok" if t.get("ok") else "x") for lv, t in sorted(v.get("tests", {}).items()))
+        print("  %-34s %-14s %-28s %s" % (k, v.get("status"), tests, names.get(v.get("code", ""), "")[:40]))
+    if db.get("pending"):
+        print("기다리는 검증: %s (%s) -> cli.py verify resume" % (db["pending"]["id"], db["pending"]["level"]))
+    print("(%d개, ~/m24ga_data/candidates.json)" % len(rows))
+    return 0
+
+
+def cmd_verify(args):
+    """verify <후보 id> <대상> [--level roundtrip|day|save] | verify resume  (CLI 쪽에서 돈다: day는 play를 부른다)"""
+    import apiscan
+    args = list(args)
+    level = _opt(args, "--level", "roundtrip")
+    db = apiscan.load()
+    sv = _cur_save()
+    if args[:1] == ["resume"]:
+        p = db.get("pending")
+        if not p:
+            return err("기다리는 검증이 없어요")
+        c = db["candidates"].get(p["id"])
+        sv = _wait_maps(120)   # 다시 불러온 직후에는 게임 데이터 표를 다시 만드는 중이다 (M78 실기: 바로 부르면 대상을 못 찾음)
+        if not apiscan.save_allowed(sv):
+            return err("시험 세이브가 아니거나 게임 데이터 표가 아직 준비되지 않았어요 (잠시 뒤 다시 verify resume)")
+        res = apiscan.finish_later(c, p, _vcall, sv)
+        if res.get("error") and "찾지 못했" in res["error"]:
+            return err(res["error"] + " — 기다리던 검증은 그대로 두었어요. 잠시 뒤 다시 verify resume")
+        db = apiscan.load()
+        db["pending"] = None
+        apiscan.store(db)
+        return _vresult(p["id"], res, apiscan.record(p["id"], res))
+    if args[:1] == ["--all"]:   # 여러 후보 roundtrip (상태 new인 것만). 객체가 망가진 흔적이 보이면 멈춘다
+        import re
+        if len(args) < 3:
+            return err("사용: cli.py verify --all <후보 정규식> <대상>")
+        if not apiscan.save_allowed(sv):
+            return err("시험 세이브에서만 검증해요")
+        rx, target = re.compile(args[1]), args[2]
+        todo = [k for k, v in sorted(db["candidates"].items()) if rx.search(k) and v.get("status") == "new"]
+        summary = {"ok": [], "fail": [], "linked": {}}
+        for cid in todo:
+            res = apiscan.roundtrip(db["candidates"][cid], target, _vcall)
+            apiscan.record(cid, res)
+            (summary["ok"] if res.get("ok") else summary.setdefault("skip", []) if res.get("skip") else summary["fail"]).append(cid)
+            if res.get("linked"):
+                summary["linked"][cid] = res["linked"][:10]
+            if not _json_mode:
+                print("  %-30s %s %s" % (cid, "통과" if res.get("ok") else ("건너뜀" if res.get("skip") else "실패"), "; ".join(res.get("problems") or ([res["error"]] if res.get("error") else []))[:150]))
+            bad = " ".join(res.get("problems") or [])
+            if "객체가 바뀌" in bad or "되돌린 뒤에도" in bad:
+                summary["stopped"] = cid
+                if not _json_mode:
+                    print("멈춤: %s 뒤에 객체가 바뀌었거나 값이 남았어요. 이 객체의 다른 시험은 믿을 수 없어요 -> 시험 세이브를 다시 불러온 뒤 이어서 하세요" % cid)
+                break
+        if _json_mode:
+            out(summary)
+        else:
+            print("통과 %d, 실패 %d, 건너뜀 %d / %d개" % (len(summary["ok"]), len(summary["fail"]), len(summary.get("skip", [])), len(todo)))
+        return 0 if not summary["fail"] else 1
+    if len(args) < 2:
+        return err("사용: cli.py verify <후보 id> <대상> [--level roundtrip|day|save] | verify resume | verify --all <정규식> <대상>")
+    cid, target = args[0], args[1]
+    c = db["candidates"].get(cid)
+    if not c:
+        return err("모르는 후보: %s (cli.py cand list)" % cid)
+    if not apiscan.save_allowed(sv):
+        return err("시험 세이브에서만 검증해요. 지금 세이브가 시험 세이브면: cli.py cand testsave add")
+    if db.get("pending"):
+        return err("기다리는 검증이 있어요: %s -> verify resume 먼저" % db["pending"]["id"])
+    if level == "roundtrip":
+        res = apiscan.roundtrip(c, target, _vcall)
+        return _vresult(cid, res, apiscan.record(cid, res))
+    if level not in ("day", "save"):
+        return err("--level은 roundtrip|day|save")
+    if not c.get("tests", {}).get("roundtrip", {}).get("ok"):
+        return err("roundtrip을 먼저 통과해야 해요")
+    p = apiscan.write_for_later(c, target, _vcall, level, sv)
+    if not p.get("ok"):
+        return err(p.get("error"))
+    p["id"] = cid
+    if level == "day":
+        code = _play(["--days", "1", "--quiet"], remote=_remote())
+        if code:
+            _vcall(apiscan._vset_args(c, target, p["before"]))   # 되돌리기만
+            return err("하루 진행에 실패해서 되돌렸어요 (play 종료 코드 %s)" % code)
+        res = apiscan.finish_later(c, p, _vcall, _cur_save())
+        return _vresult(cid, res, apiscan.record(cid, res))
+    db = apiscan.load()
+    db["pending"] = p
+    apiscan.store(db)
+    return ok("값을 %s -> %s로 써 뒀어요. 게임에서 저장(Ctrl+S)하고 같은 세이브를 다시 불러온 뒤: cli.py verify resume" % (p["before"], p["wrote"]), pending=p)
+
+
+def _vresult(cid, res, status):
+    if _json_mode:
+        out(dict(res, id=cid, status=status))
+    else:
+        print("%s %s: %s (후보 상태 %s)" % (cid, res.get("level"), "통과" if res.get("ok") else "실패", status))
+        for k in ("before", "wrote", "after", "now", "result", "restored", "linked", "problems", "error"):
+            if res.get(k) not in (None, [], ""):
+                print("  %-9s %s" % (k, json.dumps(res[k], ensure_ascii=False)[:300]))
+    return 0 if res.get("ok") else 1
+
+
+def cmd_promote(args):
+    """promote <후보 id> --tier safe|tested [--ko 뜻] [--range a b] [--name 필드이름] [--gte 코드] [--lte 코드]"""
+    import apiscan
+    args = list(args)
+    tier, ko, name = _opt(args, "--tier", "tested"), _opt(args, "--ko"), _opt(args, "--name")
+    gte, lte = _opt(args, "--gte"), _opt(args, "--lte")
+    rng = None
+    if "--range" in args:
+        i = args.index("--range")
+        try:
+            rng = [json.loads(args[i + 1]), json.loads(args[i + 2])]
+        except (IndexError, ValueError):
+            return err("--range 최소 최대 (숫자, 날짜는 \"YYYY-MM-DD\")")
+        del args[i:i + 3]
+    if not args or tier not in ("safe", "tested"):
+        return err("사용: cli.py promote <후보 id> --tier safe|tested [--ko 뜻] [--range a b] [--name 필드이름]")
+    try:
+        f, n = apiscan.promote(args[0], tier, ko, rng, name, gte, lte)
+    except ValueError as e:
+        return err(str(e))
+    return ok("등록했어요: %s %s (%s). 문서를 다시 만들었어요. 시험(unittest)과 커밋은 따로 하세요" % (os.path.basename(f), n, tier))
 
 
 def cmd_actions(args):
@@ -2139,6 +2388,11 @@ COMMANDS = {
     "get": cmd_get,
     "fields": cmd_fields,
     "props": cmd_props,
+    "vsnap": cmd_vsnap,
+    "vset": cmd_vset,
+    "cand": cmd_cand,
+    "verify": cmd_verify,
+    "promote": cmd_promote,
     "prop-find": cmd_prop_find,
     "prop-info": cmd_prop_info,
     "actions": cmd_actions,
@@ -2173,7 +2427,7 @@ def usage():
 
 
 # 실행 중인 로더로 보내지 않고 이 프로세스에서 하는 명령 (로더 상태와 상관없음, 또는 오래 도는 명령)
-LOCAL_ONLY = {"validate", "version", "run", "watch", "open-mods", "open-data", "classes", "fields", "functions"}
+LOCAL_ONLY = {"validate", "version", "run", "watch", "open-mods", "open-data", "classes", "fields", "functions", "cand", "promote"}
 # 실행 중인 로더가 없으면 이 프로세스 안에서만 의미가 있는 명령 (명령이 끝나면 로더도 끝난다)
 NEEDS_LOADER = {"start", "stop", "reload", "log", "log-clear", "undo", "safe-leave"}
 _run_lock = threading.Lock()
@@ -2250,6 +2504,8 @@ def main(argv=None, local=False):
     # M30: 기다리는 반복은 CLI 쪽에서 (앱 안에서 기다리면 조종 통로가 막혀서 그동안 act가 줄을 선다)
     if not local and cmd == "ui" and argv[:1] == ["state"] and "--watch" in argv:
         return _ui_state(argv[1:], remote=control.call(["version"]) is not None)
+    if not local and cmd == "verify":   # M78: 검증은 CLI 쪽에서 (day 단계가 play를 부른다)
+        return cmd_verify(argv)
     if not local and cmd == "play":
         return _play(argv, remote=control.call(["version"]) is not None)
     if not local and cmd == "act" and argv[:1] == ["continue"] and "--wait" in argv:

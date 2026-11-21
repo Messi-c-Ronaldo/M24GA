@@ -278,6 +278,20 @@ python -X utf8 loader/cli.py props player:2002117436 "^P(ced|dob|cwg)$"
 #### `actions [정규식]` (M62)
 게임 액션(명령) 198개 목록: 4글자 id, 클래스, 보호 구역 여부, 확인 함수가 읽는 문맥 키. 게임이 꺼져 있어도 돼요. 실행 이벤트도 보여요 (M65). 대상마다 쓸 수 있는 명령 읽기·실행은 모드 API `api.actionsFor`·`api.action`(코어 0.41.0)으로 해요 ([ACTIONS.md](ACTIONS.md)).
 
+#### `cand` / `verify` / `promote` (M78, 반자동 API 탐색)
+쓰기 후보를 모으고, 시험 세이브에서 자동으로 검증하고, 등록부에 올려요. 절차는 [`EXTENDING.md`](EXTENDING.md) D절.
+```bash
+m24cli cand testsave add                                  # 지금 세이브를 시험 세이브로 (검증 쓰기는 여기서만)
+m24cli cand import ~/m24ga_data/api_scan.json             # tools/api_scan.py 결과
+m24cli cand add prop contract Cabo                        # 손으로
+m24cli verify prop:contract:Cabo contract:p45806          # roundtrip
+m24cli verify --all "^prop:contract:" contract:p45806     # 여러 개
+m24cli verify prop:contract:Cabo contract:p45806 --level day
+m24cli verify prop:contract:Cabo contract:p45806 --level save   # -> 저장·다시 불러오기 -> verify resume
+m24cli promote prop:contract:Cabo --tier tested
+```
+`vsnap <대상>`(정체성 + 스칼라 속성 전부)과 `vset <대상> prop|field …`(등록부 검사 없는 읽기·쓰기, 쓰기는 시험 세이브만)는 verify가 쓰는 낮은 단계 명령이에요.
+
 #### `prop-info [정규식] [--writable]` (코어 0.36.0, 쓰기 표시 0.42.0)
 속성 등록부 목록 (코드·값 종류·답하는 객체 종류·확인된 뜻). 게임이 꺼져 있어도 돼요.
 코드마다 쓰기 단계를 붙여요: `[쓰기 safe 범위]`·`[쓰기 tested]`·`[쓰기 금지]`. `--writable`이면 `api.setProp`으로 쓸 수 있는 코드만 보여요 (쓰기는 모드에서만: 기능 `write.prop`).

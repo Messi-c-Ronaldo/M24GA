@@ -244,7 +244,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 `api.setProp(대상, '코드', 값, {expect, reason})` → Promise `{ok, before, after, code, key, error}` (Python `ctx.set_prop`). 게임 자신의 setter(속성 객체 vtable +0x18)를 화면 스레드에서 불러요. 정수·불리언·실수만 되고, 기록되고 앱에서 되돌릴 수 있어요.
 
 - **safe** (56개): 쓰기 → 화면 → 하루 진행 → 저장 뒤 다시 불러오기까지 확인했어요 (M71).
-- **tested** (173개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
+- **tested** (174개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
 - **쓰지 않는 코드**: `DELE`, `duni`, `dsha`, `noni`, `nsss`, `rdui`, `Ptyp` (`Ptyp`는 사람 종류를 바꿔서 게임이 객체를 새로 만들어요).
 
 | 코드 | 종류 | 범위 | 뜻 |
@@ -311,7 +311,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 - **award** (14): `AWap` `AWbr` `AWdr` `AWfo` `AWmg` `AWnp` `AWpo` `AWrb` `AWre` `AWrt` `AWty` `AWvf` `AWwh` `AWwr`
 - **club** (44): `C2at` `C2lp` `C2pf` `C2rp` `C2ty` `C2un` `C2xa` `C3at` `C3xa` `CScP` `Cafo` `Catd` `Ccda` `Ccdr` `Ccpc` `Cdfo` `Cect` `Cels` `Cemn` `Cemx` `Cepr` `Cetl` `Chsd` `Chti` `Clpn` `Clps` `Cmle` `Cmna` `Cmtm` `Cmxa` `Cnsb` `Cntb` `Cown` `Cpfa` `Cpfr` `Cprs` `Csaf` `Csdl` `Csly` `CteA` `Cyfn` `Cyim` `TCng` `TCoi`
 - **comp** (15): `CTty` `Ccre` `LAUC` `Pchd` `Pctd` `cmnl` `cmnw` `cmxl` `cmxw` `csso` `cuae` `dbty` `levl` `wben` `wbst`
-- **contract** (3): `Csda` `Csts` `PSJO`
+- **contract** (4): `Csda` `Csts` `PSJO` `Cabo`
 - **human** (12): `HSbr` `Hcit` `MHSP` `MHTY` `MREP` `MRSP` `MTSP` `Nnat` `mdty` `mibh` `mmCA` `mrCA`
 - **media** (3): `Mper` `Mscp` `Msty`
 - **staff** (26): `Ndep` `Ndir` `Necc` `Nfla` `Nflx` `Nhat` `Nint` `Npaf` `Npcs` `Npdf` `Nppf` `Npre` `Npsf` `Npvr` `Nrot` `Ntem` `Nwid` `Phes` `Pwes` `SPDm` `SPaf` `SPan` `SPdn` `SPdt` `SPpd` `Spdl`
@@ -537,25 +537,25 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 
 <details><summary><b>contract</b> — 118개</summary>
 
-- **int** (25): `CAgF` `CGpm` `Cclc` `Ccsb` `Clbn` `Clmf` `Clmt` `Clst` `Cmmr` `Crlb` `Csts` `Ctco` `Ctoo` `CtrL` `CtrT` `Ctst` `Ctyp` `CwwA` `CwwT` `Cwwa` `Cwwn` `CwyF` `PCJO` `PSJO` `mlCT`
+- **int** (26): `CAgF` `CGpm` `Cabo` `Cclc` `Ccsb` `Clbn` `Clmf` `Clmt` `Clst` `Cmmr` `Crlb` `Csts` `Ctco` `Ctoo` `CtrL` `CtrT` `Ctst` `Ctyp` `CwwA` `CwwT` `Cwwa` `Cwwn` `CwyF` `PCJO` `PSJO` `mlCT`
 - **bool** (16): `CGCC` `CIRC` `CMCR` `CMHE` `CWCM` `Ccsc` `Chwp` `Cilc` `Cilf` `Circ` `Citc` `Clec` `Cmma` `Crdc` `Cvmr` `ydpc`
 - **date** (5): `Ceda` `Clme` `Csda` `Ctld` `Cwpp`
 - **rec** (7): `CMCC`{dref} `Cloa`{dref} `Cnxs`{Pers,plbt,plti,ptpt,ptpv} `CnyF`{Pers,plbt,plti,ptpt,ptpv} `Cpns`{Pers,plbt,plti,ptpt,ptpv} `Csfp`{Pers,plbt,plti,ptpt,ptpv} `Ctea`{Ctea,dref,filt}
 - **list** (11): `Cbla` `Ccbl` `Ccla`{numb,valu} `Ccpb` `Ceba` `Cebg` `Cebx` `Ceig` `Cewg` `Cnpe` `Cspe`
-- **empty** (54): `C1YE` `C1YP` `C1YR` `CABA` `CABF` `CACE` `CACP` `CGBF` `CGBG` `CIIG` `CIIW` `CMDc` `CMDe` `CMFF` `CMFH` `CMFe` `CMHe` `CMac` `CMae` `CMcc` `CMce` `CNPA` `CPCL` `CPGP` `CPIG` `CPIW` `CPWS` `CRRA` `CSOF` `CSPC` `CSPP` `CTDD` `CTDI` `CXBF` `CXBG` `Cabo` `Cdtf` `Cgbo` `Cicb` `Cmfc` `Cmfe` `Cnpr` `Cpwi` `Crrf` `Crwd` `Csbo` `CsqH` `Csqs` `Ctgs` `Ctyb` `Cusb` `Cywi` `PMsq` `WpCw`
+- **empty** (53): `C1YE` `C1YP` `C1YR` `CABA` `CABF` `CACE` `CACP` `CGBF` `CGBG` `CIIG` `CIIW` `CMDc` `CMDe` `CMFF` `CMFH` `CMFe` `CMHe` `CMac` `CMae` `CMcc` `CMce` `CNPA` `CPCL` `CPGP` `CPIG` `CPIW` `CPWS` `CRRA` `CSOF` `CSPC` `CSPP` `CTDD` `CTDI` `CXBF` `CXBG` `Cdtf` `Cgbo` `Cicb` `Cmfc` `Cmfe` `Cnpr` `Cpwi` `Crrf` `Crwd` `Csbo` `CsqH` `Csqs` `Ctgs` `Ctyb` `Cusb` `Cywi` `PMsq` `WpCw`
 
 </details>
 
 <details><summary><b>loan</b> — 122개</summary>
 
-- **int** (34): `CAgF` `CGpm` `Cclc` `Ccsb` `ClDf` `ClDw` `ClEt` `ClMm` `ClMt` `ClPt` `Clbb` `Clbn` `Clff` `Clmf` `Clmt` `Clpp` `Clpw` `Clst` `Cmmr` `Crlb` `Csts` `Ctco` `Ctoo` `CtrL` `CtrT` `Ctst` `Ctyp` `CwwA` `CwwT` `Cwwa` `Cwwn` `CwyF` `PCJO` `mlCT`
+- **int** (35): `CAgF` `CGpm` `Cabo` `Cclc` `Ccsb` `ClDf` `ClDw` `ClEt` `ClMm` `ClMt` `ClPt` `Clbb` `Clbn` `Clff` `Clmf` `Clmt` `Clpp` `Clpw` `Clst` `Cmmr` `Crlb` `Csts` `Ctco` `Ctoo` `CtrL` `CtrT` `Ctst` `Ctyp` `CwwA` `CwwT` `Cwwa` `Cwwn` `CwyF` `PCJO` `mlCT`
 - **u32** (2): `Clfl` `Clpr`
 - **bool** (16): `CGCC` `CIRC` `CMCR` `CMHE` `CWCM` `Ccsc` `Chwp` `Cilc` `Cilf` `Circ` `Citc` `Clec` `Cmma` `Crdc` `Cvmr` `ydpc`
 - **date** (5): `Ceda` `Clme` `Csda` `Ctld` `Cwpp`
 - **rec** (7): `CMCC`{dref} `ClFc`{dref} `Cloa`{dref} `Cnxs`{Pers,plbt,plti,ptpt,ptpv} `CnyF`{Pers,plbt,plti,ptpt,ptpv} `Cpns`{Pers,plbt,plti,ptpt,ptpv} `Ctea`{Ctea,dref,filt}
 - **list** (4): `Cbla` `Ccla`{numb,valu} `Ccpb` `Clcb`
 - **data** (1): `ClFs`
-- **empty** (53): `C1YE` `C1YP` `C1YR` `CABA` `CABF` `CACE` `CACP` `CGBF` `CGBG` `CIIG` `CIIW` `CMDc` `CMDe` `CMFF` `CMFH` `CMFe` `CMHe` `CMac` `CMae` `CMcc` `CMce` `CNPA` `CPCL` `CPGP` `CPIG` `CPIW` `CPWS` `CRRA` `CSOF` `CSPC` `CSPP` `CTDD` `CTDI` `CXBF` `CXBG` `Cabo` `Cdtf` `Cgbo` `Cicb` `Cmfc` `Cmfe` `Cnpr` `Cpwi` `Crrf` `Crwd` `Csbo` `CsqH` `Csqs` `Ctgs` `Ctyb` `Cusb` `Cywi` `WpCw`
+- **empty** (52): `C1YE` `C1YP` `C1YR` `CABA` `CABF` `CACE` `CACP` `CGBF` `CGBG` `CIIG` `CIIW` `CMDc` `CMDe` `CMFF` `CMFH` `CMFe` `CMHe` `CMac` `CMae` `CMcc` `CMce` `CNPA` `CPCL` `CPGP` `CPIG` `CPIW` `CPWS` `CRRA` `CSOF` `CSPC` `CSPP` `CTDD` `CTDI` `CXBF` `CXBG` `Cdtf` `Cgbo` `Cicb` `Cmfc` `Cmfe` `Cnpr` `Cpwi` `Crrf` `Crwd` `Csbo` `CsqH` `Csqs` `Ctgs` `Ctyb` `Cusb` `Cywi` `WpCw`
 
 </details>
 

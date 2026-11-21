@@ -10,6 +10,7 @@
 | `rtti.py` | `fm.exe`의 클래스 정보(MSVC RTTI)로 vtable ↔ 클래스 이름 ↔ 상속 표를 만든다 (클래스 1만여 개). 결과는 `~/m24ga_data/rtti/`에 캐시. 패키지 필요 없음. Denuvo 빌드라 섹션 이름이 뒤섞여 있어서 크기로 구역을 고른다 | `python -X utf8 rtti.py build` / `find <정규식>` / `vt <RVA>` / `stats` (CLI `classes`가 이걸 쓴다). `PE(...).func_of(rva)`: 예외 테이블로 그 주소가 든 함수의 시작·끝 (CLI `watch-write`가 쓴다) |
 | `props_catalog.py` | 속성 전수 조사 결과(scan_*.json)로 속성 등록부 `core/properties.json`과 `docs/PROPERTIES.md`를 만든다 (M55). 이미 적은 뜻(ko)은 유지 | `python -X utf8 props_catalog.py <scan 폴더>` / `--docs` (문서만) |
 | `prop_names.py` | 게임 파일(`properties.fmf`의 열 정의 + `shared.fmf` 번역 파일)에서 속성 코드 이름표 `~/m24ga_data/prop_names.tsv`를 만든다 (코드, 영어, 게임 언어, 표시 형식, 분류 1,655개). 게임 글이라 저장소에는 없고 각자 만든다 (M67). 번역 파일 위치는 `~/m24ga_data/ltc_offsets.json`에 캐시 | `python -X utf8 prop_names.py [--lang 한국어] [--pylib <zstandard 폴더>] [--game <FM24 폴더>]` (zstandard 필요) |
+| `api_scan.py` | 속성 setter(vtable +0x18, 기반 클래스 사슬)가 받는 코드 중 쓰기 등록부에 없는 스칼라 코드를 뽑아 후보 파일로 (M78, `cli.py cand import`로 가져가 `verify`) | `python -X utf8 api_scan.py --pylib <capstone 폴더> [--exe fm.exe] [--kinds club,player]` |
 | `actions_catalog.py` | 게임 액션(명령) 198개의 4글자 id·클래스·문맥 키를 `fm.exe`에서 뽑아 `core/actions.json`·`docs/ACTIONS.md`를 만든다 (M62) | `python -X utf8 actions_catalog.py [fm.exe] [--pylib <capstone 폴더>]` |
 | `func_vf.py` | 함수 등록부에 클래스 기반 주소 `vf`와 긴 검색 바이트 `find`를 채우고, 빌드가 바뀌었을 때 다시 찾기를 확인한다 (M57, `loader/funcmap.py`) | `python -X utf8 func_vf.py fill` / `check` |
 | `ltc_extract.py` | `data/shared.fmf` 안의 한국어 번역 `.ltc`를 CSV로 추출한다 (게임 문구 찾기용) | `python ltc_extract.py [시작 오프셋] [출력.csv]` |

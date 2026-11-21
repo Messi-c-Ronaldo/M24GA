@@ -134,6 +134,25 @@ m24cli hooks                              # 서명 확인: 이 빌드와 맞으�
 
 그다음 임시 모드에서 `api.hook('이름', { before, after })`로 걸어 `m24cli log <모드 id>`와 `m24cli hooks`(호출 수·오류·걸린 시간)를 확인해요 (M22의 시험 모드: `logs/M24GA/2026-11-09/m22_hook/`).
 
+## D. 반자동 탐색으로 쓰기 열기 (M78)
+
+A·B를 손으로 하던 일 중 **후보 모으기 → 검증 → 등록**을 명령으로 묶었어요. 사람이 하는 일은 대상 고르기와 뜻(ko)·등급 정하기예요.
+
+1. **시험 세이브 지정** (한 번): 시험 세이브를 불러온 상태에서 `cli.py cand testsave add`. 검증 쓰기는 이 세이브에서만 돼요.
+2. **후보 모으기**
+   - 정적: `python -X utf8 tools/api_scan.py --pylib <capstone 폴더>` → 속성 setter(vtable +0x18)가 받는 코드 중 아직 쓰기 등록부에 없는 스칼라 코드 → `cli.py cand import ~/m24ga_data/api_scan.json`
+   - 손으로: `cli.py cand add prop <종류> <코드>` / `cand add field <종류> <칸> <형식> [--via 0x340] [--via-cls db::FULL_CONTRACT]` (find-field로 찾은 칸)
+3. **검증** (`cli.py verify <후보> <대상>` / 여러 개 `verify --all <정규식> <대상>`)
+   - `roundtrip`: 쓰기(+1·반전·+1일) → 다시 읽기 → 되돌리기. 쓰기 전후 **객체 정체성과 같은 객체의 스칼라 속성 전부**를 비교해, 객체가 바뀌거나(`Ptyp` 사고) 되돌린 뒤 다른 값이 남으면 실패. 같이 바뀐 속성은 `linked`(파생 값 후보)로 남겨요. 값이 비어 시험할 수 없으면 건너뛰고 상태는 그대로.
+   - `--level day`: 쓰고 하루 진행(`play`) → 유지(kept) 또는 쓴 값에서 움직임(drift)이면 통과, 원래 값으로 돌아가면(reverted, 파생 값) 실패 → 되돌림
+   - `--level save`: 쓰고 기다림 → 게임에서 저장(Ctrl+S) → 같은 세이브 다시 불러오기 → `cli.py verify resume`(게임 데이터 표가 준비될 때까지 기다림) → 판단 → 되돌림
+   - `verify --all`은 객체가 망가진 흔적이 보이면 멈춰요 → 세이브를 다시 불러온 뒤 이어서.
+4. **등록** `cli.py promote <후보> --tier tested|safe [--ko 뜻] [--range 최소 최대] [--name 필드이름] [--gte/--lte 코드]`
+   - tested = roundtrip 통과, safe = day·save까지 통과 + 범위 + 뜻. 속성은 `core/properties.json` write에, 필드는 `core/fields.json`에 쓰고 문서를 다시 만들어요. 금지 코드(deny)는 안 돼요.
+   - 등록 뒤 `python -X utf8 -m unittest discover -s tests`와 커밋은 직접.
+- 목록·결과: `cli.py cand list [정규식]`, `cand show <후보>` (`~/m24ga_data/candidates.json`, 저장소에 넣지 않음).
+- 함수(부르기)는 이 장치로 열지 않아요. 인자 뜻을 확인해야 해서 B 절차대로.
+
 ## 스킨·언어와 무관하게 (M35~M39)
 
 - 사용자마다 스킨과 게임 언어가 달라요. **위젯 id나 화면 글 대신 게임 내부를 쓰세요**: 데이터는 객체·필드, 동작은 등록부 함수·이벤트 (예: 계속 = `ui.continueHandler`에 `'CONT'`, 휴가 = `ui.holidayStart`, 즉석 결과 = `match.clientTacticEvent`에 `'INST'`).

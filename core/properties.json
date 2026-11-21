@@ -362,7 +362,8 @@
    "mmCA": {"w":"tested","kinds":["human"]},
    "mrCA": {"w":"tested","kinds":["human"]},
    "wben": {"w":"tested","kinds":["comp"]},
-   "wbst": {"w":"tested","kinds":["comp"]}
+   "wbst": {"w":"tested","kinds":["comp"]},
+   "Cabo": {"w":"tested","kinds":["contract"]}
   }
  },
  "props": {
@@ -565,7 +566,7 @@
   "CXBF": {"t":"empty","k":["contract","loan"]},
   "CXBG": {"t":"empty","k":["contract","loan"]},
   "Ca3n": {"t":"str","k":["club"]},
-  "Cabo": {"t":"empty","k":["contract","loan"]},
+  "Cabo": {"t":"int","k":["contract","loan"]},
   "Cadm": {"t":"bool","k":["team","club"]},
   "Cafl": {"t":"list","k":["club"],"keys":["UsSK","affl","cpsd","endt","fnhl","fotb","fri%","frly","golo","hlwf","ismc","lpfs","mrrl","msls","perm","pfpr","plfr","pwgp","rsrv","scks","smbo","stdt","type","ualf","ustf","yfee","yout","yutr"]},
   "Cafo": {"t":"int","k":["club"]},
