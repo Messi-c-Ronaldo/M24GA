@@ -95,7 +95,7 @@ interface ModApi {
   /** (코어 0.40.0, read.prop) 리그 경기 결과 (보도 안 되는 경기 포함). 대회 객체 또는 'myleague'. 지난번 부른 뒤 끝난 경기. 처음엔 기준만 잡고 [] */
   leagueResults(comp: Ptr | 'myleague'): { home: Ptr; away: Ptr; homeGoals: number; awayGoals: number; date: string | null; fixture: number; comp: Ptr }[];
   /** (코어 0.41.0, 기능 read.action) 게임 메뉴가 그 대상(사람·팀·대회)에 보여 주는 명령. opts.all = 숨은 것도. docs/ACTIONS.md */
-  actionsFor(target: Ptr | string | { dref: number } | number, opts?: { all?: boolean }): Promise<{ id: string; cls: string | null; hidden: boolean; disabled: boolean; canRun: boolean; events: string[]; args: Record<string, any> }[] | { ok: false; error: string }>;
+  actionsFor(target: Ptr | string | { dref: number } | number, opts?: { all?: boolean }): Promise<{ id: string; cls: string | null; hidden: boolean; disabled: boolean; canRun: boolean; events: string[]; click: string[]; confirm: string | null; args: Record<string, any> }[] | { ok: false; error: string }>;
   /** (코어 0.41.0, 기능 game.action, 세이브를 바꿈) 게임이 보여 주는 명령일 때만 실행. event = 처리기 이벤트(하나면 생략, 확인 창 명령은 확인 뒤 이벤트 예: PmcP의 pmcC), danger = 사임·은퇴 같은 명령 허용 */
   action(id: string, target: Ptr | string | { dref: number } | number, opts?: { event?: string; danger?: boolean }): Promise<{ ok: boolean; error?: string; id?: string; cls?: string; event?: string; target?: number; handled?: boolean }>;
   panel: {

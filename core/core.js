@@ -2464,12 +2464,12 @@ M24GA.leagueResults = leagueResults;
 //   [id][결과 묶음]을 채운다. 결과 묶음 hidn = 메뉴에서 숨김, 나머지 칸 = 실행할 때 쓰는 인자 (화면 메뉴와 같은 판단).
 // 실행: 액션마다 fm.exe 안 전역 객체 *_ACTION_UI가 있고 vtable [2] = 처리기 (this, 이벤트 4글자, 결과 묶음, ACTIONS_EVENT_HANDLER).
 //   메뉴를 누르면 게임도 이 처리기를 부른다 (M65 실기: 리더십 훈련 코스). 넷째 인자 = 전역 fm+0x63635b0.
-// 대상 목록·문맥은 게임 함수(val.listPush, rec.set)로 만든다. 복사본이 우리가 만든 {dref} 묶음을 같이 가리키므로(바로 정리하면 접근 오류, M65 실기)
-// 우리 묶음·값은 ACT_KEEP에 살려 둔다 (부를 때마다 수백 바이트). 대상 목록 항목도 정리 함수를 몰라 남긴다.
-var ACT_KEEP = [];
-var M24_ACTIONS = {};   // 로더가 넣는다: {id: [클래스, 실행 객체 rva | 0, [이벤트]]}
+// 대상 목록·문맥은 게임 함수로만 만든다: {dref} 묶음 값 = rec.init + rec.set('dref', 정수) + rec.toValue(게임 풀의 참조 횟수 있는 묶음).
+// M65 교훈: Frida 메모리로 묶음 값을 흉내 내면 게임 복사본이 그걸 같이 가리키다 나중에(다음 날 처리) 정리하면서 튕겼다 (덤프: 화면 스레드, fm+0x1977be0 근처).
+// 대상 목록 벡터의 항목(게임 힙, 0x20바이트씩)은 정리 함수를 몰라 남긴다.
+var M24_ACTIONS = {};   // 로더가 넣는다: {id: [클래스, 실행 객체 rva | 0, [처리기 이벤트], [누름 이벤트], 확인 뒤 이벤트 | '', 처리기가 비었나]}
 var ACT_MGR_SLOT = 0x6363570, ACT_DIR_SLOT = 0x63635b0, ACT_FN = null;
-var ACT_FN_NAMES = ['action.query', 'val.types', 'val.listInit', 'val.listPush', 'rec.init', 'rec.set', 'ui.eventFree'];
+var ACT_FN_NAMES = ['action.query', 'val.types', 'val.listInit', 'val.listPush', 'rec.init', 'rec.set', 'rec.toValue', 'ui.eventFree'];
 function actFns() {
   if (ACT_FN) return ACT_FN;
   var a = {};
@@ -2481,6 +2481,7 @@ function actFns() {
     push: new NativeFunction(a['val.listPush'], 'void', ['pointer', 'pointer']),
     recInit: new NativeFunction(a['rec.init'], 'pointer', ['pointer']),
     recSet: new NativeFunction(a['rec.set'], 'void', ['pointer', 'uint32', 'pointer']),
+    toValue: new NativeFunction(a['rec.toValue'], 'void', ['pointer', 'pointer']),
     recFree: new NativeFunction(a['ui.eventFree'], 'void', ['pointer'])
   };
   return ACT_FN;
@@ -2490,7 +2491,7 @@ function actGlobal(slot, cls) {   // 전역 칸이 가리키는 객체, 클래�
   if (o.isNull() || className(o) !== cls) throw new Error(cls + '를 찾지 못했어요 (이 게임 빌드에서는 액션을 쓸 수 없어요)');
   return o;
 }
-// 객체·대상 글 -> dref 번호 (0x01 사람, 0x18 팀, 0x19 대회). {dref} 또는 번호는 그대로
+// 객체·대상 글 -> dref 번호 (0x01 사람, 0x03 구단, 0x18 팀, 0x19 대회). {dref} 또는 번호는 그대로
 function actDref(spec) {
   if (spec && typeof spec === 'object' && typeof spec.dref === 'number') return spec.dref >>> 0;
   if (typeof spec === 'number') return spec >>> 0;
@@ -2501,15 +2502,19 @@ function actDref(spec) {
   if (tg.kind === 'player' || tg.kind === 'staff') return (0x01000000 | id(tg.p)) >>> 0;
   if (tg.kind === 'team' || tg.kind === 'nation') return (0x18000000 | id(tg.p)) >>> 0;
   if (tg.kind === 'comp') return (0x19000000 | id(tg.p)) >>> 0;
-  throw new Error("'" + tg.kind + "' 종류는 아직 액션 대상으로 못 써요 (사람·팀·대회만)");
+  if (tg.kind === 'club') return (0x03000000 | id(tg.p)) >>> 0;   // propDeref의 clubByIndex와 같은 번호 (구단 +8)
+  throw new Error("'" + tg.kind + "' 종류는 아직 액션 대상으로 못 써요 (사람·팀·구단·대회만)");
 }
-function actDrefVal(F, d) {   // {dref: n} 묶음 값. 값 {REC_T, 벡터*}, 벡터 항목 ['dref', {INT_T, n}]
+function actDrefVal(F, d) {   // {dref: n} 묶음 값 (게임 것). 다 쓰면 actRelease
   var vec = Memory.alloc(0x20); F.recInit(vec);
-  var iv = Memory.alloc(16); iv.writePointer(EMPTY_VAL.add(0x20)); iv.add(8).writeU64(d >>> 0);
+  var iv = Memory.alloc(16); iv.writePointer(EMPTY_VAL.add(0x20)); iv.add(8).writeU64(d >>> 0);   // 정수 값은 안에 바로 든다 (복사됨)
   F.recSet(vec, code4('dref'), iv);
-  var v = Memory.alloc(16); v.writePointer(EMPTY_VAL.add(0xb0)); v.add(8).writePointer(vec);
-  ACT_KEEP.push(vec, iv, v); if (ACT_KEEP.length > 30000) ACT_KEEP.splice(0, 3000);   // 아주 오래된 것만 놓는다
-  return { v: v, vec: vec };
+  var v = Memory.alloc(16); v.writePointer(EMPTY_VAL); v.add(8).writeU64(0);   // 빈 값에서 시작
+  F.toValue(v, vec); F.recFree(vec);
+  return v;
+}
+function actRelease(v) {   // 값 정리 = 종류 객체의 가상 함수 +0x10 (게임 코드와 같음)
+  try { var t = v.readPointer(); new NativeFunction(t.readPointer().add(0x10).readPointer(), 'void', ['pointer', 'pointer'])(t, v); } catch (e) {}
 }
 function actDrefMe() { var h = humans()[0]; if (!h) throw new Error('사람 감독을 찾지 못했어요'); return { obj: h, d: (0x01000000 | (h.add(0x458).readU32() & 0xffffff)) >>> 0 }; }
 // 화면 메뉴가 넘기는 것과 같은 문맥 {Pers, Ttea, Hhum, SidT, islc, objt}
@@ -2519,18 +2524,19 @@ function actContext(d) {
   if (kind === 0x01) { c.Pers = d; var o = propDeref(d), t = null; try { t = o && propGet(o, 'Pcte'); } catch (e) {} c.Ttea = (t && t.dref) || myt; }
   else if (kind === 0x18) c.Ttea = d;
   else if (myt) c.Ttea = myt;
+  if (kind === 0x03) c.Cclu = d;   // 구단 화면 문맥 (M65: 구단 결과 묶음에 Cclu)
   return { me: me, c: c };
 }
 // 게임에 묻기: fn(결과 [{id, val 포인터}])를 결과가 살아 있는 동안 부른다
 function actQuery(d, filter, fn) {
   var F = actFns(), mgr = actGlobal(ACT_MGR_SLOT, 'ACTIONS_MANAGER'), x = actContext(d), T = F.types(), frees = [];
   var list = Memory.alloc(0x20); F.listInit(list);
-  var tv = actDrefVal(F, d); F.push(list, tv.v); ACT_KEEP.push(list);
+  var tv = actDrefVal(F, d); F.push(list, tv); actRelease(tv);
   var ctx = Memory.alloc(0x20); F.recInit(ctx);
   Object.keys(x.c).forEach(function (k) {
     var v = x.c[k];
-    if (v === true || v === false) { var b = Memory.alloc(16); b.writePointer(T.add(0x18)); b.add(8).writeU64(v ? 1 : 0); F.recSet(ctx, code4(k), b); ACT_KEEP.push(b); }
-    else F.recSet(ctx, code4(k), actDrefVal(F, v).v);
+    if (v === true || v === false) { var b = Memory.alloc(16); b.writePointer(T.add(0x18)); b.add(8).writeU64(v ? 1 : 0); F.recSet(ctx, code4(k), b); }
+    else { var dv = actDrefVal(F, v); F.recSet(ctx, code4(k), dv); actRelease(dv); }
   });
   var out = Memory.alloc(0x20); F.recInit(out);
   try {
@@ -2552,7 +2558,7 @@ function actionsFor(spec, opts) {
       if (hid && !opts.all) return;
       var a = {}; if (r) Object.keys(r).forEach(function (k) { if (k !== 'hidn' && k !== 'disa') a[k] = r[k]; });
       var m = M24_ACTIONS[e.id] || [];
-      out.push({ id: e.id, cls: m[0] || null, hidden: hid, disabled: !!(r && r.disa), canRun: !!m[1], events: m[2] || [], args: a });
+      out.push({ id: e.id, cls: m[0] || null, hidden: hid, disabled: !!(r && r.disa), canRun: !!m[1] && !m[5], events: m[2] || [], click: m[3] || [], confirm: m[4] || null, args: a });
     });
     return out;
   });
@@ -2564,10 +2570,13 @@ function actionRun(id, spec, opts) {
   var m = M24_ACTIONS[id];
   if (!m) throw new Error("모르는 액션 '" + id + "' (docs/ACTIONS.md)");
   if (!m[1]) throw new Error("'" + id + "'는 실행 객체를 못 찾은 액션이에요");
+  if (m[5]) throw new Error("'" + id + "'는 실행 처리기가 비어 있어요 (화면 이동·사임처럼 게임이 다른 길로 실행하는 명령, docs/ACTIONS.md)");
   if (ACT_DANGER_CLS.test(m[0]) && opts.danger !== true) throw new Error("'" + id + "'(" + m[0] + ")는 감독 경력을 크게 바꾸는 액션이라 { danger: true }가 있어야 해요");
-  var ev = opts.event || (m[2].length === 1 ? m[2][0] : null);
-  if (!ev) throw new Error("'" + id + "'는 이벤트를 골라야 해요 (opts.event): " + (m[2].join(', ') || '알려진 이벤트 없음'));
-  if (m[2].length && m[2].indexOf(ev) < 0) throw new Error("'" + id + "'의 처리기가 받는 이벤트가 아니에요: " + ev + " (" + m[2].join(', ') + ")");
+  var known = m[2].concat(m[3].filter(function (x) { return m[2].indexOf(x) < 0; }));   // 처리기 이벤트 + 누름 이벤트
+  var ev = opts.event || (known.length === 1 ? known[0] : null);
+  if (!ev) throw new Error("'" + id + "'는 이벤트를 골라야 해요 (opts.event): " + (known.join(', ') || '알려진 이벤트 없음') +
+    (m[4] ? " — 확인 창 없이 실행하려면 확인 뒤 이벤트 '" + m[4] + "'" : '') + (m[3].length ? " (메뉴를 누를 때: " + m[3].join(', ') + ", 확인 창·화면을 여는 단계는 모드에서 부르면 창이 안 떠요)" : ''));
+  if (known.length && known.indexOf(ev) < 0) throw new Error("'" + id + "'가 받는 이벤트가 아니에요: " + ev + " (" + known.join(', ') + ")");
   var ui = B.add(m[1]), ucls = className(ui);
   if (!ucls || ucls.indexOf('ACTION_UI') < 0) throw new Error("'" + id + "'의 실행 객체가 이 빌드와 맞지 않아요");
   var dir = actGlobal(ACT_DIR_SLOT, 'action_ui::ACTIONS_EVENT_HANDLER'), d = actDref(spec);
@@ -3290,6 +3299,9 @@ rpc.exports = {
     var t = exploreResolve(spec); if (t.error) return t;
     try { var v = getField(t.p, name); return { path: t.path, name: name, value: (v && v.add) ? v.toString() : v, cls: className(t.p) }; } catch (e) { return { error: String(e.message || e) }; }
   },
+  // (코어 0.41.0) Python 모드 ctx.actions_for / ctx.action. 확인·횟수 제한·기록은 Python(mods.py)이 한다
+  actionsfor: function (spec, opts) { return M24GA.actionsFor(spec, opts || {}); },
+  actionrun: function (id, spec, opts) { return M24GA.actionRun(id, spec, opts || {}).then(function (r) { return r && r.error !== undefined && r.ok === undefined ? { ok: false, error: r.error } : r; }); },
   props: function (spec, re, empty) {   // CLI props (M55): 대상이 답하는 속성 전부
     try {
       var o = propResolve(spec); if (!o) { var t = exploreResolve(spec); if (t.error) return t; o = t.p; }

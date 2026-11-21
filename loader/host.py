@@ -895,7 +895,7 @@ def rpc(name, *args):
         return {"error": "%s 실패: %s" % (name, e)}
 
 
-modlib.RPC["fn"] = lambda name, *args: rpc(name, *args) if name in ("props",) else {"error": "모드가 부를 수 없는 rpc: %s" % name}   # ctx.props (코어 0.39.0)
+modlib.RPC["fn"] = lambda name, *args: rpc(name, *args) if name in ("props", "actionsfor", "actionrun") else {"error": "모드가 부를 수 없는 rpc: %s" % name}   # ctx.props (코어 0.39.0), ctx.actions_for / ctx.action (0.41.0)
 
 
 def getfield(spec, name):

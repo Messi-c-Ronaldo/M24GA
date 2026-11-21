@@ -979,7 +979,8 @@ def cmd_actions(args):
         out(dict(rows))
         return 0
     for a, e in rows:
-        ev = ("실행:" + ",".join(e["ui"]["events"])) if e.get("ui") else "실행 없음"
+        u = e.get("ui") or {}
+        ev = "실행 없음" if not u else "실행 불가(빈 처리기)" if u.get("noop") else "실행:" + ",".join(u["events"] + [x for x in u.get("click", []) if x not in u["events"]]) + ("(확인 뒤 %s)" % u["confirm"] if u.get("confirm") else "")
         print("  %-5s %-62s %-8s %-22s %s" % (a, e["class"], "보호" if e["protected"] else "", ev, " ".join(e.get("keys", [])[:8])))
     print("(%d개, core/actions.json, docs/ACTIONS.md. 모드 API: api.actionsFor / api.action, 코어 0.41.0)" % len(rows))
     return 0

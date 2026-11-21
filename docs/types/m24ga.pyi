@@ -39,6 +39,13 @@ class ModContext:
     def game_dir(self) -> Optional[str]:
         """(코어 0.31.0) 붙은 게임의 설치 폴더 (fm.exe 폴더). 한 번도 안 붙었으면 None"""
 
+    def actions_for(self, target: Any, all: bool = False) -> list[dict[str, Any]]:
+        """(코어 0.41.0, 기능 read.action) 게임 메뉴가 그 대상에 보여 주는 명령 [{id, cls, hidden, disabled, canRun, events, click, confirm, args}].
+        target = 'me'|'myteam'|'myclub'|'p123'|'s45'|dref 번호. 실패하면 RuntimeError"""
+
+    def action(self, action_id: str, target: Any, event: Optional[str] = None, danger: bool = False) -> dict[str, Any]:
+        """(코어 0.41.0, 기능 game.action, 세이브를 바꿈) 게임 명령 실행 {ok, error, handled}. 게임이 보여 주는 명령만, 1분에 10번"""
+
     def props(self, target: str, regex: Optional[str] = None, empty: bool = False) -> dict[str, Any]:
         """(코어 0.39.0, 기능 read.prop) 게임 속성 코드 값 {코드: 값}. target = 'me'|'myteam'|'myclub'|'myjob'|'p123'|'s45'|'team:<번호>'|'comp:<번호>'|'0x주소'.
         게임에 안 붙어 있거나 대상을 못 찾으면 RuntimeError, read.prop이 없으면 PermissionError"""

@@ -245,9 +245,10 @@
         "*"
       ],
       "title": "게임 명령(액션) 목록 읽기",
-      "desc": "api.actionsFor(대상, {all})로 게임 메뉴가 그 대상(사람·팀·대회, 'me'·'myteam'·{dref})에 보여 주는 명령을 읽어요. 게임 자신의 확인 함수를 불러서 화면 메뉴와 같은 판단이에요 (Promise [{id, cls, hidden, disabled, canRun, events, args}]). 목록: docs/ACTIONS.md. 게임을 바꾸지 않아요",
+      "desc": "api.actionsFor(대상, {all})로 게임 메뉴가 그 대상(사람·팀·구단·대회, 'me'·'myteam'·'myclub'·{dref})에 보여 주는 명령을 읽어요. 게임 자신의 확인 함수를 불러서 화면 메뉴와 같은 판단이에요 (Promise [{id, cls, hidden, disabled, canRun, events, click, confirm, args}]). 목록: docs/ACTIONS.md. 게임을 바꾸지 않아요 Python 모드: ctx.actions_for(대상)",
       "uses": [
-        "api.actionsFor"
+        "api.actionsFor",
+        "ctx.actions_for"
       ],
       "detect": [
         "\\bapi\\.actionsFor\\s*\\("
@@ -522,9 +523,10 @@
         "*"
       ],
       "title": "게임 명령(액션) 실행",
-      "desc": "api.action(id, 대상, {event, danger})로 게임 명령을 실행해요 (구독, 관심 목록, 구단에 요구 …). 게임이 그 대상에 그 명령을 보여 줄 때만, 게임이 만든 인자 그대로 화면 메뉴와 같은 처리기를 불러요. 세이브에 남고 되돌리기가 없어서(되돌리는 명령이 따로 있는 것도 있음) 사용자 허용이 필요하고 1분에 10번까지, 실행마다 로더 기록에 남아요. 사임·은퇴·휴가처럼 경력을 크게 바꾸는 명령은 {danger: true}가 있어야 해요. 확인 창을 거치는 명령(주장 지정 PmcP 등)은 확인 뒤 이벤트(pmcC처럼 …C)를 {event}로 주면 확인 창 없이 실행되고, 이런 명령은 게임이 다음 처리(하루 진행) 때 반영해요 (M65 실기). Promise {ok, error, handled}",
+      "desc": "api.action(id, 대상, {event, danger})로 게임 명령을 실행해요 (구독, 관심 목록, 구단에 요구 …). 게임이 그 대상에 그 명령을 보여 줄 때만, 게임이 만든 인자 그대로 화면 메뉴와 같은 처리기를 불러요. 세이브에 남고 되돌리기가 없어서(되돌리는 명령이 따로 있는 것도 있음) 사용자 허용이 필요하고 1분에 10번까지, 실행마다 로더 기록에 남아요. 사임·은퇴·휴가처럼 경력을 크게 바꾸는 명령은 {danger: true}가 있어야 해요. 확인 창을 거치는 명령(주장 지정 PmcP 등)은 확인 뒤 이벤트(pmcC처럼 …C)를 {event}로 주면 확인 창 없이 실행되고, 이런 명령은 게임이 다음 처리(하루 진행) 때 반영해요 (M65 실기). Promise {ok, error, handled}. 처리기가 빈 명령(화면 이동 LINK·사임 등 38개)은 이 길로 실행할 수 없어요. 이벤트가 여럿이면 {event}로 고르고, 등록부의 confirm(확인 뒤 이벤트)이 확인 창 없이 실행하는 쪽이에요. Python 모드: ctx.action(id, 대상, event=None, danger=False)",
       "uses": [
-        "api.action"
+        "api.action",
+        "ctx.action"
       ],
       "detect": [
         "\\bapi\\.action\\s*\\("

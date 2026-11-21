@@ -110,20 +110,52 @@ def _ui_map(pe, data, code):
             if t in vts and m[i + 7:i + 10] == b"\x48\x89\x05":
                 obj = rva + 14 + struct.unpack_from("<i", m, i + 10)[0]
                 s = funcmap._slots(pe, t, code)
-                evs = []
+                evs, e = [], {"obj": hex(obj)}
                 if len(s) > 2:
                     h = s[2] - IB
                     ho = pe.off(h)
                     if ho is not None:
                         blob = m[ho:ho + 0x80]
-                        j = blob.find(b"\x81\xfa")
+                        if blob[:3] in (b"\x31\xc0\xc3", b"\x33\xc0\xc3"):   # xor eax, eax; ret = 처리기가 비었다 (화면 이동 LINK, 사임 등은 다른 길로 실행)
+                            e["noop"] = True
+                        j = blob.find(b"\x81\xfa")   # cmp edx, imm32
                         while j != -1 and j + 6 <= len(blob):
                             v = struct.unpack_from("<I", blob, j + 2)[0].to_bytes(4, "big")
                             if all(0x20 < c < 0x7f for c in v) and v.decode() not in evs:
                                 evs.append(v.decode())
                             j = blob.find(b"\x81\xfa", j + 6)
-                out[vts[t]] = {"obj": hex(obj), "events": evs}
+                e["events"] = evs
+                if len(s) > 1:   # 메뉴 항목을 만드는 [1]: 항목 묶음에 'evid'(누르면 보낼 이벤트)를 넣는 곳 = mov edx, 값; ...; mov edx, 'evid'
+                    ck = _click_events(pe, s[1] - IB)
+                    if ck:
+                        e["click"] = ck
+                        rest = [x for x in evs if x not in ck]
+                        if len(ck) == 1 and len(evs) == 2 and len(rest) == 1:
+                            e["confirm"] = rest[0]   # 누름 = 확인 창, 남은 하나 = 확인 뒤 실행 (PmcP pmcE -> pmcC, M65 실기)
+                out[vts[t]] = e
             i = m.find(b"\x48\x8d\x05", i + 3, o0 + (b - a))
+    return out
+
+
+def _click_events(pe, rva):
+    """메뉴 항목을 만드는 함수에서 'evid' 키 바로 앞에 실은 4글자 값 (바이트 검색). 보호 구역(jmp)이면 []."""
+    o = pe.off(rva)
+    if o is None or pe.m[o] == 0xE9:
+        return []
+    f = pe.func_of(rva)
+    end = o + ((f[1] - f[0]) if f else 0x800)
+    m, out = pe.m, []
+    k = m.find(b"\xba\x64\x69\x76\x65", o, end)   # mov edx, 'evid'
+    while k != -1:
+        j = m.rfind(b"\xba", max(o, k - 0x40), k)   # 그 앞의 mov edx, imm32
+        while j != -1:
+            v = struct.unpack_from("<I", m, j + 1)[0].to_bytes(4, "big")
+            if v != b"evid" and all(0x20 < c < 0x7f for c in v):
+                if v.decode() not in out:
+                    out.append(v.decode())
+                break
+            j = m.rfind(b"\xba", max(o, k - 0x40), j)
+        k = m.find(b"\xba\x64\x69\x76\x65", k + 5, end)
     return out
 
 
@@ -143,6 +175,23 @@ def _keys(pe, md, rva):
     return ks
 
 
+def _ev_cell(u):
+    if not u:
+        return "-"
+    if u.get("noop"):
+        return "실행 불가"
+    evs = list(u["events"]) + [x for x in u.get("click", []) if x not in u["events"]]
+    out = []
+    for x in evs:
+        t = "`%s`" % x
+        if x in u.get("click", []):
+            t = "**%s**" % t
+        if x == u.get("confirm"):
+            t += " ✔"
+        out.append(t)
+    return " ".join(out)
+
+
 def docs(reg):
     A = reg["actions"]
     L = ["# 게임 액션(명령) 목록", "",
@@ -154,8 +203,8 @@ def docs(reg):
          "- 화면이 열릴 때 게임은 액션마다 '이 대상에 대해' 확인 함수를 불러요. 넘기는 문맥 묶음: " +
          ", ".join("`%s` %s" % kv for kv in reg["context_keys"].items()) + ".",
          "- `protected` = 확인 함수가 Denuvo 보호 구역이라 정적으로 못 읽은 것. `keys` = 확인 함수가 읽는 키 후보.",
-         "- `실행 이벤트` = 실행 쪽 처리기(*_ACTION_UI)가 받는 이벤트. 하나면 `api.action`에서 생략해도 되고, 여럿이면 `{event}`로 골라요. 비었으면 처리기를 정적으로 못 읽은 것 (실행 객체가 없으면 '-').",
-         "- 실기 확인 (M65): `SUBS` 구독 / `USUB` 구독 취소 = 바로 반영. 리더십 훈련 코스(`Ablc` 이벤트)는 화면 메뉴로 확인. 주장 지정 `PmcP`는 `pmcE`(누름 = 확인 창)가 아니라 `pmcC`(확인 뒤)를 주면 확인 창 없이 실행되고 다음 날 처리 때 반영 (주장 바뀜 → 되돌림 확인). 이벤트가 여럿인 명령은 이름 끝이 확인(`C`, `!`)인 것부터 보세요.",
+         "- `실행 이벤트` = 실행 쪽 처리기(*_ACTION_UI)가 받는 이벤트. **굵게** = 메뉴를 누를 때 보내는 이벤트(`click`, 확인 창·화면을 여는 단계가 많아요), ✔ = 확인 뒤 이벤트(`confirm`, 확인 창 없이 실행). 하나면 `api.action`에서 생략, 여럿이면 `{event}`로 골라요. `실행 불가` = 처리기가 비어 있어 이 길로 실행할 수 없는 명령 (화면 이동 LINK, 사임 등), '-' = 실행 객체 없음.",
+         "- 실기 확인 (M65): `SUBS` 구독 / `USUB` 구독 취소 = 바로 반영. 리더십 훈련 코스(`Ablc`)는 화면 메뉴로 확인. 주장 지정 `PmcP`는 누름 `pmcE`(확인 창, 모드에서 부르면 창이 안 뜸)가 아니라 확인 뒤 `pmcC`를 주면 실행되고 다음 날 처리 때 반영 (주장 바뀜 → 되돌림 확인). 다른 `confirm`은 같은 꼴(이벤트 2개 중 누름이 아닌 쪽)이라 적은 것이고 실기는 아직이에요.",
          "- CLI: `cli.py actions [정규식]` (게임 없이 됨).", ""]
     by = {}
     for aid, e in A.items():
@@ -163,7 +212,7 @@ def docs(reg):
     for g in sorted(by, key=lambda x: (x == "기타", x)):
         L += ["## %s (%d)" % (g, len(by[g])), "", "| id | 클래스 | 보호 | 문맥 키 | 실행 이벤트 |", "|---|---|---|---|---|"]
         for aid, e in sorted(by[g], key=lambda x: x[1]["class"]):
-            ev = " ".join("`%s`" % x for x in e["ui"]["events"]) if e.get("ui") else "-"
+            ev = _ev_cell(e.get("ui"))
             L.append("| `%s` | `%s` | %s | %s | %s |" % (aid.replace("|", "\\|"), e["class"], "예" if e["protected"] else "", " ".join("`%s`" % k for k in e.get("keys", [])[:10]), ev))
         L.append("")
     return "\n".join(L) + "\n"

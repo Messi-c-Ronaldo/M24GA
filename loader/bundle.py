@@ -37,8 +37,12 @@ def props_compact(reg):
 
 
 def actions_compact(reg):
-    """액션 등록부의 짧은 판 (M65): {id: [클래스, 실행 객체 rva 또는 0, [이벤트]]}"""
-    return {aid: [e["class"], int(e["ui"]["obj"], 16) if e.get("ui") else 0, e.get("ui", {}).get("events", [])] for aid, e in reg["actions"].items()}
+    """액션 등록부의 짧은 판 (M65): {id: [클래스, 실행 객체 rva 또는 0, [처리기 이벤트], [누름 이벤트], 확인 뒤 이벤트 | "", 처리기가 비었나]}"""
+    out = {}
+    for aid, e in reg["actions"].items():
+        u = e.get("ui") or {}
+        out[aid] = [e["class"], int(u["obj"], 16) if u else 0, u.get("events", []), u.get("click", []), u.get("confirm", ""), bool(u.get("noop"))]
+    return out
 
 
 def _js_path(p):

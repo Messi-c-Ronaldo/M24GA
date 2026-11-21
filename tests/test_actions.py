@@ -50,6 +50,9 @@ class Actions(unittest.TestCase):
         self.assertEqual(c["SUBS"][0], "SUBSCRIBE_ACTION")
         self.assertGreater(c["SUBS"][1], 0)
         self.assertEqual(c["SUBS"][2], ["stSU"])
+        self.assertEqual(c["PmcP"][3], ["pmcE"])   # M65: 누름 = 확인 창
+        self.assertEqual(c["PmcP"][4], "pmcC")     # 확인 뒤 = 실기로 주장 바뀜
+        self.assertTrue(c["Hres"][5])              # 처리기가 비어 있음 (사임은 다른 길)
 
     def test_docs(self):
         with open(os.path.join(ROOT, "docs", "ACTIONS.md"), encoding="utf-8") as f:

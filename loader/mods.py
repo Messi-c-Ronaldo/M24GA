@@ -613,6 +613,45 @@ class ModContext:
         import re
         return self.props(target, "^%s$" % re.escape(code), empty=True).get(code)
 
+    def actions_for(self, target, all=False):
+        """(코어 0.41.0, 기능 read.action) 게임 메뉴가 그 대상에 보여 주는 명령 [{id, cls, hidden, disabled, canRun, events, click, confirm, args}]
+        (JS api.actionsFor와 같음, docs/ACTIONS.md). target = 'me' | 'myteam' | 'myclub' | 'p123' | 's45' | dref 번호(int)"""
+        caps = self.mod.manifest.get("capabilities") or []
+        if "read.action" not in caps and "game.action" not in caps:
+            raise PermissionError("mod.json capabilities에 read.action이 없어요")
+        r = self._rpc("actionsfor", target, {"all": bool(all)})
+        if isinstance(r, dict):
+            raise RuntimeError(r.get("error") or "액션 읽기 실패")
+        return r
+
+    def action(self, action_id, target, event=None, danger=False):
+        """(코어 0.41.0, 기능 game.action — 세이브를 바꿈) 게임 명령 실행 (JS api.action과 같은 확인: 게임이 보여 주는 명령만, 1분에 10번, 기록).
+        반환 {ok, error, handled}"""
+        if "game.action" not in (self.mod.manifest.get("capabilities") or []):
+            return {"ok": False, "error": "mod.json capabilities에 game.action이 없어요 (사용자 허용 필요)"}
+        now = time.time()
+        ts = [t for t in getattr(self, "_act_ts", []) if now - t < 60]
+        if len(ts) >= 10:
+            self._act_ts = ts
+            return {"ok": False, "error": "액션이 너무 많아요 (1분에 10번까지)"}
+        self._act_ts = ts + [now]
+        opts = {"danger": bool(danger)}
+        if event:
+            opts["event"] = str(event)
+        r = self._rpc("actionrun", str(action_id), target, opts)
+        if not isinstance(r, dict) or r.get("ok") is None:
+            r = {"ok": False, "error": (r or {}).get("error") if isinstance(r, dict) else "액션 실행 실패"}
+        g = GAME.get("date")
+        self.log(("게임 액션 실행: %s %s (대상 %s, 이벤트 %s, 게임 날짜 %s)" % (action_id, r.get("cls") or "", target, r.get("event"), g or "-")) if r.get("ok")
+                 else "게임 액션 거절: %s: %s" % (action_id, r.get("error")))
+        return r
+
+    def _rpc(self, name, *args):
+        fn = RPC.get("fn")
+        if not fn:
+            raise RuntimeError("게임에 연결돼 있지 않아요")
+        return fn(name, *args)
+
     def save_dir(self):
         """(코어 0.5.0) 지금 세이브 전용 데이터 폴더 <데이터 폴더>/saves/<세이브 id>/ (만들어서 돌려준다). 세이브가 없으면 None.
         세이브마다 따로 기록해야 하는 것(선수별 기록, 진행 상황)은 여기에 둔다."""
