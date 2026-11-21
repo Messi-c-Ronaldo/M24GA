@@ -1,4 +1,4 @@
-# M24GA 기능 목록 (코어 0.40.0)
+# M24GA 기능 목록 (코어 0.41.0)
 
 > 이 파일은 `core/capabilities.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 
@@ -29,6 +29,7 @@
 | `event.saveLoaded` | read | **세이브 불러옴 이벤트**: 다른 세이브를 불러오면(또는 코어가 처음 세이브를 보면) 불려요. ev = { id, nonce, date }. 모드가 나중에 올라왔으면 이미 지나갔으니 처음에 saveInfo()로 확인하세요 | `api.on('saveLoaded', fn)` | 모두 |
 | `read.data` | read | **클럽·선수·스태프 데이터 읽기**: 데이터 표(clubs, persons, staff)와 속성 읽기(4글자 코드). mapsReady가 true일 때 써요 (세이브를 불러오면 코어가 스스로 만들어요, 화면 무관. 예전 api.prepareData는 그대로 둠). (코어 0.26.0) clubByName('토트넘') = 정식/짧은 이름이 같은 구단(db::CLUB), clubUid(구단) / clubByUid(번호) = 구단 고유 번호. (코어 0.27.0) personByName('손흥민') = {person, ref:'p95264'\|'s…', many} 또는 null, 이름 색인을 처음 만드는 동안은 {pending:true} (뒤에서 30초쯤). personByRef(ref) / personRef(사람). (코어 0.28.0) personsByName('파울리뉴') = 같은 이름의 사람 모두 (최대 8명) [{person, ref, name, age, club, role:'player'\|'staff'}] 또는 색인을 만드는 동안 {pending:true}, personInfo(사람) = 같은 정보 하나 (club ''는 무소속). personByName 결과에 count(같은 이름 수) | `api.prepareData`, `mapsReady`, `uidReady`, `clubs`, `persons`, `staff`, `lookup`, `getVal`, `getInt`, `linkIds`, `personName`, `personForm`, `formText`, `personExtra`, `mainPosition`, `topPlayer`, `clubExtra`, `clubSituation`, `staffAttrs`, `decodeVal`, `CLUB_VT`, `PERSON_VT`, `STAFF_VT`, `CLUBOBJ_VT`, `NT_VT`, `isNT`, `EMPTY_VAL`, `clubObj`, `clubFullName`, `clubShortName`, `clubByName`, `clubByUid`, `clubUid`, `personByName`, `personByRef`, `personRef`, `personsByName`, `personInfo` | 모두 |
 | `read.prop` | read | **게임 속성 코드 읽기**: 게임 화면이 쓰는 4글자 속성 코드로 팀·구단·국가대표·선수·스태프·사람 감독·대회·상(0.39.0부터 국가·경기장·도시·대륙·언론사·계약·임대·부상도)의 값을 읽어요. 등록부 core/properties.json(2,300여 개, 종류·값 형식)을 기준으로 api.prop(대상, 코드) / api.props(대상, {re, codes, empty}) / api.propInfo(코드) / api.deref({dref}). 대상은 객체 포인터 또는 'me'·'myteam'·'myclub'·'myjob'·'p123'·'s45'·'team:<번호>'·'comp:<번호>'. 날짜는 'YYYY-MM-DD', 다른 객체 링크는 {dref}. (코어 0.39.0) Python 모드: ctx.props(대상, 정규식) / ctx.prop(대상, 코드). (코어 0.40.0) api.leagueResults(대회 \| 'myleague') = 지난번 부른 뒤 끝난 리그 경기 결과 (보도 안 되는 경기 포함) | `api.prop`, `api.props`, `api.propInfo`, `api.deref`, `ctx.props`, `ctx.prop`, `api.leagueResults` | 모두 |
+| `read.action` | read | **게임 명령(액션) 목록 읽기**: api.actionsFor(대상, {all})로 게임 메뉴가 그 대상(사람·팀·대회, 'me'·'myteam'·{dref})에 보여 주는 명령을 읽어요. 게임 자신의 확인 함수를 불러서 화면 메뉴와 같은 판단이에요 (Promise [{id, cls, hidden, disabled, canRun, events, args}]). 목록: docs/ACTIONS.md. 게임을 바꾸지 않아요 | `api.actionsFor` | 모두 |
 | `read.news` | read | **뉴스 기사 본문 읽기**: 소셜피드 글이 달린 뉴스 기사의 본문(평문)을 읽어요 _(화면 의존: 소셜 피드 화면)_ | `newsBody` | 모두 |
 | `read.me` | read | **내 감독·내 클럽**: 사용자 감독 이름과 맡은 클럽. (코어 0.24.0) myHuman() = 이 PC의 사람 감독 객체(db::HUMAN_NON_PLAYER, 소셜 화면 없이), humans() = 사람 감독 목록. 칸은 getField(myHuman(), 'human.…'). (코어 0.25.0) humanRelations(h) = 감독의 관계 목록 [{target, cls, kind, kindName(favClub·dislikedClub·favPerson·dislikedPerson), level, reason, name}] (읽기만) | `myInfo`, `myHuman`, `humans`, `humanRelations` | 모두 |
 | `read.fan` | read | **팬 응원 클럽**: 댓글 작성자(팬)가 응원하는 클럽, 그 클럽 감독과 최근 성적 _(화면 의존: 소셜 피드 화면)_ | `fanClub`, `uidReady` | 모두 |
@@ -42,6 +43,7 @@
 | `ui.social.text` | ui | **소셜피드 글자 바꾸기**: 소셜 패널의 글자 칸을 새 글로 바꾸고 다시 그려요. refreshPanel은 화면 스레드(socialPanel/frame 콜백)에서만 _(화면 의존: 소셜 피드 화면)_ | `setStr`, `refreshPanel`, `uiTid` | 모두 |
 | `ui.panel` | ui | **게임 안 패널 (FM 모양 대화상자)**: 양식(제목, 글, 입력칸·숫자·체크·드롭다운·글 칸, 버튼)을 적으면 코어가 게임의 대화상자로 띄우고, 버튼·값이 바뀔 때 알려 줘요. 스킨 파일을 쓰지 않아요 (FM 사용자 폴더의 패널 칸 파일, 로더가 게임보다 먼저 만듦). 세이브는 바꾸지 않아요. 처음 한 번은 게임을 다시 켜야 할 수 있어요 (api.panel.available()) (코어 0.29.0) 칸 종류 person·club = 게임 검색칸: 치는 대로 게임이 후보(이름·포지션/직업·구단)를 띄우고, 고르면 {id, kind:'pick', value:{type, ref\|uid, name, age, club, role, label}} 이벤트가 오고 창이 고른 것을 보이며 다시 그려져요. values()에서는 고른 것, 안 골랐으면 친 글 {text}, 둘 다 없으면 null. 칸 value에 {ref}나 {uid}를 주면 '지금: …'으로 보여요. select 칸도 value를 주면 그 항목이 골라진 채로 열려요 | `api.panel` | 모두 |
 | `ui.inbox` | write | **게임 받은 편지함에 메일 넣기**: api.inbox.send({ title, body, from })로 게임 받은 편지함에 메일 한 통을 넣어요. 게임의 '감독끼리 보내는 메시지' 종류라 '보낸이의 말: 제목'으로 보이고, 보낸이는 사람(내 감독, 스태프, 선수: myHuman(), personByName(이름).person)이에요. 받는 사람은 내 감독(맡은 팀이 있어야 함). 세이브에 남고 되돌릴 수 없어서 사용자 허용이 필요하고 1분에 10통까지예요. 화면 스레드에서 넣고 Promise로 {ok, error}를 돌려줘요. 메일의 '응답' 버튼은 눌러도 아무 일도 일어나지 않아요 | `api.inbox` | 모두 |
+| `game.action` | write | **게임 명령(액션) 실행**: api.action(id, 대상, {event, danger})로 게임 명령을 실행해요 (구독, 관심 목록, 구단에 요구 …). 게임이 그 대상에 그 명령을 보여 줄 때만, 게임이 만든 인자 그대로 화면 메뉴와 같은 처리기를 불러요. 세이브에 남고 되돌리기가 없어서(되돌리는 명령이 따로 있는 것도 있음) 사용자 허용이 필요하고 1분에 10번까지, 실행마다 로더 기록에 남아요. 사임·은퇴·휴가처럼 경력을 크게 바꾸는 명령은 {danger: true}가 있어야 해요. 확인 창을 거치는 명령(주장 지정 PmcP 등)은 확인 뒤 이벤트(pmcC처럼 …C)를 {event}로 주면 확인 창 없이 실행되고, 이런 명령은 게임이 다음 처리(하루 진행) 때 반영해요 (M65 실기). Promise {ok, error, handled} | `api.action` | 모두 |
 | `pc.python` | pc | **PC 쪽 Python 부분**: mod.json의 python 진입 파일을 이 PC에서 실행해요 (인터넷 API, 파일). 게임 쪽과는 api.send/recv ↔ ctx.recv/post로 이야기해요 | `mod.json python`, `api.send`, `api.recv` | 모두 |
 | `pc.file` | pc | **게임 안에서 파일 읽기·쓰기**: Frida File로 파일을 직접 읽고 써요. 가능하면 Python 부분과 메시지를 쓰세요 | `File` | 모두 |
 | `raw.read` | raw | **게임 메모리 직접 읽기**: 주소(ptr)를 직접 만들거나 .readPointer/.readU32 같은 읽기로 게임 메모리를 읽어요. 주소가 틀리면 예외가 나요 (코어 함수로 되는 일이면 코어 함수를 쓰세요) | `ptr()`, `NativePointer.read*`, `B`, `Memory.scan`, `Process` | 모두 |
@@ -113,6 +115,12 @@ var o = lookup(clubs, idx, CLUB_VT); if (o) api.log('리그 순위 ' + getInt(o,
 
 ```js
 var rank = api.prop('myteam', 'TpoN'); var opp = api.deref(api.prop('myteam', 'Topp')); if (opp) api.log('상대 순위 ' + api.prop(opp, 'TpoN'));
+```
+
+**`read.action`**
+
+```js
+api.actionsFor(player).then(function (L) { api.log(L.map(function (a) { return a.id; }).join(' ')); });
 ```
 
 **`read.news`**
@@ -191,6 +199,12 @@ var p = api.panel.open({ title: '경력', fields: [{ id: 'club', type: 'text', l
 
 ```js
 api.inbox.send({ title: '경기 뒤 기자 질문', body: '오늘 승리의 열쇠는 무엇이었나요?', from: myHuman() }).then(function (r) { if (!r.ok) api.log(r.error); });
+```
+
+**`game.action`**
+
+```js
+api.action('SUBS', player).then(function (r) { if (!r.ok) api.log(r.error); });
 ```
 
 **`pc.python`**

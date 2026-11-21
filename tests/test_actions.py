@@ -29,6 +29,28 @@ class Actions(unittest.TestCase):
         self.assertEqual(A["PGoH"]["class"], "GO_ON_HOLIDAY_ACTION")   # M38 휴가
         self.assertEqual(A["AtSo"]["class"], "ADD_PLAYERS_TO_SHORTLIST_ACTION")
 
+    def test_ui(self):   # M65: 실행 쪽 전역 객체와 처리기 이벤트
+        A = self.reg["actions"]
+        ui = [e["ui"] for e in A.values() if "ui" in e]
+        self.assertGreaterEqual(len(ui), 190)
+        for u in ui:
+            self.assertRegex(u["obj"], r"^0x[0-9a-f]+$")
+            for ev in u["events"]:
+                self.assertEqual(len(ev), 4)
+        self.assertEqual(A["SUBS"]["ui"]["events"], ["stSU"])   # M65 실기: 구독
+        self.assertEqual(A["USUB"]["ui"]["events"], ["stSU"])
+        objs = [u["obj"] for u in ui]
+        self.assertEqual(len(objs), len(set(objs)))   # 액션마다 다른 객체
+
+    def test_compact(self):
+        import sys
+        sys.path.insert(0, os.path.join(ROOT, "loader"))
+        import bundle
+        c = bundle.actions_compact(self.reg)
+        self.assertEqual(c["SUBS"][0], "SUBSCRIBE_ACTION")
+        self.assertGreater(c["SUBS"][1], 0)
+        self.assertEqual(c["SUBS"][2], ["stSU"])
+
     def test_docs(self):
         with open(os.path.join(ROOT, "docs", "ACTIONS.md"), encoding="utf-8") as f:
             doc = f.read()

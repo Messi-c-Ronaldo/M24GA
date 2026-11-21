@@ -174,6 +174,7 @@ api.log(JSON.stringify(api.propInfo('Pced')));         // { code: 'Pced', t: 'da
 - 값: 정수, 실수, 글, `true/false`, 날짜 `'2038-06-30'`, 색 `'#rrggbbaa'`, 묶음 `{키: 값}`, 목록 `[...]`. 다른 객체는 `{dref: 번호}` → `api.deref`.
 - 읽기만 해요. 게임 화면이 보여 주는 값이라 안전하지만, 등록부에 뜻(`ko`)이 없는 코드는 값의 뜻을 직접 확인하세요.
 - (코어 0.40.0) **리그 경기 결과**: `api.leagueResults('myleague')` = 지난번 부른 뒤 끝난 리그 경기 `[{home, away, homeGoals, awayGoals, date}]` (보도 안 되는 경기 포함, [NEWS.md](NEWS.md)).
+- (코어 0.41.0) **게임 명령(액션)**: `api.actionsFor(대상)` = 게임 메뉴가 그 대상에 보여 주는 명령 목록 (기능 `read.action`), `api.action('SUBS', 대상)` = 실행 (기능 `game.action`, 세이브를 바꿔서 사용자 허용, 1분에 10번, 로더 기록). 게임이 보여 주는 명령만, 게임이 만든 인자 그대로 실행해요. 확인 창을 거치는 명령(주장 지정 `PmcP`)은 확인 뒤 이벤트를 주면 돼요 (`{event: 'pmcC'}`, 다음 날 처리 때 반영). 목록·이벤트: [ACTIONS.md](ACTIONS.md).
 - Python 쪽에서도 돼요 (코어 0.39.0): `ctx.props('myclub', '^Cc')`, `ctx.prop('myteam', 'TpoN')`. JS가 `api.send`로 보낸 객체 주소(`String(ptr)`)도 대상이 돼요. AI 프롬프트에 넣을 값을 Python에서 바로 모을 때 편해요.
 - 개발할 때: `cli.py props myteam ^T` (값 전부), `cli.py prop-find me 2038-06-30` (값으로 코드 찾기), `cli.py prop-info 순위` (게임 없이 목록).
 - 한 번에 1,000개쯤 읽는 `api.props(대상)`은 0.5~1초 걸려요. `re`나 `codes`로 좁혀 쓰세요.

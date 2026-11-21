@@ -979,8 +979,9 @@ def cmd_actions(args):
         out(dict(rows))
         return 0
     for a, e in rows:
-        print("  %-5s %-62s %-8s %s" % (a, e["class"], "보호" if e["protected"] else "", " ".join(e.get("keys", [])[:8])))
-    print("(%d개, core/actions.json, docs/ACTIONS.md. 실행 API는 아직 없어요)" % len(rows))
+        ev = ("실행:" + ",".join(e["ui"]["events"])) if e.get("ui") else "실행 없음"
+        print("  %-5s %-62s %-8s %-22s %s" % (a, e["class"], "보호" if e["protected"] else "", ev, " ".join(e.get("keys", [])[:8])))
+    print("(%d개, core/actions.json, docs/ACTIONS.md. 모드 API: api.actionsFor / api.action, 코어 0.41.0)" % len(rows))
     return 0
 
 

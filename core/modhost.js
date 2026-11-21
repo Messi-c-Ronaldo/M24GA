@@ -70,6 +70,28 @@ function m24gaInbox(id, o) {
   });
 }
 
+// 게임 액션 (코어 0.41.0, M65): 읽기 read.action, 실행 game.action (세이브를 바꿈, 사용자 허용 + 1분에 M24_ACTION_MAX_PER_MIN번 + 로더 기록)
+var M24_ACTION_MAX_PER_MIN = 10;
+function m24gaFix(r) { return r && r.error !== undefined && r.ok === undefined && !Array.isArray(r) ? { ok: false, error: r.error } : r; }
+function m24gaActionsFor(id, target, opts) {
+  if ((M24GA.caps[id] || []).indexOf('read.action') < 0 && (M24GA.caps[id] || []).indexOf('game.action') < 0) return Promise.resolve({ ok: false, error: "기능 'read.action'을 mod.json capabilities에 선언하세요" });
+  if (!M24GA.actionsFor) return Promise.resolve({ ok: false, error: '이 코어는 액션을 지원하지 않아요' });
+  return M24GA.actionsFor(target, opts).then(m24gaFix);
+}
+function m24gaAction(id, aid, target, opts) {
+  if ((M24GA.caps[id] || []).indexOf('game.action') < 0) return Promise.resolve({ ok: false, error: "기능 'game.action'을 mod.json capabilities에 선언하고 사용자 허용을 받아야 해요" });
+  if (!M24GA.actionRun) return Promise.resolve({ ok: false, error: '이 코어는 액션 실행을 지원하지 않아요' });
+  var now = Date.now(), k = 'action:' + id, ts = (M24GA.writeTimes[k] || []).filter(function (t) { return now - t < 60000; });
+  if (ts.length >= M24_ACTION_MAX_PER_MIN) { M24GA.writeTimes[k] = ts; return Promise.resolve({ ok: false, error: '액션이 너무 많아요 (1분에 ' + M24_ACTION_MAX_PER_MIN + '번까지)' }); }
+  ts.push(now); M24GA.writeTimes[k] = ts;
+  return M24GA.actionRun(aid, target, opts).then(function (r) {
+    r = m24gaFix(r);
+    var g = m24gaReadGame();
+    send({ m24core: { t: 'action', id: id, action: aid, cls: r && r.cls, event: r && r.event, target: r && r.target, ok: !!(r && r.ok), error: r && r.error, save: g.save, date: g.date && g.date.iso } });
+    return r;
+  });
+}
+
 // 관계 쓰기 (코어 0.26.0, 기능 write.relation): 감독 h에게 구단 club을 좋아하는/싫어하는 구단으로 넣거나(on=true) 뺀다.
 // 확인·기록·되돌리기는 m24gaWrite와 같다 (값은 글 'favClub:구단번호' / '').
 function m24gaRelation(id, h, kindName, club, on, opts) {
@@ -358,7 +380,12 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
     deref: function (d) { return M24GA.propDeref(d); },
     // (코어 0.40.0, 기능 read.prop) 리그 경기 결과 (보도 안 되는 경기 포함): 대회 객체 또는 'myleague'. 지난번 부른 뒤 끝난 경기 [{home, away, homeGoals, awayGoals, date, fixture, comp}].
     // 처음 부르면 기준만 잡고 []. dateChanged마다 부르면 그날 경기가 나와요
-    leagueResults: function (comp) { return M24GA.leagueResults(comp); },   // {dref} -> 객체 (사람·구단·팀·대회), 모르면 null
+    leagueResults: function (comp) { return M24GA.leagueResults(comp); },
+    // (코어 0.41.0) 게임 액션 (docs/ACTIONS.md). 화면 스레드에서 돌아 Promise를 돌려줘요.
+    // actionsFor(대상, {all}) -> [{id, cls, hidden, disabled, canRun, events, args}] (기능 read.action): 게임 메뉴가 그 대상에 보여 주는 명령
+    // action(id, 대상, {event, danger}) -> {ok, error, handled} (기능 game.action, 세이브를 바꿈): 게임이 보여 주는 명령일 때만 그 인자 그대로 실행
+    actionsFor: function (target, opts) { return alive ? m24gaActionsFor(id, target, opts) : Promise.resolve({ ok: false, error: '내려간 모드' }); },
+    action: function (aid, target, opts) { return alive ? m24gaAction(id, aid, target, opts) : Promise.resolve({ ok: false, error: '내려간 모드' }); },   // {dref} -> 객체 (사람·구단·팀·대회), 모르면 null
     panel: {
       open: function (form, cb) { return alive ? m24gaPanelOpen(id, form, cb) : { ok: false, error: '내려간 모드' }; },
       available: function () { return !!(M24GA.panelAvailable && M24GA.panelAvailable()); }

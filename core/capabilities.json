@@ -1,6 +1,6 @@
 {
   "$comment": "M24GA 기능 등록부 (M10). 코어가 모드에 열어 주는 기능마다 한 항목. 사람용 문서(docs/CAPABILITIES.md)는 tools/m24.py caps가 이 파일에서 만든다. 항목을 고치면 문서를 다시 만들고 tests를 돌린다. 'detect'는 mod.js에서 이 기능을 쓰는지 찾는 정규식(주석을 뺀 줄마다 검사). 'builds'는 지원하는 게임 빌드 이름 목록이고 [\"*\"]는 코어가 지원하는 모든 빌드. 'screen'이 있는 기능은 그 화면(스킨이 바꿀 수 있음)이 열려 있어야 동작해요 (M39). 나머지는 화면·스킨과 무관해야 해요.",
-  "core": "0.40.0",
+  "core": "0.41.0",
   "risks": {
     "read": {
       "label": "게임 데이터 읽기",
@@ -236,6 +236,23 @@
         "\\bapi\\.(prop|props|propInfo|deref|leagueResults)\\s*\\("
       ],
       "example": "var rank = api.prop('myteam', 'TpoN'); var opp = api.deref(api.prop('myteam', 'Topp')); if (opp) api.log('상대 순위 ' + api.prop(opp, 'TpoN'));"
+    },
+    {
+      "name": "read.action",
+      "risk": "read",
+      "since": "0.41.0",
+      "builds": [
+        "*"
+      ],
+      "title": "게임 명령(액션) 목록 읽기",
+      "desc": "api.actionsFor(대상, {all})로 게임 메뉴가 그 대상(사람·팀·대회, 'me'·'myteam'·{dref})에 보여 주는 명령을 읽어요. 게임 자신의 확인 함수를 불러서 화면 메뉴와 같은 판단이에요 (Promise [{id, cls, hidden, disabled, canRun, events, args}]). 목록: docs/ACTIONS.md. 게임을 바꾸지 않아요",
+      "uses": [
+        "api.actionsFor"
+      ],
+      "detect": [
+        "\\bapi\\.actionsFor\\s*\\("
+      ],
+      "example": "api.actionsFor(player).then(function (L) { api.log(L.map(function (a) { return a.id; }).join(' ')); });"
     },
     {
       "name": "read.news",
@@ -496,6 +513,23 @@
         "\\bapi\\.inbox\\.(send|available)\\s*\\("
       ],
       "example": "api.inbox.send({ title: '경기 뒤 기자 질문', body: '오늘 승리의 열쇠는 무엇이었나요?', from: myHuman() }).then(function (r) { if (!r.ok) api.log(r.error); });"
+    },
+    {
+      "name": "game.action",
+      "risk": "write",
+      "since": "0.41.0",
+      "builds": [
+        "*"
+      ],
+      "title": "게임 명령(액션) 실행",
+      "desc": "api.action(id, 대상, {event, danger})로 게임 명령을 실행해요 (구독, 관심 목록, 구단에 요구 …). 게임이 그 대상에 그 명령을 보여 줄 때만, 게임이 만든 인자 그대로 화면 메뉴와 같은 처리기를 불러요. 세이브에 남고 되돌리기가 없어서(되돌리는 명령이 따로 있는 것도 있음) 사용자 허용이 필요하고 1분에 10번까지, 실행마다 로더 기록에 남아요. 사임·은퇴·휴가처럼 경력을 크게 바꾸는 명령은 {danger: true}가 있어야 해요. 확인 창을 거치는 명령(주장 지정 PmcP 등)은 확인 뒤 이벤트(pmcC처럼 …C)를 {event}로 주면 확인 창 없이 실행되고, 이런 명령은 게임이 다음 처리(하루 진행) 때 반영해요 (M65 실기). Promise {ok, error, handled}",
+      "uses": [
+        "api.action"
+      ],
+      "detect": [
+        "\\bapi\\.action\\s*\\("
+      ],
+      "example": "api.action('SUBS', player).then(function (r) { if (!r.ok) api.log(r.error); });"
     },
     {
       "name": "pc.python",

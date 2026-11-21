@@ -2457,6 +2457,132 @@ function leagueResults(compSpec) {
   return out;
 }
 M24GA.leagueResults = leagueResults;
+
+// ---- 게임 액션 (코어 0.41.0, M65) ----
+// 사용자 명령(관심 목록에 넣기, 구독, 이적 제의 …) = ACTION_BASE 클래스 198개 (core/actions.json, M62).
+// 읽기: ACTIONS_MANAGER(fm+0x6363570이 가리킴)의 action.query(대상 목록, 감독, 결과, 문맥, 'NULL')가 액션마다 확인 함수를 불러
+//   [id][결과 묶음]을 채운다. 결과 묶음 hidn = 메뉴에서 숨김, 나머지 칸 = 실행할 때 쓰는 인자 (화면 메뉴와 같은 판단).
+// 실행: 액션마다 fm.exe 안 전역 객체 *_ACTION_UI가 있고 vtable [2] = 처리기 (this, 이벤트 4글자, 결과 묶음, ACTIONS_EVENT_HANDLER).
+//   메뉴를 누르면 게임도 이 처리기를 부른다 (M65 실기: 리더십 훈련 코스). 넷째 인자 = 전역 fm+0x63635b0.
+// 대상 목록·문맥은 게임 함수(val.listPush, rec.set)로 만든다. 복사본이 우리가 만든 {dref} 묶음을 같이 가리키므로(바로 정리하면 접근 오류, M65 실기)
+// 우리 묶음·값은 ACT_KEEP에 살려 둔다 (부를 때마다 수백 바이트). 대상 목록 항목도 정리 함수를 몰라 남긴다.
+var ACT_KEEP = [];
+var M24_ACTIONS = {};   // 로더가 넣는다: {id: [클래스, 실행 객체 rva | 0, [이벤트]]}
+var ACT_MGR_SLOT = 0x6363570, ACT_DIR_SLOT = 0x63635b0, ACT_FN = null;
+var ACT_FN_NAMES = ['action.query', 'val.types', 'val.listInit', 'val.listPush', 'rec.init', 'rec.set', 'ui.eventFree'];
+function actFns() {
+  if (ACT_FN) return ACT_FN;
+  var a = {};
+  for (var i = 0; i < ACT_FN_NAMES.length; i++) { var st = funcCheck(ACT_FN_NAMES[i]); if (!st.ok) throw new Error(st.error); a[ACT_FN_NAMES[i]] = st.addr; }
+  ACT_FN = {
+    query: new NativeFunction(a['action.query'], 'void', ['pointer', 'pointer', 'pointer', 'pointer', 'pointer', 'uint32']),
+    types: new NativeFunction(a['val.types'], 'pointer', []),
+    listInit: new NativeFunction(a['val.listInit'], 'pointer', ['pointer']),
+    push: new NativeFunction(a['val.listPush'], 'void', ['pointer', 'pointer']),
+    recInit: new NativeFunction(a['rec.init'], 'pointer', ['pointer']),
+    recSet: new NativeFunction(a['rec.set'], 'void', ['pointer', 'uint32', 'pointer']),
+    recFree: new NativeFunction(a['ui.eventFree'], 'void', ['pointer'])
+  };
+  return ACT_FN;
+}
+function actGlobal(slot, cls) {   // 전역 칸이 가리키는 객체, 클래스가 맞을 때만 (다른 빌드에서 엉뚱한 곳을 부르지 않게)
+  var o = B.add(slot).readPointer();
+  if (o.isNull() || className(o) !== cls) throw new Error(cls + '를 찾지 못했어요 (이 게임 빌드에서는 액션을 쓸 수 없어요)');
+  return o;
+}
+// 객체·대상 글 -> dref 번호 (0x01 사람, 0x18 팀, 0x19 대회). {dref} 또는 번호는 그대로
+function actDref(spec) {
+  if (spec && typeof spec === 'object' && typeof spec.dref === 'number') return spec.dref >>> 0;
+  if (typeof spec === 'number') return spec >>> 0;
+  var o = propResolve(spec); if (!o) throw new Error('대상을 찾지 못했어요: ' + spec);
+  var tg = propTarget(o); if (!tg) throw new Error('액션 대상이 될 수 없는 객체예요');
+  var id = function (p) { return p.add(8).readU32() & 0xffffff; };
+  if (tg.kind === 'human') return (0x01000000 | (tg.p.add(8).readU32() & 0xffffff)) >>> 0;   // 사람 부분 +0x450의 +8 = 감독 번호 (propDeref와 같음)
+  if (tg.kind === 'player' || tg.kind === 'staff') return (0x01000000 | id(tg.p)) >>> 0;
+  if (tg.kind === 'team' || tg.kind === 'nation') return (0x18000000 | id(tg.p)) >>> 0;
+  if (tg.kind === 'comp') return (0x19000000 | id(tg.p)) >>> 0;
+  throw new Error("'" + tg.kind + "' 종류는 아직 액션 대상으로 못 써요 (사람·팀·대회만)");
+}
+function actDrefVal(F, d) {   // {dref: n} 묶음 값. 값 {REC_T, 벡터*}, 벡터 항목 ['dref', {INT_T, n}]
+  var vec = Memory.alloc(0x20); F.recInit(vec);
+  var iv = Memory.alloc(16); iv.writePointer(EMPTY_VAL.add(0x20)); iv.add(8).writeU64(d >>> 0);
+  F.recSet(vec, code4('dref'), iv);
+  var v = Memory.alloc(16); v.writePointer(EMPTY_VAL.add(0xb0)); v.add(8).writePointer(vec);
+  ACT_KEEP.push(vec, iv, v); if (ACT_KEEP.length > 30000) ACT_KEEP.splice(0, 3000);   // 아주 오래된 것만 놓는다
+  return { v: v, vec: vec };
+}
+function actDrefMe() { var h = humans()[0]; if (!h) throw new Error('사람 감독을 찾지 못했어요'); return { obj: h, d: (0x01000000 | (h.add(0x458).readU32() & 0xffffff)) >>> 0 }; }
+// 화면 메뉴가 넘기는 것과 같은 문맥 {Pers, Ttea, Hhum, SidT, islc, objt}
+function actContext(d) {
+  var me = actDrefMe(), myt = null, kind = d >>> 24, c = { Hhum: me.d, islc: true, objt: d };
+  try { myt = actDref('myteam'); c.SidT = myt; } catch (e) {}
+  if (kind === 0x01) { c.Pers = d; var o = propDeref(d), t = null; try { t = o && propGet(o, 'Pcte'); } catch (e) {} c.Ttea = (t && t.dref) || myt; }
+  else if (kind === 0x18) c.Ttea = d;
+  else if (myt) c.Ttea = myt;
+  return { me: me, c: c };
+}
+// 게임에 묻기: fn(결과 [{id, val 포인터}])를 결과가 살아 있는 동안 부른다
+function actQuery(d, filter, fn) {
+  var F = actFns(), mgr = actGlobal(ACT_MGR_SLOT, 'ACTIONS_MANAGER'), x = actContext(d), T = F.types(), frees = [];
+  var list = Memory.alloc(0x20); F.listInit(list);
+  var tv = actDrefVal(F, d); F.push(list, tv.v); ACT_KEEP.push(list);
+  var ctx = Memory.alloc(0x20); F.recInit(ctx);
+  Object.keys(x.c).forEach(function (k) {
+    var v = x.c[k];
+    if (v === true || v === false) { var b = Memory.alloc(16); b.writePointer(T.add(0x18)); b.add(8).writeU64(v ? 1 : 0); F.recSet(ctx, code4(k), b); ACT_KEEP.push(b); }
+    else F.recSet(ctx, code4(k), actDrefVal(F, v).v);
+  });
+  var out = Memory.alloc(0x20); F.recInit(out);
+  try {
+    F.query(mgr, list, x.me.obj, out, ctx, filter ? code4(filter) : 0x4e554c4c);
+    var b0 = out.readPointer(), n = b0.isNull() ? 0 : out.add(8).readPointer().sub(b0).toInt32() / 16, L = [];
+    for (var i = 0; i < n && i < 400; i++) { var ent = b0.add(16 * i); L.push({ id: cc4(ent.readU32()), val: ent.add(8).readPointer() }); }
+    return fn(L, ctx);
+  } finally { F.recFree(out); F.recFree(ctx); }   // 둘 다 M65 조사 모드에서 정리해도 됐다
+}
+function actDecode(vp) { try { return decodeVal(vp.readPointer(), vp.add(8), 0); } catch (e) { return null; } }
+// 대상에 지금 쓸 수 있는 액션 (화면 메뉴와 같은 판단). opts.all = 숨은 것도
+function actionsFor(spec, opts) {
+  opts = opts || {};
+  var d = actDref(spec);
+  return actQuery(d, null, function (L) {
+    var out = [];
+    L.forEach(function (e) {
+      var r = actDecode(e.val), hid = !r || r.hidn !== false;
+      if (hid && !opts.all) return;
+      var a = {}; if (r) Object.keys(r).forEach(function (k) { if (k !== 'hidn' && k !== 'disa') a[k] = r[k]; });
+      var m = M24_ACTIONS[e.id] || [];
+      out.push({ id: e.id, cls: m[0] || null, hidden: hid, disabled: !!(r && r.disa), canRun: !!m[1], events: m[2] || [], args: a });
+    });
+    return out;
+  });
+}
+var ACT_DANGER_CLS = /RESIGN|RETIRE|KICK|BAN_USER|FORCE_|CHANGE_HUMAN_TEAM|TERMINATION|HOLIDAY|ADD_MANAGER|ADD_AI_MANAGER|ADD_MULTIPLE_AI_MANAGER|KEEP_RETIRED/;
+// 액션 실행: 게임이 그 대상에 보여 주는 액션일 때만, 그 결과 묶음 그대로 처리기에. opts.event = 이벤트 4글자 (처리기가 받는 것이 하나면 생략)
+function actionRun(id, spec, opts) {
+  opts = opts || {};
+  var m = M24_ACTIONS[id];
+  if (!m) throw new Error("모르는 액션 '" + id + "' (docs/ACTIONS.md)");
+  if (!m[1]) throw new Error("'" + id + "'는 실행 객체를 못 찾은 액션이에요");
+  if (ACT_DANGER_CLS.test(m[0]) && opts.danger !== true) throw new Error("'" + id + "'(" + m[0] + ")는 감독 경력을 크게 바꾸는 액션이라 { danger: true }가 있어야 해요");
+  var ev = opts.event || (m[2].length === 1 ? m[2][0] : null);
+  if (!ev) throw new Error("'" + id + "'는 이벤트를 골라야 해요 (opts.event): " + (m[2].join(', ') || '알려진 이벤트 없음'));
+  if (m[2].length && m[2].indexOf(ev) < 0) throw new Error("'" + id + "'의 처리기가 받는 이벤트가 아니에요: " + ev + " (" + m[2].join(', ') + ")");
+  var ui = B.add(m[1]), ucls = className(ui);
+  if (!ucls || ucls.indexOf('ACTION_UI') < 0) throw new Error("'" + id + "'의 실행 객체가 이 빌드와 맞지 않아요");
+  var dir = actGlobal(ACT_DIR_SLOT, 'action_ui::ACTIONS_EVENT_HANDLER'), d = actDref(spec);
+  return actQuery(d, id, function (L) {
+    var e = null; L.forEach(function (x) { if (x.id === id) e = x; });
+    var r = e && actDecode(e.val);
+    if (!r || r.hidn !== false) return { ok: false, error: "게임이 이 대상에 '" + id + "'를 보여 주지 않아요 (지금 쓸 수 없음)" };
+    if (r.disa) return { ok: false, error: "게임 메뉴에서 '" + id + "'가 흐리게(못 누름) 나와요" };
+    var h = new NativeFunction(ui.readPointer().add(0x10).readPointer(), 'uint8', ['pointer', 'uint32', 'pointer', 'pointer']);
+    var ret = h(ui, code4(ev), e.val.add(8).readPointer(), dir);
+    return { ok: true, id: id, cls: m[0], event: ev, target: d, handled: ret !== 0 };
+  });
+}
+M24GA.actionsFor = function (spec, opts) { return runOnUi(function () { return actionsFor(spec, opts); }); };
+M24GA.actionRun = function (id, spec, opts) { return runOnUi(function () { return actionRun(id, spec, opts); }); };
 var dbgLines = [], dbgFile = null;
 function dbg(msg) {   // 진단 기록 (처음 40줄만)
   if (dbgLines.length >= 40) return;

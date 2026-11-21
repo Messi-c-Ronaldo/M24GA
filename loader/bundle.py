@@ -19,6 +19,7 @@ CORE_DATA = modlib.DATA
 FIELDS_JSON = os.path.join(ROOT, "core", "fields.json")   # 필드 등록부 (M20)
 FUNCS_JSON = os.path.join(ROOT, "core", "functions.json")   # 함수 등록부 (M22)
 PROPS_JSON = os.path.join(ROOT, "core", "properties.json")   # 속성 등록부 (M55, 코어 0.36.0)
+ACTIONS_JSON = os.path.join(ROOT, "core", "actions.json")   # 액션 등록부 (M65, 코어 0.41.0)
 
 
 def props_compact(reg):
@@ -33,6 +34,11 @@ def props_compact(reg):
             bits |= 1 << kinds.index(k)
         p[c] = [v["t"], bits]
     return {"kinds": {k: [reg["kinds"][k]["class"], reg["kinds"][k]["off"]] for k in kinds}, "block": sorted(reg.get("block", {})), "p": p}
+
+
+def actions_compact(reg):
+    """액션 등록부의 짧은 판 (M65): {id: [클래스, 실행 객체 rva 또는 0, [이벤트]]}"""
+    return {aid: [e["class"], int(e["ui"]["obj"], 16) if e.get("ui") else 0, e.get("ui", {}).get("events", [])] for aid, e in reg["actions"].items()}
 
 
 def _js_path(p):
@@ -100,6 +106,8 @@ def build(mods_to_load=None, exe=None):
     core = _inject(core, "M24_FUNCS", json.dumps(funcs, ensure_ascii=False, separators=(",", ":")), "core.js")
     with open(PROPS_JSON, encoding="utf-8") as f:   # 속성 등록부 (M55): 짧은 판만
         core = _inject(core, "M24_PROPS", json.dumps(props_compact(json.load(f)), ensure_ascii=False, separators=(",", ":")), "core.js")
+    with open(ACTIONS_JSON, encoding="utf-8") as f:   # 액션 등록부 (M65): 짧은 판만
+        core = _inject(core, "M24_ACTIONS", json.dumps(actions_compact(json.load(f)), ensure_ascii=False, separators=(",", ":")), "core.js")
     parts.append(core)
     loaded = []
     for m in mods_to_load:

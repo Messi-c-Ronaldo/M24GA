@@ -71,13 +71,60 @@ def build(exe, pylib=None):
         if md and not prot:
             e["keys"] = _keys(pe, md, chk)
         acts[aid] = e
+    ui = _ui_map(pe, data, code)
+    byc = {e["class"]: aid for aid, e in acts.items()}
+    for ucls, u in ui.items():
+        aid = byc.get(ucls[:-3]) or byc.get(ucls.replace("_ACTION_ACTION_UI", "_ACTION"))
+        if aid:
+            acts[aid]["ui"] = u
     return {"$comment": "게임 액션(명령) 등록부 (M62). tools/actions_catalog.py가 fm.exe에서 만든다. 열쇠 = 4글자 액션 id. "
                         "class = RTTI 클래스(빌드가 바뀌어도 같음), protected = 확인 함수가 Denuvo 보호 구역(정적 분석 불가), "
-                        "keys = 확인 함수가 읽는 문맥 묶음 키 후보. 실행 API는 아직 없음 (세이브를 바꾸는 명령이라 사용자 확인 뒤).",
-            "source": {"build": "FM24 Epic 24.4.2 (fm.exe 2026-10-24)", "count": len(acts)},
+                        "keys = 확인 함수가 읽는 문맥 묶음 키 후보. ui = 실행 쪽 전역 객체 *_ACTION_UI {obj: fm 안 주소, events: 처리기가 받는 이벤트} (M65, 코어 0.41.0 api.action).",
+            "source": {"build": "FM24 Epic 24.4.2 (fm.exe 2026-10-24)", "count": len(acts), "ui": sum(1 for e in acts.values() if "ui" in e)},
             "context_keys": {"Pers": "대상 사람 {dref}", "Ttea": "팀 {dref}", "Hhum": "명령하는 사람 감독 {dref}", "SidT": "감독의 팀 {dref}",
                              "islc": "지역(이 PC) 감독인가", "objt": "화면의 대상 객체 {dref}"},
             "actions": dict(sorted(acts.items(), key=lambda kv: kv[1]["class"]))}
+
+
+def _ui_map(pe, data, code):
+    """실행 쪽 (M65): 액션마다 화면 쪽 처리 객체 *_ACTION_UI가 fm.exe 안 전역 객체로 하나씩 있다.
+    등록 함수들이 `lea rax, [vtable]; mov [rip+객체], rax`로 vtable을 넣는다 -> 바이트로 찾는다 (capstone 필요 없음).
+    처리기 = vtable [2] (this, 이벤트 4글자, 묶음, ACTIONS_EVENT_HANDLER). 처음 `cmp edx, imm32`들이 받는 이벤트."""
+    IB = pe.image_base
+    vts = {}
+    for name, c in data["classes"].items():
+        if name.endswith("ACTION_UI") and c.get("vtables"):
+            vts[int(c["vtables"][0]["rva"], 16)] = name
+    out = {}
+    for a, b in code:
+        a -= IB
+        b -= IB
+        o0 = pe.off(a)
+        if o0 is None:
+            continue
+        m = pe.m
+        i = m.find(b"\x48\x8d\x05", o0, o0 + (b - a))
+        while i != -1:
+            rva = a + (i - o0)
+            t = rva + 7 + struct.unpack_from("<i", m, i + 3)[0]
+            if t in vts and m[i + 7:i + 10] == b"\x48\x89\x05":
+                obj = rva + 14 + struct.unpack_from("<i", m, i + 10)[0]
+                s = funcmap._slots(pe, t, code)
+                evs = []
+                if len(s) > 2:
+                    h = s[2] - IB
+                    ho = pe.off(h)
+                    if ho is not None:
+                        blob = m[ho:ho + 0x80]
+                        j = blob.find(b"\x81\xfa")
+                        while j != -1 and j + 6 <= len(blob):
+                            v = struct.unpack_from("<I", blob, j + 2)[0].to_bytes(4, "big")
+                            if all(0x20 < c < 0x7f for c in v) and v.decode() not in evs:
+                                evs.append(v.decode())
+                            j = blob.find(b"\x81\xfa", j + 6)
+                out[vts[t]] = {"obj": hex(obj), "events": evs}
+            i = m.find(b"\x48\x8d\x05", i + 3, o0 + (b - a))
+    return out
 
 
 def _keys(pe, md, rva):
@@ -101,19 +148,23 @@ def docs(reg):
     L = ["# 게임 액션(명령) 목록", "",
          "> `python -X utf8 tools/actions_catalog.py`가 `core/actions.json`에서 만들어요. 직접 고치지 마세요.", "",
          "FM24에서 사용자가 하는 명령(관심 목록에 넣기, 이적 제의, 계약 제의, 휴가 …)은 게임 안에서 **액션 객체 %d개**예요. "
-         "M24GA는 그 목록을 등록부로 만들어 뒀어요. **모드가 액션을 실행하는 API는 아직 없어요** (세이브를 바꾸는 명령이라 안전 장치를 먼저 만들어야 해요)." % len(A), "",
+         "M24GA는 그 목록을 등록부로 만들어 뒀어요. 모드는 (코어 0.41.0) `api.actionsFor(대상)`으로 게임 메뉴가 그 대상에 보여 주는 명령을 읽고 "
+         "(기능 `read.action`), `api.action(id, 대상, {event})`로 실행해요 (기능 `game.action`, 세이브를 바꿔서 사용자 허용·기록)." % len(A), "",
          "- 액션 id = 4글자 (예: `PGoH` 휴가, `AtSo` 관심 목록에 넣기, `offr` 이적 제의).",
          "- 화면이 열릴 때 게임은 액션마다 '이 대상에 대해' 확인 함수를 불러요. 넘기는 문맥 묶음: " +
          ", ".join("`%s` %s" % kv for kv in reg["context_keys"].items()) + ".",
          "- `protected` = 확인 함수가 Denuvo 보호 구역이라 정적으로 못 읽은 것. `keys` = 확인 함수가 읽는 키 후보.",
+         "- `실행 이벤트` = 실행 쪽 처리기(*_ACTION_UI)가 받는 이벤트. 하나면 `api.action`에서 생략해도 되고, 여럿이면 `{event}`로 골라요. 비었으면 처리기를 정적으로 못 읽은 것 (실행 객체가 없으면 '-').",
+         "- 실기 확인 (M65): `SUBS` 구독 / `USUB` 구독 취소 = 바로 반영. 리더십 훈련 코스(`Ablc` 이벤트)는 화면 메뉴로 확인. 주장 지정 `PmcP`는 `pmcE`(누름 = 확인 창)가 아니라 `pmcC`(확인 뒤)를 주면 확인 창 없이 실행되고 다음 날 처리 때 반영 (주장 바뀜 → 되돌림 확인). 이벤트가 여럿인 명령은 이름 끝이 확인(`C`, `!`)인 것부터 보세요.",
          "- CLI: `cli.py actions [정규식]` (게임 없이 됨).", ""]
     by = {}
     for aid, e in A.items():
         by.setdefault(e["group"], []).append((aid, e))
     for g in sorted(by, key=lambda x: (x == "기타", x)):
-        L += ["## %s (%d)" % (g, len(by[g])), "", "| id | 클래스 | 보호 | 문맥 키 |", "|---|---|---|---|"]
+        L += ["## %s (%d)" % (g, len(by[g])), "", "| id | 클래스 | 보호 | 문맥 키 | 실행 이벤트 |", "|---|---|---|---|---|"]
         for aid, e in sorted(by[g], key=lambda x: x[1]["class"]):
-            L.append("| `%s` | `%s` | %s | %s |" % (aid.replace("|", "\\|"), e["class"], "예" if e["protected"] else "", " ".join("`%s`" % k for k in e.get("keys", [])[:10])))
+            ev = " ".join("`%s`" % x for x in e["ui"]["events"]) if e.get("ui") else "-"
+            L.append("| `%s` | `%s` | %s | %s | %s |" % (aid.replace("|", "\\|"), e["class"], "예" if e["protected"] else "", " ".join("`%s`" % k for k in e.get("keys", [])[:10]), ev))
         L.append("")
     return "\n".join(L) + "\n"
 

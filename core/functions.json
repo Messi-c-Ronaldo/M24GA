@@ -748,6 +748,146 @@
         "off": "0x10",
         "hex": "080000488dac248000000048c78540080000feffffff4889"
       }
+    },
+    "action.query": {
+      "rva": "0x2aabb20",
+      "sig": {
+        "off": "0x10",
+        "hex": "000000488dac248000000048c74520fe"
+      },
+      "args": [
+        "ptr",
+        "ptr",
+        "ptr",
+        "ptr",
+        "ptr",
+        "u32"
+      ],
+      "argNames": [
+        "ACTIONS_MANAGER (fm+0x6363570이 가리킴)",
+        "대상 목록 (값 포인터 벡터, 항목 = {dref} 묶음 값)",
+        "사람 감독 객체",
+        "결과 묶음 벡터 (게임이 [액션 id][결과 묶음 값]을 채움)",
+        "문맥 묶음 벡터 (Pers·Ttea·Hhum·SidT·islc·objt)",
+        "액션 id 거르기 (4글자, 'NULL' = 전부)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "ui",
+      "desc": "대상에 대해 모든 액션의 확인 함수([2])를 불러 결과 묶음(hidn = 숨김, 나머지 = 실행 인자)을 모은다. 화면이 메뉴를 만들 때 쓰는 함수. 코어 0.41.0 api.actionsFor·api.action",
+      "source": "M65 (액션 관리자 호출 fm+0x4a168c0와 확인 함수들의 순서, 실기 확인)",
+      "verified": true,
+      "find": {
+        "off": "0x10",
+        "hex": "000000488dac248000000048c74520feffffff4d89ce4c8945f04889ce488955"
+      }
+    },
+    "val.types": {
+      "rva": "0x197d070",
+      "sig": {
+        "off": "0x10",
+        "hex": "8b0100008b0502a8aa048b0d301ea104"
+      },
+      "args": [],
+      "argNames": [],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "any",
+      "desc": "값 종류 표를 돌려준다 (+8 = 빈 값 종류 = 코어 EMPTY_VAL, +0x18 bool). 처음 부르면 만든다",
+      "source": "M65 (액션 관리자 호출 fm+0x4a168c0와 확인 함수들의 순서, 실기 확인)",
+      "verified": true
+    },
+    "val.listInit": {
+      "rva": "0x197a840",
+      "sig": {
+        "off": "0x10",
+        "hex": "ffffff4889ce48833d8a8c9e0400752f"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "벡터 자리 (0x18바이트)"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "any",
+      "desc": "값 목록 벡터 {시작, 끝, 용량}을 비운다 (0으로)",
+      "source": "M65 (액션 관리자 호출 fm+0x4a168c0와 확인 함수들의 순서, 실기 확인)",
+      "verified": true
+    },
+    "val.listPush": {
+      "rva": "0x197b1b0",
+      "sig": {
+        "off": "0x10",
+        "hex": "488d6c242048c74500feffffff4989d6"
+      },
+      "args": [
+        "ptr",
+        "ptr"
+      ],
+      "argNames": [
+        "값 목록 벡터",
+        "값 {종류, 자료} (복사됨)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "any",
+      "desc": "값 목록 끝에 값 사본을 넣는다 (게임 힙에 0x20바이트씩)",
+      "source": "M65 (액션 관리자 호출 fm+0x4a168c0와 확인 함수들의 순서, 실기 확인)",
+      "verified": true,
+      "find": {
+        "off": "0x10",
+        "hex": "488d6c242048c74500feffffff4989d64989cf488b394839"
+      }
+    },
+    "rec.init": {
+      "rva": "0x1973210",
+      "sig": {
+        "off": "0x10",
+        "hex": "ffffff4889ce48833dba029f0400752f"
+      },
+      "args": [
+        "ptr"
+      ],
+      "argNames": [
+        "묶음 벡터 자리 (0x18바이트)"
+      ],
+      "ret": "ptr",
+      "owner": "core",
+      "call": true,
+      "thread": "any",
+      "desc": "속성 묶음 벡터를 비운다. 다 쓰면 ui.eventFree",
+      "source": "M65 (액션 관리자 호출 fm+0x4a168c0와 확인 함수들의 순서, 실기 확인)",
+      "verified": true
+    },
+    "rec.set": {
+      "rva": "0x1974e70",
+      "sig": {
+        "off": "0x10",
+        "hex": "3048c74500feffffff4d89c689d64989"
+      },
+      "args": [
+        "ptr",
+        "u32",
+        "ptr"
+      ],
+      "argNames": [
+        "묶음 벡터",
+        "4글자 키",
+        "값 {종류, 자료} (복사됨)"
+      ],
+      "ret": "void",
+      "owner": "core",
+      "call": true,
+      "thread": "any",
+      "desc": "속성 묶음에 키 = 값을 넣는다 (있으면 바꿈)",
+      "source": "M65 (액션 관리자 호출 fm+0x4a168c0와 확인 함수들의 순서, 실기 확인)",
+      "verified": true
     }
   },
   "gates": {
