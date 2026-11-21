@@ -372,6 +372,24 @@ m24.toast('저장했어요');                      // 앱 아래에 토스트
 
 > 등록부에 없는 값이나 함수가 필요하면 [`EXTENDING.md`](EXTENDING.md)의 절차대로 `core/fields.json` / `core/functions.json`에 한 줄 더해요.
 
+### 세이브별 모드 데이터 (코어 0.44.0, M82)
+
+세이브마다 따로 두는 모드 자료(선수별 기록, 커리어 진행 등)는 `api.saveData`에 두세요. 기능 `save.data`를 선언해요 (허용 필요 없음).
+
+```js
+if (api.saveData.ready()) {
+  var wins = api.saveData.get('wins', 0);
+  api.saveData.set('wins', wins + 1);
+}
+```
+
+- **게임을 저장할 때 확정**돼요 (`~/m24ga_data/savedata/<세이브 id>/<모드 id>.json`).
+- **저장하지 않고 같은 세이브를 다시 불러오면** 마지막 저장 때 값으로, **다른 세이브를 불러오면** 그 세이브의 값으로 돌아가요. 세이브를 되돌려도 모드 기록과 게임이 어긋나지 않아요.
+- 값은 JSON으로 저장할 수 있는 것만, 모드당 1MB까지. 키는 1~200자 글.
+- `ready()`는 세이브를 불러와 자료가 준비됐을 때 true. 세이브를 바꾸면 `saveLoaded` 이벤트 뒤에 자료가 바뀌어요.
+- 같은 모드의 Python은 `ctx.save_data().get/set/delete/keys/all`로 같은 자료를 봐요.
+- 예전처럼 `ctx.save_dir()`(세이브별 폴더)에 직접 쓰는 자료는 저장·되돌리기를 따라가지 않아요. 되돌림이 중요한 자료는 saveData로 옮기세요.
+
 ### 속성 코드로 쓰기 (코어 0.42.0, M71)
 
 `api.prop`으로 읽는 4글자 코드 중 쓰기가 확인된 것은 `api.setProp`으로 바꿀 수 있어요. 메모리 칸을 직접 고치지 않고 **게임 자신의 setter**(화면 편집과 같은 길)를 불러서, 게임이 값 자르기·바뀜 알림을 처리해요.

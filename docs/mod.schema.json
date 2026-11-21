@@ -226,6 +226,7 @@
           "read.manager",
           "read.date",
           "read.save",
+          "save.data",
           "read.player",
           "read.rtti",
           "read.field",

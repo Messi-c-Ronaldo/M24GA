@@ -46,6 +46,9 @@ class ModContext:
     def action(self, action_id: str, target: Any, event: Optional[str] = None, danger: bool = False) -> dict[str, Any]:
         """(코어 0.41.0, 기능 game.action, 세이브를 바꿈) 게임 명령 실행 {ok, error, handled}. 게임이 보여 주는 명령만, 1분에 10번"""
 
+    def save_data(self) -> Any:
+        """(코어 0.44.0, 기능 save.data) 세이브별 모드 자료: .get(키, 기본값) .set(키, 값) .delete(키) .keys() .all()"""
+        ...
     def set_props(self, target: Any, values: dict[str, Any], reason: str = "", tested: bool = False) -> dict[str, Any]:
         """(코어 0.42.0) 여러 속성을 한 번에. 하나라도 실패하면 되돌려요 -> {ok, results, error, rolledBack}"""
         ...

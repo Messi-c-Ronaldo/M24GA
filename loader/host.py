@@ -37,6 +37,7 @@ import frida  # noqa: E402
 import buildreport  # noqa: E402  (빌드 진단 보고서, M48)
 import bundle  # noqa: E402
 import health  # noqa: E402
+import savedata  # noqa: E402  (세이브별 모드 데이터, 코어 0.44.0)
 import panels  # noqa: E402  (게임 안 패널 칸, M44)
 import validate as vlib  # noqa: E402
 
@@ -340,6 +341,17 @@ def _core_notice(n):
         mod_log(mid, ("게임 액션 실행: " + what + ", 게임 날짜 %s" % (n.get("date") or "-")) if n.get("ok") else ("게임 액션 거절: %s: %s" % (n.get("action"), n.get("error"))), "loader")
     elif t == "game":                     # 게임 날짜·세이브가 바뀜 (M12, modhost.js m24gaPollGame)
         _game_notice(n.get("date"), n.get("save"))
+        _sd_game(n.get("save"))
+    elif t == "saving":                   # 게임 저장 시작 (코어 0.44.0): 이 동안의 nonce 변화는 되돌리지 않는다
+        savedata.STORE.on_saving()
+    elif t == "saved":                    # 게임 저장 끝: 모드 데이터 작업본 -> 확정본
+        k = savedata.STORE.on_saved(n.get("save"))
+        if k:
+            log("모드 데이터 확정 (세이브 %s): 모드 %d개" % ((n.get("save") or {}).get("id"), k))
+    elif t == "sd":                       # 모드 JS가 api.saveData.set/del
+        okk, why = savedata.STORE.set(mid, n.get("k"), n.get("v"), bool(n.get("del")), n.get("save"))
+        if not okk:
+            mod_log(mid, "세이브 데이터 쓰기 거절: %s" % why, "loader", "error")
     elif t in ("disabled", "loadfail"):
         what = "mod.js를 불러오지 못함" if t == "loadfail" else "게임 쪽 코드가 5초에 25번 넘게 오류(%s)" % where
         reason = "%s: %s" % (what, msg.splitlines()[0] if msg else "")
@@ -417,6 +429,7 @@ def _load_script():
     script.on("message", on_message)
     # load() 도중에 모드 JS가 보낸 hello에 모드 Python이 바로 답하므로, 올리기 전에 등록해 둔다 (안 그러면 post_to_game이 그 답을 버린다)
     _cur["script"] = script
+    savedata.STORE.need_push = True   # 새 코어에는 모드 데이터 거울이 없다 -> 다음 'game' 알림 때 다시 보냄
     try:
         script.load()
     except Exception:
@@ -572,6 +585,28 @@ def _game_notice(date, save):
             log("세이브 확인: id %s, nonce %s, 게임 날짜 %s" % (save.get("id"), save.get("nonce"), date))
         else:
             log("세이브 없음 (메인 메뉴 등)")
+
+
+def _sd_game(save):
+    """세이브가 바뀌면 모드 데이터 작업본을 정하고 게임 쪽 거울을 다시 보낸다 (코어 0.44.0)"""
+    act = savedata.STORE.on_game(save)
+    if act == "load":
+        snap = savedata.STORE.snapshot()
+        post_to_game("__sd", dict(op="load", **snap))
+        if snap["save"]:
+            log("모드 데이터 불러옴 (세이브 %s, nonce %s): 모드 %d개" % (snap["save"].get("id"), snap["save"].get("nonce"), len(snap["all"])))
+
+
+def sd_set_from_python(mod_id, key, value=None, delete=False):
+    """ctx.save_data().set/delete -> 작업본 + 게임 쪽 거울"""
+    okk, why = savedata.STORE.set(mod_id, key, value, delete)
+    if okk:
+        post_to_game("__sd", {"op": "set", "id": mod_id, "k": key, "v": None if delete else value, "del": bool(delete)})
+    return okk, why
+
+
+modlib.SD["set"] = sd_set_from_python
+modlib.SD["get"] = savedata.STORE.get
 
 
 def _unload_script():

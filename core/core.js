@@ -3109,9 +3109,11 @@ M24GA.eventHook = function (ev) {
     });
   } else if (ev === 'gameSaved') {
     st = funcCheck('save.write'); if (!st.ok) { coreErr++; return false; }
-    EVENT_HOOKS[ev] = Interceptor.attach(st.addr, {
-      onEnter: function () { this.t0 = Date.now(); },
-      onLeave: function () { if (!M24GA.on.gameSaved.length) return; var g = {}; try { g = M24GA.readGame() || {}; } catch (e) {}
+    EVENT_HOOKS[ev] = Interceptor.attach(st.addr, {   // 코어 0.44.0: 세이브별 모드 데이터(api.saveData)를 위해 로더에 저장 시작·끝을 항상 알린다
+      onEnter: function () { this.t0 = Date.now(); try { send({ m24core: { t: 'saving' } }); } catch (e) {} },
+      onLeave: function () { var g = {}; try { g = M24GA.readGame() || {}; } catch (e) {}
+        try { send({ m24core: { t: 'saved', save: g.save || null, ms: Date.now() - this.t0 } }); } catch (e) {}
+        if (!M24GA.on.gameSaved.length) return;
         try { m24gaEmit('gameSaved', { ms: Date.now() - this.t0, save: g.save || null }); } catch (e) { coreErr++; } }
     });
   } else return false;

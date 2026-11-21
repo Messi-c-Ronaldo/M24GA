@@ -24,7 +24,7 @@ import zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import caps  # noqa: E402  (기능 등록부, M10)
 
-CORE_VERSION = "0.43.0"
+CORE_VERSION = "0.44.0"
 MOD_EXT = ".24mod"
 FROZEN = getattr(sys, "frozen", False)
 ROOT = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -556,6 +556,7 @@ def save_settings(mod, changes):
 # status()가 있으면 GUI가 부른다. 같은 폴더의 다른 모듈은 평범하게 import한다 (모드끼리 이름이 겹치면 늦게 켠 쪽을 막는다).
 # 게임 날짜·세이브 (M12): 호스트가 코어 알림을 받아 채운다. 게임에 안 붙어 있거나 세이브가 없으면 None
 GAME = {"date": None, "save": None}
+SD = {"set": None, "get": None}   # (코어 0.44.0) host.py가 채운다: 세이브별 모드 데이터
 GAME_DIR = {"dir": None}   # (코어 0.31.0) 마지막으로 붙은 fm.exe의 폴더. 게임이 꺼져도 남겨 둔다
 RPC = {"fn": None}   # (코어 0.39.0) host가 코어 rpc 부르기 함수를 넣는다 (ctx.props)
 
@@ -676,6 +677,13 @@ class ModContext:
             raise RuntimeError("게임에 연결돼 있지 않아요")
         return fn(name, *args)
 
+    def save_data(self):
+        """(코어 0.44.0, 기능 save.data) 세이브별 모드 데이터: get(키, 기본값) / set(키, 값) / delete(키) / keys() / all().
+        JS api.saveData와 같은 자료. 게임을 저장할 때 확정되고, 저장 없이 다시 불러오면 마지막 저장 때 값으로 돌아가요."""
+        if "save.data" not in (self.mod.manifest.get("capabilities") or []):
+            raise PermissionError("mod.json capabilities에 save.data가 없어요")
+        return _SaveData(self.mod.id)
+
     def save_dir(self):
         """(코어 0.5.0) 지금 세이브 전용 데이터 폴더 <데이터 폴더>/saves/<세이브 id>/ (만들어서 돌려준다). 세이브가 없으면 None.
         세이브마다 따로 기록해야 하는 것(선수별 기록, 진행 상황)은 여기에 둔다."""
@@ -685,6 +693,34 @@ class ModContext:
         p = os.path.join(self.data_dir, "saves", str(s["id"]))
         os.makedirs(p, exist_ok=True)
         return p
+
+
+class _SaveData:
+    """ctx.save_data()가 돌려주는 것 (코어 0.44.0)"""
+
+    def __init__(self, mod_id):
+        self.mod_id = mod_id
+
+    def get(self, key, default=None):
+        return SD["get"](self.mod_id, key, default) if SD["get"] else default
+
+    def all(self):
+        return SD["get"](self.mod_id) if SD["get"] else {}
+
+    def keys(self):
+        return list(self.all().keys())
+
+    def set(self, key, value):
+        if not SD["set"]:
+            return {"ok": False, "error": "로더가 준비되지 않았어요"}
+        ok, why = SD["set"](self.mod_id, key, value, False)
+        return {"ok": ok, "error": why}
+
+    def delete(self, key):
+        if not SD["set"]:
+            return {"ok": False, "error": "로더가 준비되지 않았어요"}
+        ok, why = SD["set"](self.mod_id, key, None, True)
+        return {"ok": ok, "error": why}
 
 
 class PyRunner:

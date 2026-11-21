@@ -13,6 +13,7 @@ var M24GA = { mods: [], on: { socialPanel: [], frame: [], dateChanged: [], saveL
   readGame: null,                      // core.js가 채운다: function () { return { date: u32 원값 또는 null, save: {id, nonce} 또는 null } }
   caps: {},                            // 모드 id -> 로더가 넘긴 그 모드의 기능 목록 (M14: 쓰기 API를 열지 정한다)
   settings: {}, settingsFns: {},       // 모드 id -> 설정 값 {key: 값} (password 형식은 제외), 바뀔 때 부를 함수 (M23)
+  sd: {}, sdSave: null, sdReady: false,   // 세이브별 모드 데이터 거울 (코어 0.44.0): 모드 id -> {키: 값}. 원본은 로더(loader/savedata.py)
   writers: {},                         // core.js가 채운다: { 'player.pa': { write(key, value, expect) -> {ok, before, after, name, error} } }
   writeTimes: {},                      // 모드 id -> 최근 1분의 쓰기 시각 (폭주 방지)
   prepareData: function (th) {} };     // prepareData는 core.js가 채운다
@@ -216,7 +217,10 @@ function m24gaPollGame() {
   if (m24gaSaveKey(now.save) !== m24gaSaveKey(g.save)) {     // 다른 세이브를 불러옴 (또는 처음 봄 / 메인 메뉴로 나감)
     g.save = now.save; g.date = now.date;
     send({ m24core: { t: 'game', date: now.date && now.date.iso, save: now.save } });
-    if (now.save) m24gaEmit('saveLoaded', { id: now.save.id, nonce: now.save.nonce, date: now.date });
+    if (now.save) {
+      if (M24GA.eventHook) { try { M24GA.eventHook('gameSaved'); } catch (e) {} }   // 코어 0.44.0: 저장 시작·끝을 로더에 알리려고 (api.saveData)
+      m24gaEmit('saveLoaded', { id: now.save.id, nonce: now.save.nonce, date: now.date });
+    }
     return;
   }
   if (!now.date) return;
@@ -263,8 +267,38 @@ function m24gaModError(id, where, e) {
 function m24gaOff(id) { var st = M24GA.errs[id]; return !!(st && st.off); }
 // 모드 <-> 모드 Python 메시지 (7a단계): api.send(obj)는 호스트가 그 모드의 Python 수신함(ctx.recv)에 넣고,
 // Python의 ctx.post(obj)는 api.recv(fn)로 온다. 코어가 recv를 하나만 걸어 두고 모드 id로 나눠 준다.
+// ---- 세이브별 모드 데이터 (코어 0.44.0, M82, 기능 save.data) ----
+// 로더가 세이브를 불러올 때·되돌릴 때 {op:'load', save, all}, Python이 바꿀 때 {op:'set', id, k, v | del}를 보낸다.
+function m24gaSdRecv(d) {
+  if (d.op === 'load') { M24GA.sd = d.all || {}; M24GA.sdSave = d.save || null; M24GA.sdReady = !!d.save; return; }
+  if (d.op === 'set' && d.id) { var o = M24GA.sd[d.id] || (M24GA.sd[d.id] = {}); if (d.del) delete o[d.k]; else o[d.k] = d.v; }
+}
+function m24gaSdCopy(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+function m24gaSaveData(id) {
+  function cap() { return (M24GA.caps[id] || []).indexOf('save.data') >= 0; }
+  function put(k, v, del) {
+    if (!cap()) return { ok: false, error: "기능 'save.data'를 mod.json capabilities에 선언하세요" };
+    if (!M24GA.sdReady) return { ok: false, error: '세이브를 불러온 뒤에만 쓸 수 있어요' };
+    if (typeof k !== 'string' || !k || k.length > 200) return { ok: false, error: '키는 1~200자 글이어야 해요' };
+    var s;
+    if (!del) { try { s = JSON.stringify(v); } catch (e) { return { ok: false, error: 'JSON으로 저장할 수 있는 값만 돼요' }; } if (s === undefined) return { ok: false, error: 'JSON으로 저장할 수 있는 값만 돼요' }; }
+    var o = M24GA.sd[id] || (M24GA.sd[id] = {});
+    if (del) delete o[k]; else o[k] = JSON.parse(s);
+    send({ m24core: { t: 'sd', id: id, save: M24GA.sdSave, k: k, v: del ? null : o[k], del: !!del } });
+    return { ok: true };
+  }
+  return {
+    ready: function () { return !!M24GA.sdReady && cap(); },
+    get: function (k, def) { var o = M24GA.sd[id] || {}; return Object.prototype.hasOwnProperty.call(o, k) ? m24gaSdCopy(o[k]) : def; },
+    set: function (k, v) { return put(k, v, false); },
+    del: function (k) { return put(k, null, true); },
+    keys: function () { return Object.keys(M24GA.sd[id] || {}); },
+    all: function () { return m24gaSdCopy(M24GA.sd[id] || {}); }
+  };
+}
 function m24gaRecv() {
   recv('m24ga', function (msg) {
+    if (msg.m === '__sd') { try { m24gaSdRecv(msg.d || {}); } catch (e) {} m24gaRecv(); return; }   // 로더 -> 모드 데이터 거울 (코어 0.44.0)
     try { var f = M24GA.recvFns[msg.m]; if (f && !m24gaOff(msg.m)) f(msg.d); } catch (e) { m24gaModError(msg.m, 'recv', e); }
     m24gaRecv();   // recv는 한 번만 받으므로 다시 건다
   });
@@ -451,6 +485,8 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
       open: function (form, cb) { return alive ? m24gaPanelOpen(id, form, cb) : { ok: false, error: '내려간 모드' }; },
       available: function () { return !!(M24GA.panelAvailable && M24GA.panelAvailable()); }
     },
+    // saveData.get/set/del/keys/all/ready — 세이브별 모드 데이터 (코어 0.44.0, 기능 save.data): 게임 저장 때 확정, 저장 없이 다시 불러오면 되돌림
+    saveData: m24gaSaveData(id),
     // setProp(대상, '코드', 값, {expect, reason, tested}) -> Promise {ok, before, after, code, key, error} (기능 write.prop, 코어 0.42.0)
     setProp: function (target, code, value, opts) { return alive ? m24gaSetProp(id, target, code, value, opts) : Promise.resolve({ ok: false, error: '내려간 모드' }); },
     // setProps(대상, {코드: 값}, opts) -> Promise {ok, results, error, rolledBack}: 하나라도 실패하면 앞의 것을 되돌린다 (코어 0.42.0)
