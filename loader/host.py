@@ -600,8 +600,9 @@ def _sd_game(save):
 def sd_set_from_python(mod_id, key, value=None, delete=False):
     """ctx.save_data().set/delete -> 작업본 + 게임 쪽 거울"""
     okk, why = savedata.STORE.set(mod_id, key, value, delete)
-    if okk:
-        post_to_game("__sd", {"op": "set", "id": mod_id, "k": key, "v": None if delete else value, "del": bool(delete)})
+    if okk:   # 큰 값(MIRROR_MAX 넘음)은 PC 쪽 전용: 게임 쪽 거울에서는 지운다
+        big = not delete and not savedata.STORE.mirrorable(mod_id, key)
+        post_to_game("__sd", {"op": "set", "id": mod_id, "k": key, "v": None if (delete or big) else value, "del": bool(delete or big)})
     return okk, why
 
 

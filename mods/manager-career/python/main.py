@@ -1,4 +1,5 @@
-"""감독 커리어 모드: PC 쪽. 세이브마다 적은 경력을 career.json에 보관한다. GPL-3.0-or-later.
+"""감독 커리어 모드: PC 쪽. 세이브마다 적은 경력을 세이브별 모드 데이터(ctx.save_data, 코어 0.44.0)에 보관한다
+(0.6.0까지는 career.json). 게임을 저장할 때 확정되고, 저장 없이 다시 불러오면 되돌아간다. GPL-3.0-or-later.
 
 게임 쪽(mod.js)이 보내는 메시지:
   {"t": "get", "save": "id:nonce"}            -> {"t": "career", "save": ..., "career": {...} 또는 None}
@@ -17,26 +18,30 @@ def _path(ctx):
 
 
 def _load(ctx):
+    """경력 자료. 코어 0.44.0부터 세이브별 모드 데이터(ctx.save_data: 게임 저장 때 확정, 저장 없이 다시 불러오면 되돌림).
+    처음에는 예전 career.json(0.6.0까지)을 한 번 가져온다 -> 다음 게임 저장 때 확정"""
+    sd = ctx.save_data()
+    data = sd.get("career_data")
+    if data is not None:
+        return data
     p = _path(ctx)
     if not p or not os.path.isfile(p):
         return {}
     try:
         with open(p, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
     except (OSError, ValueError) as e:
         ctx.log("career.json을 읽지 못했어요: %s" % e)
         return {}
+    sd.set("career_data", data)
+    return data
 
 
 def _save(ctx, data):
-    p = _path(ctx)
-    if not p:
-        ctx.log("세이브 폴더를 몰라서 저장하지 못했어요 (세이브를 불러온 뒤 다시)")
+    r = ctx.save_data().set("career_data", data)
+    if not r.get("ok"):
+        ctx.log("경력을 저장하지 못했어요: %s (세이브를 불러온 뒤 다시)" % r.get("error"))
         return False
-    tmp = p + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, p)
     return True
 
 
@@ -73,4 +78,4 @@ def run(ctx):
             hist.append({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "career": c})
             data = {"save": m.get("save"), "career": c, "history": hist[-20:]}
             if _save(ctx, data):
-                ctx.log("경력 저장: %s" % _path(ctx))
+                ctx.log("경력 저장 (게임을 저장하면 확정돼요)")

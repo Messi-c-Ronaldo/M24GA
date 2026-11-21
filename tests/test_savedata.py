@@ -38,7 +38,7 @@ class SaveData(unittest.TestCase):
         self.clock.t += 15
         self.assertIsNone(self.load(7, 2))            # 저장 중 nonce 변화 -> 이어서 (되돌리지 않음)
         self.assertEqual(self.s.on_saved({"id": 7, "nonce": 2}), 1)
-        self.assertEqual(json.load(open(os.path.join(self.tmp, "7", "m.json"), encoding="utf-8")), {"a": 1})
+        self.assertEqual(json.load(open(os.path.join(self.tmp, "7", "m", "a.json"), encoding="utf-8")), 1)
         self.s.set("m", "a", 2)                        # 저장 뒤 바꿈
         self.clock.t += 300
         self.assertEqual(self.load(7, 3), "load")      # 저장 없이 다시 불러옴 -> 확정본으로
@@ -79,8 +79,29 @@ class SaveData(unittest.TestCase):
         self.assertIsNone(self.s.get("m", "a"))
         self.assertFalse(self.s.set("m", "x", object())[0])
         self.assertFalse(self.s.set("m", "", 1)[0])
-        self.assertFalse(self.s.set("m", "big", "x" * (savedata.MAX_BYTES + 1))[0])
+        self.assertFalse(self.s.set("m", "big", "x" * (savedata.KEY_MAX + 1))[0])
         self.assertFalse(self.s.set("m", "a", 1, save={"id": 8})[0])   # 다른 세이브 자료
+
+    def test_big_values_stay_pc_side_and_deleted_keys_removed(self):
+        self.load(7, 1)
+        self.s.set("m", "small", 1)
+        self.s.set("m", "big", "x" * (savedata.MIRROR_MAX + 10))
+        self.assertTrue(self.s.mirrorable("m", "small"))
+        self.assertFalse(self.s.mirrorable("m", "big"))
+        self.assertEqual(set(self.s.snapshot()["all"]["m"]), {"small"})
+        self.s.on_saving()
+        self.s.on_saved()
+        self.assertTrue(os.path.isfile(os.path.join(self.tmp, "7", "m", "big.json")))
+        self.s.set("m", "big", delete=True)
+        self.s.on_saved()
+        self.assertFalse(os.path.isfile(os.path.join(self.tmp, "7", "m", "big.json")))
+        self.s.set("m", "a/b:c", 2)                     # 파일 이름에 못 쓰는 글자가 든 키
+        self.s.on_saved()
+        self.s.clock = lambda: 10 ** 9
+        self.s.on_game(None)
+        self.s.on_game({"id": 7, "nonce": 9})
+        self.assertEqual(self.s.get("m", "a/b:c"), 2)
+        self.assertIsNone(self.s.get("m", "big"))
 
     def test_need_push_after_script_reload(self):
         self.assertEqual(self.load(7, 1), "load")

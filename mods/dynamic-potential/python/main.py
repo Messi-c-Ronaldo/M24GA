@@ -5,7 +5,7 @@
   평가일(기본 7/1)이 지나면 한 번: 게임 쪽에 collect를 시켜 리그 기록을 받고 -> potential.evaluate -> 세이브 폴더에 저장
     -> 반영 방식이 auto면 바로 적용, preview면 모드창에서 사용자가 적용.
   모드창의 "지금 기록으로 미리보기"는 시험용: 오늘 날짜로 평가하고, 다음 해 평가에 쓰는 기록(history.json)에는 남기지 않는다.
-세이브 폴더(ctx.save_dir())
+세이브별 모드 데이터(ctx.save_data, 코어 0.44.0 — 게임 저장 때 확정, 저장 없이 다시 불러오면 되돌림. 1.1.0까지는 세이브 폴더 파일이었고 처음 읽을 때 가져온다)
   preview.json  마지막 평가 (요약, 모든 선수 결과, 적용 결과)
   history.json  {uid: {평가 연도: {dob, percentile, poor, ca}}} - 다음 해 '최근 3시즌 가중'과 CA 변화에 쓴다
   state.json    {"evaluated": [평가일 ...]} - 같은 평가일을 두 번 하지 않게
@@ -30,12 +30,38 @@ _phase = ""        # 모드창에 보여 줄 지금 단계 (과거 시즌 읽는
 _pending = None    # 요청된 평가 (run 스레드가 시작)
 
 
-def _read(path, default):
+# 세이브별 모드 데이터 (코어 0.44.0 ctx.save_data): 게임 진행에 따라 쌓이는 기록은 게임 저장 때 확정되고,
+# 저장 없이 다시 불러오면 마지막 저장 때로 돌아간다 (PA 쓰기도 세이브와 함께 돌아가므로 기록과 어긋나지 않음).
+# 세이브 파일에서 다시 만드는 캐시(savehist.pkl)는 그대로 파일.
+SD_KEYS = {"history.json": "history", "state.json": "state", "injuries.json": "injuries", "preview.json": "preview"}
+
+
+def _sd():
+    try:
+        return _ctx.save_data() if _ctx else None
+    except Exception:  # noqa: BLE001  (옛 코어: save.data 없음)
+        return None
+
+
+def _read_file(path, default):
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except (OSError, ValueError):
         return default
+
+
+def _read(path, default):
+    key = SD_KEYS.get(os.path.basename(path or ""))
+    sd = _sd() if key else None
+    if not sd:
+        return _read_file(path, default)
+    v = sd.get(key)
+    if v is None:   # 처음: 예전 파일(1.1.0까지)에서 한 번 가져온다 -> 다음 게임 저장 때 확정
+        v = _read_file(path, None)
+        if v is not None:
+            sd.set(key, v)
+    return default if v is None else v
 
 
 def replace_retry(tmp, path, tries=10):
@@ -52,6 +78,13 @@ def replace_retry(tmp, path, tries=10):
 
 
 def _write(path, obj):
+    key = SD_KEYS.get(os.path.basename(path or ""))
+    sd = _sd() if key else None
+    if sd:
+        r = sd.set(key, obj)
+        if not r.get("ok"):
+            _ctx.log("세이브 데이터에 쓰지 못했어요 (%s): %s" % (key, r.get("error")))
+        return
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False)

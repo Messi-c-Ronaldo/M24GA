@@ -19,6 +19,7 @@
 | `ui/index.html` | 모드창: 평가 소식, 미리보기 표, 적용 버튼, 필터·검색 |
 
 세이브별 자료는 `~\m24ga_data\dynamic-potential\saves\<세이브 id>\`: `preview.json`(마지막 평가) `history.json`(해마다 백분위·부진 여부, 다음 해 3시즌 가중) `state.json`(한 평가일) `injuries.json` `savehist.pkl`.
+- **1.2.0부터** `preview`·`history`·`state`·`injuries`는 세이브별 모드 데이터(`ctx.save_data()`, 코어 0.44.0)에 둔다: 게임 저장 때 확정(`~\m24ga_data\savedata\<세이브 id>\dynamic-potential\<키>.json`), 저장 없이 다시 불러오면 되돌아감. 위 폴더의 예전 파일은 처음 읽을 때 한 번 가져온다. `savehist.pkl`(세이브 파일에서 다시 만드는 캐시)은 그대로 위 폴더. 이 기록들은 수 MB라 PC 쪽 전용(게임 쪽 JS에서는 안 보임).
 
 ## 꼭 지킬 규칙 (이 모드에서 특히)
 - 변수는 항상 `var`. mod.js는 `require`/`import`/`document`/`fetch`를 못 써요. 파일·세이브 작업은 Python 쪽에서.
