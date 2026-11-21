@@ -24,7 +24,7 @@ import zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import caps  # noqa: E402  (기능 등록부, M10)
 
-CORE_VERSION = "0.41.0"
+CORE_VERSION = "0.42.0"
 MOD_EXT = ".24mod"
 FROZEN = getattr(sys, "frozen", False)
 ROOT = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -644,6 +644,20 @@ class ModContext:
         g = GAME.get("date")
         self.log(("게임 액션 실행: %s %s (대상 %s, 이벤트 %s, 게임 날짜 %s)" % (action_id, r.get("cls") or "", target, r.get("event"), g or "-")) if r.get("ok")
                  else "게임 액션 거절: %s: %s" % (action_id, r.get("error")))
+        return r
+
+    def set_prop(self, target, code, value, expect=None, reason="", tested=False):
+        """(코어 0.42.0, 기능 write.prop — 세이브를 바꿈) 게임 속성 하나를 게임 자신의 setter로 바꿔요 (JS api.setProp과 같음).
+        쓸 수 있는 코드는 core/properties.json의 write.codes (safe, 또는 tested=True일 때 tested). 반환 {ok, before, after, code, key, error}.
+        기록되고 앱의 '되돌리기'로 되돌릴 수 있어요"""
+        if "write.prop" not in (self.mod.manifest.get("capabilities") or []):
+            return {"ok": False, "error": "mod.json capabilities에 write.prop이 없어요 (사용자 허용 필요)"}
+        opts = {"reason": str(reason or "")[:200], "tested": bool(tested)}
+        if expect is not None:
+            opts["expect"] = expect
+        r = self._rpc("propset", self.mod.id, target, str(code), value, opts)
+        if not isinstance(r, dict) or r.get("ok") is None:
+            r = {"ok": False, "error": (r or {}).get("error") if isinstance(r, dict) else "속성 쓰기 실패"}
         return r
 
     def _rpc(self, name, *args):

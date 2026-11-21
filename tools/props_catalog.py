@@ -107,6 +107,7 @@ def build(scan_dir, old):
         "kinds": KINDS,
         "types": TYPES,
         "block": {c: sorted(k) for c, k in sorted(block.items())},
+        **({"write": old["write"]} if old and "write" in old else {}),   # 쓰기 확인 결과(M71)는 조사로 다시 만들지 않는다
         "props": props,
     }
 
@@ -139,6 +140,28 @@ def docs(reg):
     for c, p in P.items():
         if p.get("ko"):
             L.append("| `%s` | %s | %s | %s%s |" % (c, ", ".join(p["k"]) or "-", p["t"], p["ko"], (" (" + p["unit"] + ")") if p.get("unit") else ""))
+    W = reg.get("write", {})
+    if W.get("codes"):
+        safe = [(c, e) for c, e in W["codes"].items() if e["w"] == "safe"]
+        tested = [(c, e) for c, e in W["codes"].items() if e["w"] == "tested"]
+        L += ["", "## 쓰기 (코어 0.42.0, 기능 `write.prop`)", "",
+              "`api.setProp(대상, '코드', 값, {expect, reason})` → Promise `{ok, before, after, code, key, error}` (Python `ctx.set_prop`). "
+              "게임 자신의 setter(속성 객체 vtable +0x18)를 화면 스레드에서 불러요. 정수·불리언·실수만 되고, 기록되고 앱에서 되돌릴 수 있어요.", "",
+              "- **safe** (%d개): 쓰기 → 화면 → 하루 진행 → 저장 뒤 다시 불러오기까지 확인했어요 (M71)." % len(safe),
+              "- **tested** (%d개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요." % len(tested),
+              "- **쓰지 않는 코드**: " + ", ".join("`%s`" % c for c in W.get("deny", [])) + " (`Ptyp`는 사람 종류를 바꿔서 게임이 객체를 새로 만들어요).", "",
+              "| 코드 | 종류 | 범위 | 뜻 |", "|---|---|---|---|"]
+        for c, e in safe:
+            r = e.get("range")
+            extra = (" (≥ %s)" % e["gte"]) if e.get("gte") else (" (≤ %s)" % e["lte"]) if e.get("lte") else ""
+            L.append("| `%s` | %s | %s%s | %s |" % (c, ", ".join(e["kinds"]), ("%s~%s" % (r[0], r[1])) if r else "-", extra, P.get(c, {}).get("ko", "")))
+        by = collections.defaultdict(list)
+        for c, e in tested:
+            for k in e["kinds"]:
+                by[k].append("`%s`" % c)
+        L += ["", "<details><summary><b>tested 코드</b> (종류별)</summary>", ""]
+        L += ["- **%s** (%d): %s" % (k, len(v), " ".join(v)) for k, v in by.items()]
+        L += ["", "</details>"]
     L += ["", "## 전체 목록 (종류별)", "", "값 종류 뒤 `{…}`는 묶음·목록 항목의 키예요.", ""]
     for k in reg["kinds"]:
         codes = [c for c, p in P.items() if k in p["k"]]
@@ -146,7 +169,8 @@ def docs(reg):
         by = collections.defaultdict(list)
         for c in codes:
             p = P[c]
-            by[p["t"]].append("`%s`%s" % (c, ("{" + ",".join(p["keys"][:6]) + ("…" if len(p["keys"]) > 6 else "") + "}") if p.get("keys") else ""))
+            keys = [k for k in p.get("keys", []) if k.isprintable()]   # 제어 문자 키(Chol 등)는 문서에서 뺀다
+            by[p["t"]].append("`%s`%s" % (c, ("{" + ",".join(keys[:6]) + ("…" if len(keys) > 6 else "") + "}") if keys else ""))
         for t in reg["types"]:
             if by.get(t):
                 L.append("- **%s** (%d): %s" % (t, len(by[t]), " ".join(by[t])))
@@ -156,9 +180,15 @@ def docs(reg):
 
 def save(reg, path):
     """코드 하나 = 한 줄 (diff 보기 좋게)."""
-    head = {k: v for k, v in reg.items() if k != "props"}
+    head = {k: v for k, v in reg.items() if k not in ("props", "write")}
     txt = json.dumps(head, ensure_ascii=False, indent=1)[:-2]
-    rows = ['  %s: %s' % (json.dumps(c), json.dumps(p, ensure_ascii=False, separators=(",", ":"))) for c, p in reg["props"].items()]
+    one = lambda p: json.dumps(p, ensure_ascii=False, separators=(",", ":"))
+    if "write" in reg:   # 쓰기 등록부(M71)도 코드 하나 = 한 줄
+        w = reg["write"]
+        txt += ',\n "write": {\n  "$comment": %s,\n  "deny": %s,\n  "codes": {\n%s\n  }\n }' % (
+            json.dumps(w["$comment"], ensure_ascii=False), one(w["deny"]),
+            ",\n".join('   %s: %s' % (json.dumps(c), one(e)) for c, e in w["codes"].items()))
+    rows = ['  %s: %s' % (json.dumps(c), one(p)) for c, p in reg["props"].items()]
     with open(path, "w", encoding="utf-8") as f:
         f.write(txt + ',\n "props": {\n' + ",\n".join(rows) + "\n }\n}\n")
 

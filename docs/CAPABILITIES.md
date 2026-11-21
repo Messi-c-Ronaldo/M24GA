@@ -1,4 +1,4 @@
-# M24GA 기능 목록 (코어 0.41.0)
+# M24GA 기능 목록 (코어 0.42.0)
 
 > 이 파일은 `core/capabilities.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 
@@ -56,6 +56,7 @@
 | `raw.hook` | hook | **게임 함수 가로채기**: Interceptor로 게임 함수에 직접 끼어들어요. 코어가 이미 건 함수와 겹치면 꼬일 수 있어요. api.onUnload에서 떼야 해요 | `Interceptor` | 모두 |
 | `write.player.pa` | write | **선수 잠재력(PA) 바꾸기**: api.setPlayerPA(uid, pa, {expect, reason})로 선수 PA를 바꿔요. 코어가 같은 선수인지·범위(1~200, CA 이상)·폭주(1분 600번)를 확인하고, 모든 쓰기를 기록해요. 앱 정보 탭에서 이 세이브에서 바꾼 값을 되돌릴 수 있어요. 게임을 저장하면 세이브 파일에 남아요. 코어 0.10.0부터 api.setField(obj, 'player.pa', ...)로도 쓸 수 있어요 (같은 확인·기록) | `api.setPlayerPA` | 모두 |
 | `write.field` | write | **필드 등록부로 게임 값 쓰기**: fields.json에서 쓰기가 확인된 칸(write: safe)을 api.setField(obj, '이름', 값, {expect, reason})로 바꿔요. 코어가 객체 종류·범위·다른 필드와의 관계·쓰기 전후 신원을 확인하고, 모든 쓰기를 기록해요. 앱 정보 탭에서 이 세이브에서 바꾼 값을 되돌릴 수 있어요. 칸마다 다른 기능이 정해져 있으면(예: player.pa는 write.player.pa) 그 기능이 필요해요. 게임을 저장하면 세이브 파일에 남아요 | `api.setField` | 모두 |
+| `write.prop` | write | **속성 코드로 게임 값 쓰기**: api.setProp(대상, '코드', 값, {expect, reason, tested})로 게임 속성 값을 게임 자신의 setter(속성 객체 vtable +0x18)로 바꿔요. 화면 메뉴처럼 게임 층이 먼저 처리하고 값 자르기·바뀜 알림도 게임이 해요. core/properties.json의 write.codes에 있는 코드만 되고(api.propInfo(코드).writable), safe(쓰기·화면·하루 진행·저장 뒤 다시 불러오기까지 확인한 29개: 구단 잔고·이적/주급/스카우트 예산·시설, 선수 CA·PA·명성·성격 일부·키·몸무게·사기·체력, 팀·대회 명성 …)는 그냥, tested(+1·되돌리기만 확인한 200개)는 {tested: true}가 있어야 해요. 정수·불리언·실수만 되고, 쓴 뒤 게임이 객체를 바꾸거나 다른 값으로 자르면 실패로 알려요(자른 경우는 원래 값으로 되돌림). 화면 스레드에서 돌아서 Promise {ok, before, after, code, key(대상 dref), error}. 1분 600번까지, 모든 쓰기를 기록하고 앱 정보 탭에서 이 세이브에서 바꾼 값을 되돌릴 수 있어요. 게임을 저장하면 세이브에 남아요. Python 모드: ctx.set_prop(대상, 코드, 값, expect=None, reason='', tested=False) | `api.setProp`, `ctx.set_prop` | 모두 |
 | `write.relation` | write | **감독의 좋아하는/싫어하는 구단·사람 바꾸기**: api.setRelation(myHuman(), 'favClub'\|'dislikedClub'\|'favPerson'\|'dislikedPerson', 구단 또는 사람, 넣기/빼기, {reason})로 사람 감독의 좋아하는/싫어하는 구단·사람을 바꿔요 (사람은 코어 0.27.0, personByName으로 찾은 사람). 게임의 관계 더하기 함수를 쓰고, 빼기는 게임처럼 항목만 치워요. 모든 쓰기는 기록되고 앱에서 되돌릴 수 있어요. 세이브에 남아요 | `api.setRelation` | 모두 |
 | `raw.write` | write | **게임 메모리 직접 쓰기**: 게임 메모리를 직접 바꿔요. 세이브에 저장되면 되돌릴 수 없어요. 코어의 안전한 쓰기 기능(백업·기록 포함)이 생기기 전까지는 이 방법뿐이에요 | `NativePointer.write*`, `Memory.protect`, `Memory.patchCode`, `Memory.copy` | 모두 |
 | `read.engine` | read | **매치엔진 표 읽기**: api.engine.dump('weights'\|'physics'\|'momentum'\|'ratings'\|'styles'\|'xg')로 게임 메모리의 매치엔진 표(선발 가중치, 선수 물리, 모멘텀, 경기 평점, (코어 0.32.0) 전술 스타일, (코어 0.33.0) xG 모델 계수·절편)를 그대로 읽어요. 게임을 바꾸지 않아요. styles는 세이브를 불러온 뒤 첫 진행일부터 있어요 | `api.engine.dump` | 모두 |
@@ -277,6 +278,12 @@ var p = playerByUid(uid), i = p && playerInfo(p); if (i && i.pa < 200) api.setPl
 
 ```js
 var r = api.setField(findObj('player', uid), 'player.pa', 150, { expect: 149, reason: '활약' }); if (!r.ok) api.log(r.error);
+```
+
+**`write.prop`**
+
+```js
+api.setProp('myclub', 'Ctfc', 300000000, { reason: '이사회 추가 예산' }).then(function (r) { if (!r.ok) api.log(r.error); });
 ```
 
 **`write.relation`**

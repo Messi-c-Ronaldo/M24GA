@@ -46,6 +46,9 @@ class ModContext:
     def action(self, action_id: str, target: Any, event: Optional[str] = None, danger: bool = False) -> dict[str, Any]:
         """(코어 0.41.0, 기능 game.action, 세이브를 바꿈) 게임 명령 실행 {ok, error, handled}. 게임이 보여 주는 명령만, 1분에 10번"""
 
+    def set_prop(self, target: Any, code: str, value: Any, expect: Any = None, reason: str = "", tested: bool = False) -> dict[str, Any]:
+        """(코어 0.42.0, 기능 write.prop) 게임 속성 하나를 게임 setter로 바꿔요 -> {ok, before, after, code, key, error}"""
+        ...
     def props(self, target: str, regex: Optional[str] = None, empty: bool = False) -> dict[str, Any]:
         """(코어 0.39.0, 기능 read.prop) 게임 속성 코드 값 {코드: 값}. target = 'me'|'myteam'|'myclub'|'myjob'|'p123'|'s45'|'team:<번호>'|'comp:<번호>'|'0x주소'.
         게임에 안 붙어 있거나 대상을 못 찾으면 RuntimeError, read.prop이 없으면 PermissionError"""

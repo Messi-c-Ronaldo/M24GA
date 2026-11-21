@@ -246,6 +246,7 @@
           "raw.hook",
           "write.player.pa",
           "write.field",
+          "write.prop",
           "write.relation",
           "raw.write",
           "read.engine",

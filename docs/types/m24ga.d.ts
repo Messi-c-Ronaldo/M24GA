@@ -57,6 +57,8 @@ interface ModApi {
   setPlayerPA(uid: number, pa: number, opts?: { expect?: number; reason?: string }): { ok: boolean; before?: number; after?: number; name?: string; same?: boolean; error?: string };
   /** (코어 0.10.0, 기능 write.field 또는 그 필드의 cap) 필드 등록부에서 write가 safe인 칸을 바꿔요. obj = 게임 객체 또는 그 종류의 key(선수는 UID).
    *  코어가 종류·형식 범위·range·gte/lte·expect·쓰기 전후 신원을 확인하고 기록해요 (앱에서 되돌리기). 목록은 docs/FIELDS.md */
+  /** (코어 0.42.0, 기능 write.prop) 속성 코드 값을 게임 setter로 바꿔요. core/properties.json write.codes의 코드만 (tested 코드는 {tested: true}). 기록·되돌리기 됨 */
+  setProp(target: Ptr | string, code: string, value: number | boolean, opts?: { expect?: number; reason?: string; tested?: boolean }): Promise<{ ok: boolean; before?: number; after?: number; code?: string; key?: number; same?: boolean; error?: string }>;
   setField(obj: Ptr | number | string, name: string, value: number, opts?: { expect?: number; reason?: string }): { ok: boolean; before?: number; after?: number; name?: string; same?: boolean; error?: string };
   /** (코어 0.11.0, 기능 hook.function, 사용자 허용 필요) 함수 등록부(docs/FUNCTIONS.md)의 게임 함수에 끼어들어요. 모드를 내리면 코어가 떼요.
    *  콜백은 게임 스레드에서 불리니 짧게. 반환 { ok, stop(), error } (ok가 false면 error를 보세요: 모르는 함수, 코어 전용, 서명이 다름) */
@@ -89,7 +91,7 @@ interface ModApi {
   /** 그 객체가 답하는 코드(등록부 기준) 전부 {코드: 값}. re = 코드 정규식, codes = 코드 목록, empty = 빈 값도 */
   props(obj: Ptr | string, opts?: { re?: string; codes?: string[]; empty?: boolean }): { [code: string]: any };
   /** 등록부 정보: t = 값 종류(int|u32|num|bool|str|date|color|rec|list|data|empty), k = 답하는 객체 종류 */
-  propInfo(code: string): { code: string; t: string; k: string[]; blocked: boolean } | null;
+  propInfo(code: string): { code: string; t: string; k: string[]; blocked: boolean; writable: 'safe' | 'tested' | 'deny' | false; writeKinds?: string[]; range?: [number, number] } | null;
   /** {dref} 또는 번호 -> 게임 객체 (0x01 사람, 0x03 구단, 0x18 팀, 0x19 대회). 모르면 null */
   deref(d: { dref: number } | number): Ptr | null;
   /** (코어 0.40.0, read.prop) 리그 경기 결과 (보도 안 되는 경기 포함). 대회 객체 또는 'myleague'. 지난번 부른 뒤 끝난 경기. 처음엔 기준만 잡고 [] */

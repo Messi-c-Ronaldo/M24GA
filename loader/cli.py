@@ -54,7 +54,7 @@ JSON 출력(--json)으로 프로그래밍 방식으로 파싱할 수 있다.
   fields [정규식]     필드 등록부 목록 (게임 없이 됨, docs/FIELDS.md)
   props <대상> [정규식] [--empty]  게임 속성 코드 값 전부 (대상: me | myteam | myclub | p123 | s45 | team:<번호> | player:<uid> | 0x주소, docs/PROPERTIES.md)
   prop-find <대상> <값>  값(숫자·글·날짜)이 든 속성 코드 찾기
-  prop-info [정규식]  속성 등록부 목록 (게임 없이 됨)
+  prop-info [정규식] [--writable]  속성 등록부 목록 (게임 없이 됨, --writable = 쓰기 되는 코드만)
   actions [정규식]    게임 액션(명령) 198개 목록 (id·클래스·문맥 키, 게임 없이 됨, docs/ACTIONS.md)
   find-field <대상>=<값> [...]  알려진 값으로 칸 찾기 (여러 대상이면 공통 칸 + fields.json 초안, 값: 숫자 | a..b | 180억)
   watch-write <대상> <칸> [크기]  그 칸에 쓰는 게임 코드 찾기 (하드웨어 감시, --secs/--max 뒤 자동 해제, show | stop)
@@ -960,14 +960,23 @@ def cmd_prop_info(args):
     """속성 등록부 목록 (게임 없이 됨)."""
     import re
     reg, names = _prop_reg(), _prop_names()
+    wr = reg.get("write", {})
+    writable = "--writable" in args   # (코어 0.42.0) 쓰기가 확인된 코드만
+    args = [a for a in args if a != "--writable"]
     rx = re.compile(args[0], re.I) if args else None
     rows = [(c, p) for c, p in reg["props"].items()
-            if not rx or rx.search(c) or rx.search(p.get("ko", "")) or rx.search(names.get(c, ""))]
+            if (not writable or c in wr.get("codes", {}))
+            and (not rx or rx.search(c) or rx.search(p.get("ko", "")) or rx.search(names.get(c, "")))]
+    def wtag(c):
+        e = wr.get("codes", {}).get(c)
+        if e:
+            return "[쓰기 %s%s]" % (e["w"], (" %s~%s" % tuple(e["range"])) if e.get("range") else "")
+        return "[쓰기 금지]" if c in wr.get("deny", []) else ""
     if _json_mode:
-        out(dict(rows))
+        out({c: dict(p, write=wr.get("codes", {}).get(c)) for c, p in rows})
         return 0
     for c, p in rows:
-        print("  %s %-5s %-34s %s" % (c, p["t"], ",".join(p["k"]), p.get("ko") or names.get(c, "")))
+        print("  %s %-5s %-34s %s %s" % (c, p["t"], ",".join(p["k"]), p.get("ko") or names.get(c, ""), wtag(c)))
     print("(%d개, 등록부 core/properties.json, 문서 docs/PROPERTIES.md)" % len(rows))
     return 0
 

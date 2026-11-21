@@ -2407,8 +2407,79 @@ function propsAll(obj, opts) {
 function propInfo(code) {
   propsInit();
   var e = M24_PROPS.p[code]; if (!e) return null;
-  return { code: code, t: e[0], k: PROP_KIND_NAMES.filter(function (k, i) { return e[1] & (1 << i); }), blocked: !!PROP_BLOCK[code] };
+  var w = (M24_PROPS.w || {})[code], out = { code: code, t: e[0], k: PROP_KIND_NAMES.filter(function (k, i) { return e[1] & (1 << i); }), blocked: !!PROP_BLOCK[code] };
+  out.writable = w ? w[0] : ((M24_PROPS.deny || []).indexOf(code) >= 0 ? 'deny' : false);   // 코어 0.42.0: 'safe' | 'tested' | 'deny' | false
+  if (w) { out.writeKinds = PROP_KIND_NAMES.filter(function (k, i) { return w[1] & (1 << i); }); if (w[2] !== null) out.range = [w[2], w[3]]; }
+  return out;
 }
+// ---- 속성 쓰기 (코어 0.42.0, M71) ----
+// 게임 자신의 set_property(속성 객체 vtable +0x18, get_property 바로 다음 칸)를 부른다. 게임 층(GAME_CLUB 등)이 먼저 처리하고,
+// 값 자르기·바뀜 알림도 게임이 한다. 값 버퍼는 get_property가 채운 것의 값 종류 포인터(정적 표)를 그대로 쓰고 값 칸만 바꾼다
+// (스칼라만: 정수·불리언·실수. 묶음·목록·글·링크는 힙 구조라 흉내 내지 않는다, M66). 등록부 write.codes에 있는 코드만,
+// deny(Ptyp 등: 사람 종류를 바꾸면 게임이 객체를 새로 만든다, M71 3절)는 절대 안 쓴다. 화면 스레드에서만 부른다 (runOnUi).
+var PROP_SCALAR = { int: 'i', cc: 'u', u32: 'u', bool: 'b', flt: 'f', dbl: 'd' };
+function propRaw(p, code) {   // -> { t, tp, v } (스칼라가 아니면 t만)
+  var g = new NativeFunction(p.readPointer().add(0x10).readPointer(), 'uint8', ['pointer', 'uint32', 'pointer']);
+  var buf = Memory.alloc(0x40); buf.writePointer(EMPTY_VAL);
+  if (!g(p, code4(code), buf)) return null;
+  var tp = buf.readPointer(), t = VT[tp.toString()] || extType(tp), s = PROP_SCALAR[t], b = buf.add(8);
+  var v = s === 'i' ? b.readS32() : s === 'u' ? b.readU32() : s === 'b' ? (b.readU8() & 1) : s === 'f' ? b.readFloat() : s === 'd' ? b.readDouble() : undefined;
+  return { t: t, tp: tp, v: v };
+}
+function propSetRaw(p, code, r, x) {
+  var s = new NativeFunction(p.readPointer().add(0x18).readPointer(), 'uint8', ['pointer', 'uint32', 'pointer']);
+  var b = Memory.alloc(0x40), k = PROP_SCALAR[r.t]; b.writePointer(r.tp); b.add(8).writeU64(0);
+  if (k === 'i') b.add(8).writeS32(x); else if (k === 'u') b.add(8).writeU32(x >>> 0); else if (k === 'b') b.add(8).writeU8(x ? 1 : 0);
+  else if (k === 'f') b.add(8).writeFloat(x); else b.add(8).writeDouble(x);
+  return s(p, code4(code), b);
+}
+// 객체 -> 쓰기 열쇠 (dref 번호: 세이브를 다시 불러와도 같다 -> 기록·되돌리기에 쓴다)
+function propKey(obj) {
+  var o = propResolve(obj); if (!o) return null;
+  var d = propGet(o, 'dref'); d = d && d.dref;
+  return typeof d === 'number' && propDeref(d) ? d >>> 0 : null;
+}
+function makePropWriter(code) {
+  var w = M24_PROPS.w[code];
+  return {
+    cap: 'write.prop', float: !!(M24_PROPS.p[code] && M24_PROPS.p[code][0] === 'num'), ui: true, prop: true,   // num = 실수 (위도·경기장 크기 등)
+    write: function (key, value, expect) {
+      if ((M24_PROPS.deny || []).indexOf(code) >= 0) return { ok: false, error: code + '는 쓰면 안 되는 코드예요' };
+      var o = propDeref(key); if (!o) return { ok: false, error: '대상을 찾지 못했어요 (dref ' + key + ')' };
+      var tg = propTarget(o); if (!tg) return { ok: false, error: '속성 객체가 아니에요' };
+      if (!(w[1] & tg.bit)) return { ok: false, error: code + '는 ' + tg.kind + '에 쓰기가 확인되지 않았어요' };
+      var r = propRaw(tg.p, code); if (!r) return { ok: false, error: '이 객체가 ' + code + '에 답하지 않아요' };
+      if (!PROP_SCALAR[r.t]) return { ok: false, error: code + ' 값 종류(' + r.t + ')는 쓸 수 없어요 (정수·불리언·실수만)' };
+      var cur = r.v, bad = function (m) { return { ok: false, error: m, before: cur }; };
+      if (typeof value === 'boolean') value = value ? 1 : 0;
+      if (typeof value !== 'number' || !isFinite(value)) return bad('값은 숫자여야 해요');
+      if (PROP_SCALAR[r.t] !== 'f' && PROP_SCALAR[r.t] !== 'd' && value !== Math.floor(value)) return bad('값은 정수여야 해요');
+      if (r.t === 'bool' && value !== 0 && value !== 1) return bad('불리언은 true/false(1/0)예요');
+      if (w[2] !== null && (value < w[2] || value > w[3])) return bad(code + '는 ' + w[2] + '~' + w[3] + '이어야 해요');
+      if (w[4]) { var lo = propGet(o, w[4]); if (typeof lo === 'number' && value < lo) return bad(code + '는 지금 ' + w[4] + '(' + lo + ')보다 낮을 수 없어요'); }
+      if (w[5]) { var hi = propGet(o, w[5]); if (typeof hi === 'number' && value > hi) return bad(code + '는 지금 ' + w[5] + '(' + hi + ')보다 높을 수 없어요'); }
+      if (expect !== undefined && expect !== null && cur !== expect) return bad('지금 ' + code + '(' + cur + ')가 예상(' + expect + ')과 달라요');
+      if (cur === value) return { ok: true, before: cur, after: cur, same: true };
+      var cls0 = className(rttiInfo(o).top), ok = propSetRaw(tg.p, code, r, value), r1 = propRaw(tg.p, code), cls1 = className(rttiInfo(o).top);
+      if (cls1 !== cls0 || propDeref(key) === null || !ptr(propDeref(key)).equals(o))
+        return { ok: false, before: cur, error: '쓰는 중에 게임이 객체를 바꿨어요 (' + cls0 + ' -> ' + cls1 + '). 이 쓰기는 되돌릴 수 없어요' };
+      var after = r1 ? r1.v : undefined;
+      var same = (PROP_SCALAR[r.t] === 'f' || PROP_SCALAR[r.t] === 'd') ? Math.abs(after - value) < 1e-3 * Math.max(1, Math.abs(value)) : after === value;
+      if (!ok || !same) {   // 게임이 거절했거나 다른 값으로 바꿨다 -> 원래 값으로 되돌린다
+        if (after !== cur) propSetRaw(tg.p, code, r, cur);
+        return { ok: false, before: cur, after: after, error: !ok ? '게임이 이 값을 받지 않았어요' : '게임이 값을 ' + after + '(으)로 바꿔서 되돌렸어요' };
+      }
+      return { ok: true, before: cur, after: after };
+    }
+  };
+}
+function installPropWriters() {
+  for (var c in (M24_PROPS.w || {})) M24GA.writers['prop.' + c] = makePropWriter(c);
+}
+installPropWriters();
+M24GA.propKey = propKey;
+M24GA.propWriteTier = function (code) { var w = (M24_PROPS.w || {})[code]; return w ? w[0] : null; };
+M24GA.runOnUi = runOnUi;
 // {dref: 번호} 또는 번호 -> 게임 객체. 위 8비트 = 종류: 0x01 사람, 0x03 구단, 0x18 팀(국가대표 포함), 0x19 대회. 모르는 종류·없는 번호는 null
 function propDeref(d) {
   if (d && typeof d === 'object') d = d.dref;
@@ -3301,6 +3372,8 @@ rpc.exports = {
   },
   // (코어 0.41.0) Python 모드 ctx.actions_for / ctx.action. 확인·횟수 제한·기록은 Python(mods.py)이 한다
   actionsfor: function (spec, opts) { return M24GA.actionsFor(spec, opts || {}); },
+  // (코어 0.42.0) Python 모드 ctx.set_prop. 기능(write.prop) 확인은 mods.py가 하고, 범위·기록·되돌리기·1분 제한은 m24gaWrite가 한다
+  propset: function (id, spec, code, value, opts) { opts = opts || {}; opts.__py = true; return m24gaSetProp(String(id), spec, code, value, opts); },
   actionrun: function (id, spec, opts) { return M24GA.actionRun(id, spec, opts || {}).then(function (r) { return r && r.error !== undefined && r.ok === undefined ? { ok: false, error: r.error } : r; }); },
   props: function (spec, re, empty) {   // CLI props (M55): 대상이 답하는 속성 전부
     try {

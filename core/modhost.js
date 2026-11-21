@@ -31,7 +31,7 @@ function m24gaWrite(id, field, key, value, opts) {
     if (!M24_WRITE_CAP[field]) return { ok: false, error: "모르는 필드 '" + field + "'" };
   }
   var cap = (w && w.cap) || M24_WRITE_CAP[field];   // 필드 등록부(M20)의 쓰기는 필드마다 기능을 갖고 온다 (기본 write.field)
-  if ((M24GA.caps[id] || []).indexOf(cap) < 0)
+  if ((M24GA.caps[id] || []).indexOf(cap) < 0 && !(opts.__py && cap === 'write.prop'))   // __py: Python 모드는 mods.py가 기능을 확인한 뒤 rpc propset으로 온다
     return { ok: false, error: "기능 '" + cap + "'을 mod.json capabilities에 선언하고 사용자 허용을 받아야 해요" };
   if (!w) return { ok: false, error: '이 게임 빌드에서는 ' + field + ' 쓰기를 지원하지 않아요' };
   if (typeof value !== 'number' || !isFinite(value) || (!w.float && value !== Math.floor(value))) return { ok: false, error: w.float ? '값은 숫자여야 해요' : '값은 정수여야 해요' };
@@ -47,6 +47,24 @@ function m24gaWrite(id, field, key, value, opts) {
       save: g.save, date: g.date && g.date.iso, reason: String(opts.reason || '').slice(0, 200) } });
   }
   return r;
+}
+// 속성 쓰기 (코어 0.42.0, 기능 write.prop, M71): 게임 set_property로 등록부 write.codes의 코드만. 화면 스레드에서 돌아서 Promise.
+// 기록·되돌리기는 m24gaWrite와 같다 (필드 이름 = 'prop.<코드>', key = 대상의 dref 번호). tested 코드는 {tested: true}가 있어야 한다.
+function m24gaSetProp(id, target, code, value, opts) {
+  opts = opts || {};
+  code = String(code || '');
+  if (!M24GA.propKey || !M24GA.runOnUi) return Promise.resolve({ ok: false, error: '이 코어는 속성 쓰기를 지원하지 않아요' });
+  var tier = M24GA.propWriteTier(code);
+  if (!tier) return Promise.resolve({ ok: false, error: code + '는 쓰기가 확인된 코드가 아니에요 (api.propInfo(코드).writable)' });
+  if (tier === 'tested' && opts.tested !== true) return Promise.resolve({ ok: false, error: code + '는 쓰기 시험만 한 코드예요. 쓰려면 {tested: true}를 주세요 (게임에서 결과를 꼭 확인하세요)' });
+  if (typeof value === 'boolean') value = value ? 1 : 0;
+  return M24GA.runOnUi(function () {
+    var key = M24GA.propKey(target);
+    if (key === null) return { ok: false, error: '대상을 찾지 못했거나 쓸 수 없는 대상이에요: ' + target };
+    var r = m24gaWrite(id, 'prop.' + code, key, value, opts);
+    if (r) { r.code = code; r.key = key; }
+    return r;
+  }).then(m24gaFix);
 }
 // 매치엔진 표 (코어 0.31.0, 기능 read.engine·write.engine, DynamicME E04)
 function m24gaEngine(id, cap, fn) {
@@ -121,6 +139,7 @@ function m24gaUndoWrite(field, key, from, to) {
   if (!w) return { ok: false, error: '쓰기 기능 없음: ' + field };
   var g = m24gaReadGame();
   if (!g.save) return { ok: false, error: '세이브가 없어요' };
+  if (w.ui && M24GA.runOnUi) return M24GA.runOnUi(function () { return w.write(key, from, to); });   // 속성 쓰기(0.42.0)는 화면 스레드에서
   try { return w.write(key, from, to); } catch (e) { return { ok: false, error: String(e) }; }
 }
 
@@ -390,6 +409,8 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
       open: function (form, cb) { return alive ? m24gaPanelOpen(id, form, cb) : { ok: false, error: '내려간 모드' }; },
       available: function () { return !!(M24GA.panelAvailable && M24GA.panelAvailable()); }
     },
+    // setProp(대상, '코드', 값, {expect, reason, tested}) -> Promise {ok, before, after, code, key, error} (기능 write.prop, 코어 0.42.0)
+    setProp: function (target, code, value, opts) { return alive ? m24gaSetProp(id, target, code, value, opts) : Promise.resolve({ ok: false, error: '내려간 모드' }); },
     setField: function (obj, name, value, opts) {
       if (!alive) return { ok: false, error: '내려간 모드' };
       var kind = M24GA.fieldKind ? M24GA.fieldKind(name) : null;

@@ -278,8 +278,9 @@ python -X utf8 loader/cli.py props player:2002117436 "^P(ced|dob|cwg)$"
 #### `actions [정규식]` (M62)
 게임 액션(명령) 198개 목록: 4글자 id, 클래스, 보호 구역 여부, 확인 함수가 읽는 문맥 키. 게임이 꺼져 있어도 돼요. 실행 이벤트도 보여요 (M65). 대상마다 쓸 수 있는 명령 읽기·실행은 모드 API `api.actionsFor`·`api.action`(코어 0.41.0)으로 해요 ([ACTIONS.md](ACTIONS.md)).
 
-#### `prop-info [정규식]` (코어 0.36.0)
+#### `prop-info [정규식] [--writable]` (코어 0.36.0, 쓰기 표시 0.42.0)
 속성 등록부 목록 (코드·값 종류·답하는 객체 종류·확인된 뜻). 게임이 꺼져 있어도 돼요.
+코드마다 쓰기 단계를 붙여요: `[쓰기 safe 범위]`·`[쓰기 tested]`·`[쓰기 금지]`. `--writable`이면 `api.setProp`으로 쓸 수 있는 코드만 보여요 (쓰기는 모드에서만: 기능 `write.prop`).
 
 화면 값과 코드 맞추기 팁: `ui text`는 위젯마다 4글자 코드를 보여 주는데, 숫자 위젯의 코드는 대개 그 값을 묻는 **속성 코드**예요 (예: 선수 프로필 `ATTRIBUTE_LABEL Pcro` = 크로스).
 

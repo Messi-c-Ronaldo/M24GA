@@ -33,7 +33,17 @@ def props_compact(reg):
         for k in v["k"]:
             bits |= 1 << kinds.index(k)
         p[c] = [v["t"], bits]
-    return {"kinds": {k: [reg["kinds"][k]["class"], reg["kinds"][k]["off"]] for k in kinds}, "block": sorted(reg.get("block", {})), "p": p}
+    # 쓰기(M71): w = {코드: [safe|tested, 종류 비트, 최소, 최대, gte 코드, lte 코드]}, deny = 절대 안 쓰는 코드
+    w = {}
+    wr = reg.get("write", {})
+    for c, e in wr.get("codes", {}).items():
+        bits = 0
+        for k in e["kinds"]:
+            bits |= 1 << kinds.index(k)
+        r = e.get("range") or [None, None]
+        w[c] = [e["w"], bits, r[0], r[1], e.get("gte"), e.get("lte")]
+    return {"kinds": {k: [reg["kinds"][k]["class"], reg["kinds"][k]["off"]] for k in kinds}, "block": sorted(reg.get("block", {})), "p": p,
+            "w": w, "deny": wr.get("deny", [])}
 
 
 def actions_compact(reg):

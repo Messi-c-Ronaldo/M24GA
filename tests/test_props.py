@@ -57,6 +57,48 @@ class Props(unittest.TestCase):
         self.assertEqual(t, "int")
         self.assertTrue(bits & 1)   # team
 
+    def test_write(self):
+        # 쓰기 등록부 (코어 0.42.0, M71): 종류·단계 형식, safe는 범위 필수, deny는 쓰기 목록에 없음, 스칼라 값 종류만
+        w = self.reg["write"]
+        kinds = set(self.reg["kinds"])
+        self.assertIn("Ptyp", w["deny"])
+        for c in ("DELE", "duni"):
+            self.assertIn(c, w["deny"])
+        nsafe = 0
+        for c, e in w["codes"].items():
+            self.assertIn(c, self.reg["props"], c)
+            self.assertNotIn(c, w["deny"], c)
+            self.assertIn(e["w"], ("safe", "tested"), c)
+            self.assertTrue(e["kinds"] and set(e["kinds"]) <= kinds, c)
+            self.assertIn(self.reg["props"][c]["t"], ("int", "u32", "num", "bool", "date"), c)
+            if e["w"] == "safe":
+                nsafe += 1
+                self.assertEqual(len(e["range"]), 2, c)
+                self.assertLess(e["range"][0], e["range"][1], c)
+                self.assertTrue(self.reg["props"][c].get("ko"), "safe 코드는 뜻(ko)이 있어야 해요: " + c)
+                for rel in ("gte", "lte"):
+                    if rel in e:
+                        self.assertIn(e[rel], w["codes"], c)
+        self.assertGreaterEqual(nsafe, 20)
+
+    def test_write_compact(self):
+        import bundle
+        cp = bundle.props_compact(self.reg)
+        self.assertEqual(cp["w"]["PPAB"][0], "safe")
+        self.assertEqual(cp["w"]["PPAB"][4], "PCAB")   # gte
+        self.assertIn("Ptyp", cp["deny"])
+        self.assertNotIn("Ptyp", cp["w"])
+
+    def test_core_has_write(self):
+        with open(os.path.join(ROOT, "core", "core.js"), encoding="utf-8") as f:
+            core = f.read()
+        with open(os.path.join(ROOT, "core", "modhost.js"), encoding="utf-8") as f:
+            host = f.read()
+        for s in ("function makePropWriter(", "add(0x18).readPointer()", "M24GA.propKey = propKey", "propset:"):
+            self.assertIn(s, core)
+        for s in ("function m24gaSetProp(", "setProp: function", "w.ui && M24GA.runOnUi"):
+            self.assertIn(s, host)
+
     def test_docs_fresh(self):
         import props_catalog
         with open(props_catalog.DOC, encoding="utf-8") as f:

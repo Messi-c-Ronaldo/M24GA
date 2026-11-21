@@ -105,6 +105,7 @@ my-mod-1.0.0.24mod   (zip)
 | `api.gate(name, on?)` | (코어 0.15.0, 기능 `hook.gate`, 사용자 허용 필요) 등록된 게이트를 켜요: 정해진 게임 함수 안에서만 정해진 질문에 다른 답을 해요 (예: 몸값 계산의 '감독이 사람인가'). 같은 칸에 게이트 여러 개를 함께 걸 수 있어요 (0.16.0). 반환 `{ ok, set(on), stats(), stop() }`. 목록은 [`FUNCTIONS.md`](FUNCTIONS.md) '게이트' |
 | `api.scale(name)` | (코어 0.17.0, 기능 `hook.scale`, 사용자 허용 필요) 등록부에서 scale이 있는 함수(예: `player.value` = 선수 가치)의 반환값에 객체별 배율을 곱해요: `s.set(선수, 1.2)`. 네이티브 표라 하루 수만 번 불려도 빨라요. 게임 상한으로 잘라요. 함수 하나에 모드 하나. 반환 `{ ok, set, get, clear, enable, stats, stop }` |
 | `api.setField(obj, name, value, opts)` | (코어 0.10.0, 기능 `write.field` 또는 그 필드의 기능, **사용자 허용 필요**) 필드 등록부에서 쓰기가 확인된 칸을 바꿔요 (아래 "게임 값 쓰기", 목록 [`FIELDS.md`](FIELDS.md)) |
+| `api.setProp(대상, 코드, 값, opts)` | (코어 0.42.0, 기능 `write.prop`, **사용자 허용 필요**) 속성 코드 값을 게임 자신의 setter로 바꿔요 → Promise `{ok, before, after, code, key, error}` (아래 "속성 코드로 쓰기", 목록 [`PROPERTIES.md`](PROPERTIES.md) "쓰기") |
 | `api.settings()` / `api.onSettings(fn)` | (코어 0.12.0) 이 모드의 설정 값 `{key: 값}` (mod.json `settings`, 없으면 `default`, **비밀번호 형식은 빠져요**)와, 앱에서 설정이 바뀔 때 새 값으로 불리는 함수. 사용자 허용이 필요 없어요. 설정 파일을 직접 읽지 마세요 (`pc.file` 허용이 필요해져요). Python은 `ctx.settings()` |
 | `api.status(fn)` | `fn()`이 돌려주는 객체가 로더 상태(`rpc status`)에 합쳐져요 |
 | `api.prepareData(th)` | 게임 데이터 표(클럽·선수·스태프 주소록)를 만들기 시작하고 값 종류를 얻어요. 소셜 패널 안에서 한 번 부르면 돼요. 표는 1~2분 걸려요. 준비되면 전역 `mapsReady`가 `true` |
@@ -370,6 +371,23 @@ m24.toast('저장했어요');                      // 앱 아래에 토스트
 - 사람 데이터 객체에서 UID는 `personUid(o)` 또는 `playerInfo(playerOf(o)).uid`로 얻어요.
 
 > 등록부에 없는 값이나 함수가 필요하면 [`EXTENDING.md`](EXTENDING.md)의 절차대로 `core/fields.json` / `core/functions.json`에 한 줄 더해요.
+
+### 속성 코드로 쓰기 (코어 0.42.0, M71)
+
+`api.prop`으로 읽는 4글자 코드 중 쓰기가 확인된 것은 `api.setProp`으로 바꿀 수 있어요. 메모리 칸을 직접 고치지 않고 **게임 자신의 setter**(화면 편집과 같은 길)를 불러서, 게임이 값 자르기·바뀜 알림을 처리해요.
+
+```js
+api.setProp('myclub', 'Ctfc', 300000000, { reason: '이사회 추가 예산' }).then(function (r) {
+  if (!r.ok) api.log('실패: ' + r.error); else api.log('이적 예산 ' + r.before + ' -> ' + r.after);
+});
+api.propInfo('PCAB').writable   // 'safe' | 'tested' | 'deny' | false
+```
+
+- 쓸 수 있는 코드: [`PROPERTIES.md`](PROPERTIES.md)의 "쓰기" 절. **safe** 29개(재정·시설·선수 CA/PA/명성/숨은 성향/키·몸무게·사기·경기 감각, 팀·대회 명성 등)는 그냥, **tested**(+1·되돌리기만 확인)는 `{ tested: true }`를 줘야 써져요.
+- 대상: `api.prop`과 같아요(`'me'`·`'myteam'`·`'myclub'`·객체·`'p123'`). 기록 열쇠는 대상의 dref라서 게임을 다시 불러와도 되돌리기가 돼요.
+- 정수·불리언·실수만 돼요. 범위(`range`)와 관계(PA는 CA 이상, CA는 PA 이하)를 확인하고, 게임이 값을 다르게 자르면 원래 값으로 되돌리고 `ok: false`예요. 쓰는 중에 게임이 객체를 바꾸면(사람 종류 `Ptyp` 같은 코드, 등록부에서 막음) 실패로 알려요.
+- 화면 스레드에서 돌아서 Promise예요. 기록·되돌리기·1분 600번 제한은 `setField`와 같아요. **저장하면 세이브에 남아요.**
+- Python 모드: `ctx.set_prop('myclub', 'Ctfc', 300000000, reason='...')` (기능 `write.prop` 선언).
 
 ### 게임 함수 끼어들기 (코어 0.11.0)
 
