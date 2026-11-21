@@ -55,6 +55,7 @@ JSON 출력(--json)으로 프로그래밍 방식으로 파싱할 수 있다.
   props <대상> [정규식] [--empty]  게임 속성 코드 값 전부 (대상: me | myteam | myclub | p123 | s45 | team:<번호> | player:<uid> | 0x주소, docs/PROPERTIES.md)
   prop-find <대상> <값>  값(숫자·글·날짜)이 든 속성 코드 찾기
   prop-info [정규식]  속성 등록부 목록 (게임 없이 됨)
+  actions [정규식]    게임 액션(명령) 198개 목록 (id·클래스·문맥 키, 게임 없이 됨, docs/ACTIONS.md)
   find-field <대상>=<값> [...]  알려진 값으로 칸 찾기 (여러 대상이면 공통 칸 + fields.json 초안, 값: 숫자 | a..b | 180억)
   watch-write <대상> <칸> [크기]  그 칸에 쓰는 게임 코드 찾기 (하드웨어 감시, --secs/--max 뒤 자동 해제, show | stop)
   find-global <정규식>  전역 칸 중 그 클래스 객체를 가리키는 것 (싱글턴 찾기)
@@ -964,6 +965,22 @@ def cmd_prop_info(args):
     for c, p in rows:
         print("  %s %-5s %-34s %s" % (c, p["t"], ",".join(p["k"]), p.get("ko") or names.get(c, "")))
     print("(%d개, 등록부 core/properties.json, 문서 docs/PROPERTIES.md)" % len(rows))
+    return 0
+
+
+def cmd_actions(args):
+    """게임 액션 등록부 목록 (M62, 게임 없이 됨)."""
+    import re
+    with open(os.path.join(modlib.ROOT, "core", "actions.json"), encoding="utf-8") as f:
+        reg = json.load(f)
+    rx = re.compile(args[0], re.I) if args else None
+    rows = [(a, e) for a, e in reg["actions"].items() if not rx or rx.search(a) or rx.search(e["class"]) or rx.search(e["group"])]
+    if _json_mode:
+        out(dict(rows))
+        return 0
+    for a, e in rows:
+        print("  %-5s %-62s %-8s %s" % (a, e["class"], "보호" if e["protected"] else "", " ".join(e.get("keys", [])[:8])))
+    print("(%d개, core/actions.json, docs/ACTIONS.md. 실행 API는 아직 없어요)" % len(rows))
     return 0
 
 
@@ -2109,6 +2126,7 @@ COMMANDS = {
     "props": cmd_props,
     "prop-find": cmd_prop_find,
     "prop-info": cmd_prop_info,
+    "actions": cmd_actions,
     "find-field": cmd_find_field,
     "watch-write": cmd_watch_write,
     "functions": cmd_functions,

@@ -96,6 +96,7 @@ M24GA(FM24 모드 로더)용 모드를 만들어 줘.
 | 소셜 패널의 스레드·지금 글·작성자 응원팀 | `panelThread(th)`, `panelText(th)`, `panelFanUid(th)`, 저장해 둔 패널 다시 찾기 `panelAt(addr, type)` |
 | **아무 게임 값이나 4글자 속성 코드로 읽기** (팀·구단·선수·스태프·감독·대회·상·국가·경기장·계약…) | `api.prop('myteam', 'TpoN')`, `api.props('myclub', { re: '^Cc' })`, 링크 따라가기 `api.deref(v)`, Python `ctx.props('me')` (코어 0.36.0~0.39.0, `read.prop`, 등록부 2,300여 개 [`PROPERTIES.md`](PROPERTIES.md)). **코드를 모르면** 게임 화면에 보이는 값으로 `cli.py prop-find <대상> <값>`, 목록은 `cli.py prop-info <정규식>` |
 | 경기 결과(점수), 뉴스의 관련 사람·팀 | `api.on('matchEnded', ev => ...)` (`ev.home/away/homeGoals/awayGoals`), `api.on('newsAdded', ev => ev.refs())` (코어 0.37.0, [`NEWS.md`](NEWS.md)) |
+| 게임 명령(액션) 목록 — 관심 목록 넣기, 이적 제의, 휴가 … | [`ACTIONS.md`](ACTIONS.md), CLI `actions <정규식>` (목록만, **모드가 실행하는 API는 아직 없음**) |
 | 확인된 속성 코드 목록 | [`PROPERTIES.md`](PROPERTIES.md) (뜻 `ko`가 있는 것만 화면과 맞춰 봤어요. 나머지는 값을 직접 확인) |
 | 선수 잠재력(PA) 바꾸기 | `api.setPlayerPA(uid, pa, { expect, reason })` (기능 `write.player.pa`, 사용자 허용 필요, 모든 쓰기가 기록되고 앱에서 되돌릴 수 있음, 결과의 `ok`·`error`를 꼭 확인) |
 | 내 감독과 클럽 | `myInfo()` |
