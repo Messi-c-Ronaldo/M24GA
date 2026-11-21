@@ -71,46 +71,112 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `PAcg` | player | int | 골 — 정수 |
 | `PCAB` | player | int | 현재 능력 CA (M58: 필드 player.ca와 같음 179) |
 | `PCRP` | player | int | 명성 — 정수 (0~10000) |
+| `PNaC` | player, staff, human | rec | 이름 (화면 이름, M64) |
+| `POps` | player | rec | 페널티 득점 (화면 이름, M64) |
+| `POpt` | player | rec | PK (화면 이름, M64) |
 | `PPAB` | player | int | 잠재 능력 PA (M58: 필드 player.pa와 같음 180) |
+| `PSag` | player, staff, human | rec | 나이 (화면 이름, M64) |
+| `PSpi` | player, staff, human | rec | 상태 (화면 이름, M64) |
+| `Paab` | player | data | 공중 장악력 (화면 이름, M64) — 선수는 필드 player.attr.aerialReach로 읽기 |
+| `Pacc` | player | data | 가속도 (화면 이름, M64) — 선수는 필드 player.attr.acceleration로 읽기 |
 | `Pace` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Page` | player, staff, human | int | 나이 — 정수 |
+| `Pagg` | player | data | 적극성 (화면 이름, M64) — 선수는 필드 player.attr.aggression로 읽기 |
+| `Pagi` | player | data | 민첩성 (화면 이름, M64) — 선수는 필드 player.attr.agility로 읽기 |
 | `Pamb` | player, staff, human | int | 야망 — 정수 1~20 |
 | `Pamc` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Paml` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pamr` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
+| `Pant` | player | data | 예측력 (화면 이름, M64) — 선수는 필드 player.attr.anticipation로 읽기 |
+| `Pbal` | player | data | 균형 감각 (화면 이름, M64) — 선수는 필드 player.attr.balance로 읽기 |
+| `Pbra` | player | data | 대담성 (화면 이름, M64) — 선수는 필드 player.attr.bravery로 읽기 |
 | `PcCt` | player, staff, human | rec | 계약 묶음 {Ctyp 종류, Ceda 만료일} |
+| `Pcac` | player | data | 능력 (화면 이름, M64) |
 | `Pced` | player, staff, human | date | 계약 만료일 (M55 화면 확인) |
 | `Pcex` | player, staff, human | date | 계약 만료일 (Pced와 같음) |
 | `Pcjd` | player, staff, human | date | 지금 구단 입단일 |
+| `Pcmp` | player, staff, human | data | 침착성 (화면 이름, M64) — 선수는 필드 player.attr.composure로 읽기 |
+| `Pcnt` | player | data | 집중력 (화면 이름, M64) — 선수는 필드 player.attr.concentration로 읽기 |
+| `Pcoa` | player | data | 페널티 박스 장악력 (화면 이름, M64) — 선수는 필드 player.attr.commandOfArea로 읽기 |
+| `Pcom` | player | data | 수비 조율 (화면 이름, M64) — 선수는 필드 player.attr.communication로 읽기 |
+| `Pcor` | player | data | 코너킥 (화면 이름, M64) — 선수는 필드 player.attr.corners로 읽기 |
+| `Pcpt` | player, staff, human | rec | 동의한 출전 시간 (화면 이름, M64) |
+| `Pcre` | player | data | 시야 (화면 이름, M64) — 선수는 필드 player.attr.vision로 읽기 |
+| `Pcro` | player | data | 크로스 (화면 이름, M64) — 선수는 필드 player.attr.crossing로 읽기 |
 | `Pcvy` | player, staff, human | int | 논란 성향 — 정수 1~20 |
 | `Pcwg` | player, staff, human | int | 주급 — 내부 단위, ×1664.7 = 원 (M55 화면 확인: 6.01억) |
 | `Pcww` | player, staff, human | int | 주급 (Pcwg와 같음) |
 | `Pdce` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
+| `Pdec` | player | data | 판단력 (화면 이름, M64) — 선수는 필드 player.attr.decisions로 읽기 |
+| `Pdet` | player | data | 승부욕 (화면 이름, M64) — 선수는 필드 player.attr.determination로 읽기 |
 | `Pdls` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pdmc` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pdob` | player, staff, human | date | 생년월일 (M55 화면 확인) |
+| `Pdri` | player | data | 드리블 (화면 이름, M64) — 선수는 필드 player.attr.dribbling로 읽기 |
 | `Pdrs` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
+| `Pdva` | player | rec | 몸값 (화면 이름, M64) |
+| `Pecc` | player | data | 기행 (화면 이름, M64) — 선수는 필드 player.attr.eccentricity로 읽기 |
+| `Pfcr` | player, staff, human | list | 랭킹 (화면 이름, M64) |
+| `Pfin` | player | data | 골 결정력 (화면 이름, M64) — 선수는 필드 player.attr.finishing로 읽기 |
+| `Pfla` | player | data | 천재성 (화면 이름, M64) — 선수는 필드 player.attr.flair로 읽기 |
 | `Pfln` | player, staff, human | str | 전체 이름 (글) |
+| `Pfrk` | player | data | 프리킥 (화면 이름, M64) — 선수는 필드 player.attr.freeKicks로 읽기 |
 | `Pfrm` | player | rec | 최근 폼 — `{Prat 평균, Pgls 골, Pfrm [최근 5경기 평점]}` |
+| `Pfrs` | player | data | 퍼스트 터치 (화면 이름, M64) — 선수는 필드 player.attr.firstTouch로 읽기 |
 | `Pgls` | player | rec | 시즌 골 — `{valu, numb}` |
 | `Pgoa` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
+| `Phan` | player | data | 볼 핸들링 (화면 이름, M64) — 선수는 필드 player.attr.handling로 읽기 |
+| `Phea` | player | data | 헤더 (화면 이름, M64) — 선수는 필드 player.attr.heading로 읽기 |
 | `Phei` | player, staff, human | int | 키 cm (M58 화면 187) |
 | `Piap` | player, staff, human | int | 국가대표 출전 — 정수 |
 | `Pigl` | player, staff, human | int | 골 — 정수 |
+| `Pinf` | player | data | 리더십 (화면 이름, M64) — 선수는 필드 player.attr.leadership로 읽기 |
 | `Pipr` | player | int | 부상 경향 (숨은 값) — 정수 1~20 |
+| `Pjum` | player | data | 점프 거리 (화면 이름, M64) — 선수는 필드 player.attr.jumpingReach로 읽기 |
+| `Pkic` | player | data | 골킥 (화면 이름, M64) — 선수는 필드 player.attr.kicking로 읽기 |
 | `Ploy` | player, staff, human | int | 충성심 — 정수 1~20 |
+| `Plsh` | player | data | 중거리 슛 (화면 이름, M64) — 선수는 필드 player.attr.longShots로 읽기 |
+| `Plth` | player | data | 장거리 스로인 (화면 이름, M64) — 선수는 필드 player.attr.longThrows로 읽기 |
+| `Pmar` | player | data | 일대일 마크 (화면 이름, M64) — 선수는 필드 player.attr.marking로 읽기 |
 | `Pmce` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pmls` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pmor` | player | int | 사기 — 정수 (1~20) |
 | `Pmrs` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pnam` | player, staff, human | rec | 이름 — `{Pfna: 전체 이름, ...}` |
+| `Pnfo` | player, staff, human | rec | 상태 (화면 이름, M64) |
+| `Pnft` | player | data | 타고난 체력 (화면 이름, M64) — 선수는 필드 player.attr.naturalFitness로 읽기 |
+| `Pnms` | player, staff, human | rec | 이름 (화면 이름, M64) |
+| `Poap` | player | rec | 경기 (화면 이름, M64) |
 | `Poav` | player | rec | 시즌 평균 평점 — `{valu, numb(출전)}` |
+| `Pogl` | player | rec | 골 (화면 이름, M64) |
+| `Pooo` | player | data | 1:1 방어 (화면 이름, M64) — 선수는 필드 player.attr.oneOnOnes로 읽기 |
 | `Porc` | player | rec | 퇴장 — `{valu, numb}` |
+| `Potb` | player | data | 오프 더 볼 (화면 이름, M64) — 선수는 필드 player.attr.offTheBall로 읽기 |
 | `PoxG` | player | rec | xG — `{valu, numb}` |
 | `Poyc` | player | rec | 시즌 경고 — `{valu, numb}` |
+| `PpAH` | player | rec | 성적 (화면 이름, M64) |
+| `Ppac` | player | data | 주력 (화면 이름, M64) — 선수는 필드 player.attr.pace로 읽기 |
+| `Ppas` | player | data | 패스 (화면 이름, M64) — 선수는 필드 player.attr.passing로 읽기 |
+| `Ppen` | player | data | 페널티킥 (화면 이름, M64) — 선수는 필드 player.attr.penaltyTaking로 읽기 |
+| `Pppc` | player | data | 잠재력 (화면 이름, M64) |
+| `PpsC` | player | rec | 포지션 (화면 이름, M64) |
+| `Ppsn` | player | data | 수비 위치 선정 (화면 이름, M64) — 선수는 필드 player.attr.positioning로 읽기 |
+| `Pref` | player | data | 반사 신경 (화면 이름, M64) — 선수는 필드 player.attr.reflexes로 읽기 |
+| `Prou` | player | data | 돌진(빈도) (화면 이름, M64) — 선수는 필드 player.attr.rushingOut로 읽기 |
+| `Psta` | player | data | 지구력 (화면 이름, M64) — 선수는 필드 player.attr.stamina로 읽기 |
+| `Pstr` | player | data | 몸싸움 (화면 이름, M64) — 선수는 필드 player.attr.strength로 읽기 |
+| `Ptac` | player | data | 태클 (화면 이름, M64) — 선수는 필드 player.attr.tackling로 읽기 |
+| `Ptec` | player | data | 개인기 (화면 이름, M64) — 선수는 필드 player.attr.technique로 읽기 |
+| `Pthr` | player | data | 공 던지기 (화면 이름, M64) — 선수는 필드 player.attr.throwing로 읽기 |
+| `PtmT` | player | empty | 선수단 (화면 이름, M64) |
+| `Ptrt` | player | num | 훈련 평점 (화면 이름, M64) |
+| `PtsL` | player | rec | 선택한 포지션 (화면 이름, M64) |
+| `Pttp` | player | data | 펀칭(빈도) (화면 이름, M64) — 선수는 필드 player.attr.punching로 읽기 |
+| `Ptwr` | player | data | 팀워크 (화면 이름, M64) — 선수는 필드 player.attr.teamwork로 읽기 |
 | `Pwbl` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pwbr` | player | int | 포지션 숙련도 (골키퍼, 중앙 수비 … 스트라이커) — 정수 1~20 (`mainPosition`이 가장 높은 것을 고름) |
 | `Pwei` | player, staff, human | int | 몸무게 kg (M58 화면 81) |
+| `Pwkr` | player | data | 활동량 (화면 이름, M64) — 선수는 필드 player.attr.workRate로 읽기 |
 | `TCst` | team, club, nation, comp, award, country | list | 팀 스태프 목록 [{dref}] (M55) |
 | `TMnR` | team, club, nation, comp, award, country | rec | 지금 팀 감독 (임시 감독 포함) — `{dref}` (0x01xxxxxx = 사람 링크 번호) |
 | `Tfrm` | team, club, nation, comp, award, country | list | 최근 5경기 — 배열, **[0]이 가장 오래된 것**, 3 승 / 1·2 무 / 0 패 |
@@ -124,6 +190,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Tsar` | team, nation | rec | 최고 평점 — `{plys: [{dref}], valu}` |
 | `Tsma` | team, nation | rec | 도움 1위 — `{plys: [{dref}], valu}` |
 | `Tstg` | team, nation | rec | 팀 최다 득점자 — `{plys: [{dref}], valu}` |
+| `Ttea` | team, nation, human | int | 구단 (화면 이름, M64) |
 | `ccca` | team, club, nation | int | 구단 분위기 — 정수 |
 | `ccms` | team, club, nation | int | 감독 지지도 — 정수 |
 | `chil` | team, club, nation, player, staff, human, comp, award, country, stadium, city, continent, media, injury | list | 팀 선수 목록 [{dref}] (M55) |
