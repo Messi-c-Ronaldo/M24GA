@@ -1,5 +1,7 @@
 # M24GA 넓히는 법: 새 게임 칸과 함수를 등록하기
 
+**한국어** | [English](en/EXTENDING.md)
+
 모드가 쓸 수 있는 게임 값은 [`FIELDS.md`](FIELDS.md), 끼어들 수 있는 게임 함수는 [`FUNCTIONS.md`](FUNCTIONS.md)에 있는 것뿐이에요. 원하는 값이나 함수가 없으면 **코어에 전용 함수를 덧붙이지 말고 등록부(`core/fields.json`, `core/functions.json`)에 한 줄 더하세요.** 이 문서는 그 절차예요. 아래 명령은 모두 실제로 쓴 것이에요 (예시는 선수의 요구 금액을 찾은 과정).
 
 준비: 게임을 켜고 세이브를 불러온 뒤 `python -X utf8 loader/cli.py start --now --wait 90`. 명령은 `m24cli`로 줄여 쓸 수 있어요 ([`CLI.md`](CLI.md)).
