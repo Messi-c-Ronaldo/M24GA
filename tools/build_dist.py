@@ -24,6 +24,17 @@ rem M24GA 로더 앱 (더블클릭). 창을 닫으면 모드도 멈춰요. 이 �
 cd /d "%~dp0"
 start "" "python\\pythonw.exe" -X utf8 loader\\app.py
 """
+LAUNCH_DEBUG = """@echo off
+chcp 65001 >nul
+rem M24GA 문제 확인용 (0.44.1): M24GA.bat이 아무것도 안 띄우고 꺼질 때 이 파일을 실행하면 오류 글이 이 창에 남아요.
+cd /d "%~dp0"
+echo M24GA 앱을 콘솔에서 실행해요. 오류가 나면 아래 글을 복사해서 보내 주세요.
+echo.
+"python\\python.exe" -X utf8 loader\\app.py
+echo.
+echo (끝. 오류 기록 파일: %USERPROFILE%\\m24ga_data\\app_error.txt)
+pause
+"""
 LAUNCH_CLI = """@echo off
 rem M24GA CLI (터미널에서 쓰기). 사용: m24cli <명령>   도움말: m24cli --help
 cd /d "%~dp0"
@@ -35,6 +46,8 @@ FIRST_RUN = """M24GA {ver} 배포판 (Windows 64비트)
 2. M24GA.bat 을 더블클릭 → 앱이 열려요. 홈의 큰 버튼으로 로더를 켜면 FM24가 실행될 때 자동으로 연결돼요.
 3. 모드는 앱의 "모드 폴더 열기"(문서\\M24GA\\mods)에 .24mod 파일을 넣고 "새로 고침".
 4. 터미널에서는 m24cli.bat <명령> (m24cli.bat --help).
+5. M24GA.bat을 눌러도 아무것도 안 뜨면: 알림 창의 안내를 따르거나, M24GA-debug.bat을 실행해 나오는 오류 글을 보내 주세요.
+   Windows 10에서는 Microsoft Edge WebView2 런타임이 없을 수 있어요 (https://developer.microsoft.com/microsoft-edge/webview2/).
 
 - 지금은 FM24 Epic판 24.4.2에서 확인했어요. 다른 판(예: Steam)에서 "지원하지 않는 게임 버전"이 나오면 앱 홈의
   "빌드 진단 보고서 복사"를 눌러 보고서를 보내 주세요.
@@ -158,7 +171,7 @@ def main():
     nvend = copy_vendor(dst)
     stem = setup_python(a.embed, dst)
     nlic = licenses(dst, os.path.join(dst, "python"))
-    for fn, text in (("M24GA.bat", LAUNCH_APP), ("m24cli.bat", LAUNCH_CLI)):
+    for fn, text in (("M24GA.bat", LAUNCH_APP), ("m24cli.bat", LAUNCH_CLI), ("M24GA-debug.bat", LAUNCH_DEBUG)):
         with open(os.path.join(dst, fn), "w", encoding="utf-8", newline="\r\n") as f:
             f.write(text)
     with open(os.path.join(dst, "처음 읽어 주세요.txt"), "w", encoding="utf-8-sig", newline="\r\n") as f:

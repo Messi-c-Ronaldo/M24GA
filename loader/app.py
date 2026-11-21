@@ -13,10 +13,45 @@ import threading
 
 HERE = os.path.dirname(os.path.abspath(sys.executable)) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import host  # noqa: E402  (frida 경로 설정도 여기서 한다)
-import mods as modlib  # noqa: E402
 
-import webview  # noqa: E402
+
+def _fatal(err_text):
+    """앱이 시작하다 죽을 때 (0.44.1): pythonw(M24GA.bat)는 콘솔이 없어 오류가 안 보이므로 파일로 남기고 알림 창을 띄운다."""
+    path = os.path.join(os.path.expanduser("~"), "m24ga_data", "app_error.txt")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(err_text)
+    except OSError:
+        path = "(저장 못 함)"
+    low = err_text.lower()
+    if "webview2" in low or "edgechromium" in low or "winforms" in low:
+        hint = ("앱 화면에 필요한 Microsoft Edge WebView2 런타임이 없거나 고장 난 것 같아요.\n"
+                "https://developer.microsoft.com/microsoft-edge/webview2/ 에서 'Evergreen Bootstrapper'를 설치한 뒤 다시 실행해 주세요.")
+    elif "clr" in low or "pythonnet" in low or ".net" in low:
+        hint = ".NET Framework 4.8이 필요해요. Microsoft에서 '.NET Framework 4.8 Runtime'을 설치한 뒤 다시 실행해 주세요."
+    elif "no module named" in low or "dll load failed" in low or "_frida" in low:
+        hint = ("프로그램 파일이 빠졌거나 막혔어요. zip을 우클릭 → 속성 → '차단 해제'를 체크한 뒤 새 폴더에 다시 압축을 풀어 주세요.\n"
+                "zip 안에서 바로 실행하지 말고, 백신이 파일(frida 등)을 지우지 않았는지도 확인해 주세요.")
+    else:
+        hint = "아래 오류 파일을 개발자에게 보내 주세요 (GitHub Issues)."
+    msg = "M24GA 앱을 시작하지 못했어요.\n\n%s\n\n오류 기록: %s\n\n%s" % (hint, path, err_text.strip().splitlines()[-1][:300] if err_text.strip() else "")
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(None, msg, "M24GA", 0x10)
+    except Exception:  # noqa: BLE001
+        pass
+    sys.stderr.write(msg + "\n\n" + err_text)
+
+
+try:
+    import host  # noqa: E402  (frida 경로 설정도 여기서 한다)
+    import mods as modlib  # noqa: E402
+    import webview  # noqa: E402
+except Exception:  # noqa: BLE001
+    import traceback
+    _fatal(traceback.format_exc())
+    sys.exit(1)
 
 APP_VERSION = modlib.CORE_VERSION
 UI_DIR = os.path.join(HERE, "ui")
@@ -247,4 +282,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:  # noqa: BLE001  (pywebview가 WebView2를 못 찾을 때 등 — 0.44.1)
+        import traceback
+        _fatal(traceback.format_exc())
+        sys.exit(1)
