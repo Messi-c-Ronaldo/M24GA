@@ -38,6 +38,7 @@ MAX_CALLS_ARG = None   # 직접 실행할 때 숫자 인자를 주면 그 값, �
 
 LINK = None   # 로더가 준 메시지 채널(ctx). 없으면 파일 방식
 lock = threading.Lock()
+_LAST_ERR = {}
 cache = {}
 inflight = set()
 calls = 0
@@ -63,7 +64,7 @@ def load_cache():
     global cache
     try:
         with open(CACHE, encoding="utf-8") as f:
-            cache = json.load(f)
+            cache = {k: v for k, v in json.load(f).items() if v}   # 실패(null)는 기억하지 않고 다음 실행에서 다시 시도
     except (FileNotFoundError, ValueError):
         cache = {}
 
@@ -71,7 +72,7 @@ def load_cache():
 def save_cache():
     tmp = CACHE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(cache, f, ensure_ascii=True)
+        json.dump({k: v for k, v in cache.items() if v}, f, ensure_ascii=True)
     os.replace(tmp, CACHE)
 
 
@@ -158,6 +159,15 @@ def finish(req, out, info, n_api, tag=""):
                 pass
     post({"t": "res", "k": k, "v": out})
     ok = "OK " if out else "FAIL"
+    if not out and LINK:                  # 앱의 모드 로그에도 이유를 남긴다 (같은 이유는 1분에 한 번만)
+        why = str(info.get("error"))
+        now = time.time()
+        if now - _LAST_ERR.get(why, 0) > 60:
+            _LAST_ERR[why] = now
+            try:
+                LINK.log("댓글 생성 실패: %s (자세한 기록: %s)" % (why, LOG))
+            except Exception:  # noqa: BLE001
+                pass
     # hit/miss/out = 캐시 적중 입력 / 미적중 입력 / 출력 토큰 (토큰 절약 확인용)
     log("%s %s %ss tok=%s hit=%s miss=%s out=%s err=%s ctx=%d body=%d | %s -> %s" % (
         ok, tag, info.get("sec"), u.get("total_tokens"), u.get("prompt_cache_hit_tokens"),

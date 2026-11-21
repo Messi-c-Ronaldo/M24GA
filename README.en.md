@@ -4,7 +4,7 @@
 
 An open-source mod loader for Football Manager 2024 (Epic build). A mod is a single `.24mod` file, and you switch it on/off and configure it from the app.
 
-> **Beta notes (0.44.1 = core version)**
+> **Beta notes (0.44.2 = core version)**
 > - Verified on **FM24 24.4.2 (build of 2025-04-16), Epic and Steam**. If the game build does not match, the loader injects nothing and stops, so the game stays safe.
 > - **The Steam version of 24.4.2 is supported since 0.42.1** (confirmed working by a Steam user). Steam and Epic are the same game code with different packaging. If you still see "Unsupported game version", press **Copy build diagnostic report** on the app's home screen and paste it into an Issue (it contains only file size, SHA-256, build time and signature comparison; personal paths are removed).
 > - **To use it without installing Python, download `M24GA-…-win64.zip` from Releases, unzip it and run `M24GA.bat`.** Running from source needs Python 3.14 (see Usage below).

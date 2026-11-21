@@ -1,7 +1,7 @@
 {
   "id": "ai-social-feed",
   "name": "DynamicAiFeed",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "게임 소셜피드의 팬 댓글을 게임 데이터와 기사 본문을 읽은 AI 댓글로 바꾼다.",
   "author": "McR",
   "license": "GPL-3.0-or-later",

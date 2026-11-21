@@ -83,18 +83,28 @@ def ui_test_api():
     import config as cfg
     if not os.path.exists(_key_path()):
         return {"ok": False, "error": "API 키가 없어요"}
-    if "api.deepseek.com" not in cfg.get("api.url"):
-        return {"ok": True, "balance": None, "note": "잔액 조회는 DeepSeek만 지원해요"}
+    # 잔액만이 아니라 실제로 짧은 댓글을 한 번 만들어 보고, 주소·모델이 틀리면 이유를 알려 준다
+    import urllib.error
+    import ai_generator as ag
     try:
-        with open(_key_path(), encoding="utf-8") as f:
-            key = f.read().strip()
-        req = urllib.request.Request("https://api.deepseek.com/user/balance", headers={"Authorization": "Bearer " + key})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            d = json.load(r)
-        infos = d.get("balance_infos") or []
-        usd = next((b for b in infos if b.get("currency") == "USD"), infos[0] if infos else {})
-        return {"ok": True, "balance": usd.get("total_balance"), "currency": usd.get("currency", ""), "available": d.get("is_available")}
+        ag.call_api("한국어로 한 문장만 답해라.", "안녕이라고 답해라.", max_tokens=20)
     except urllib.error.HTTPError as e:
-        return {"ok": False, "error": "키가 맞지 않아요 (HTTP %d)" % e.code if e.code in (401, 403) else "HTTP %d" % e.code}
+        hint = {401: "키가 맞지 않아요", 402: "잔액이 부족해요", 404: "API 주소(url)나 모델 이름(model)이 틀렸어요",
+                400: "모델 이름이나 요청 형식이 이 서비스와 맞지 않아요", 429: "요청이 너무 많아요"}.get(e.code, "")
+        return {"ok": False, "error": "HTTP %d %s (주소·모델: %s / %s)" % (e.code, hint, cfg.get("api.url"), cfg.get("api.model"))}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "연결 실패: %s" % type(e).__name__}
+    res = {"ok": True, "balance": None, "note": "댓글 생성 시험 통과"}
+    if "api.deepseek.com" in cfg.get("api.url"):
+        try:
+            with open(_key_path(), encoding="utf-8") as f:
+                key = f.read().strip()
+            req = urllib.request.Request("https://api.deepseek.com/user/balance", headers={"Authorization": "Bearer " + key})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                d = json.load(r)
+            infos = d.get("balance_infos") or []
+            usd = next((x for x in infos if x.get("currency") == "USD"), infos[0] if infos else {})
+            res.update(balance=usd.get("total_balance"), currency=usd.get("currency", ""), available=d.get("is_available"))
+        except Exception:  # noqa: BLE001
+            pass
+    return res

@@ -1,4 +1,4 @@
-# M24GA 기능 목록 (코어 0.44.1)
+# M24GA 기능 목록 (코어 0.44.2)
 
 > 이 파일은 `core/capabilities.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 
