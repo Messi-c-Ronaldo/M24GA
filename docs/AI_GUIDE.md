@@ -95,7 +95,7 @@ M24GA(FM24 모드 로더)용 모드를 만들어 줘.
 | 게임 객체가 무슨 클래스인지 | `className(obj)` → `'db::ACTUAL_PLAYER'`, `isA(obj, 'db::PERSON')`, `rttiInfo(obj)` (코어 0.9.0, `read.rtti`) |
 | 소셜 패널의 스레드·지금 글·작성자 응원팀 | `panelThread(th)`, `panelText(th)`, `panelFanUid(th)`, 저장해 둔 패널 다시 찾기 `panelAt(addr, type)` |
 | **아무 게임 값이나 4글자 속성 코드로 읽기** (팀·구단·선수·스태프·감독·대회·상·국가·경기장·계약…) | `api.prop('myteam', 'TpoN')`, `api.props('myclub', { re: '^Cc' })`, 링크 따라가기 `api.deref(v)`, Python `ctx.props('me')` (코어 0.36.0~0.39.0, `read.prop`, 등록부 2,300여 개 [`PROPERTIES.md`](PROPERTIES.md)). **코드를 모르면** 게임 화면에 보이는 값으로 `cli.py prop-find <대상> <값>`, 목록은 `cli.py prop-info <정규식>` |
-| **속성 코드로 게임 값 바꾸기** (구단 잔고·예산·시설, 선수 CA·PA·명성·숨은 성향·사기, 팀·대회 명성…) | `api.setProp('myclub', 'Ctfc', 값, {reason})` → Promise, Python `ctx.set_prop` (코어 0.42.0, `write.prop`, 사용자 허용). 쓸 수 있는 코드는 [`PROPERTIES.md`](PROPERTIES.md) "쓰기" (safe 29개, tested는 `{tested: true}`). 기록·되돌리기 됨 |
+| **속성 코드로 게임 값 바꾸기** (구단 잔고·예산·시설, 선수 CA·PA·명성·숨은 성향·사기, 팀·대회 명성…) | `api.setProp('myclub', 'Ctfc', 값, {reason})` → Promise, Python `ctx.set_prop` (코어 0.42.0, `write.prop`, 사용자 허용). 쓸 수 있는 코드는 [`PROPERTIES.md`](PROPERTIES.md) "쓰기" (safe 56개, tested 221개는 `{tested: true}`). 기록·되돌리기 됨 |
 | 경기 결과(점수), 뉴스의 관련 사람·팀 | `api.on('matchEnded', ev => ...)` (`ev.home/away/homeGoals/awayGoals`), `api.on('newsAdded', ev => ev.refs())` (코어 0.37.0, [`NEWS.md`](NEWS.md)) |
 | 게임 명령(액션) 목록 — 관심 목록 넣기, 이적 제의, 휴가 … | [`ACTIONS.md`](ACTIONS.md), CLI `actions <정규식>`. 모드: `api.actionsFor(대상)` 지금 쓸 수 있는 명령 (read.action), `api.action(id, 대상, {event})` 실행 (game.action, 사용자 허용) — 코어 0.41.0 |
 | 확인된 속성 코드 목록 | [`PROPERTIES.md`](PROPERTIES.md) (뜻 `ko`가 있는 것만 화면과 맞춰 봤어요. 나머지는 값을 직접 확인) |

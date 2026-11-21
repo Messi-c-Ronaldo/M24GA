@@ -244,8 +244,8 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 `api.setProp(대상, '코드', 값, {expect, reason})` → Promise `{ok, before, after, code, key, error}` (Python `ctx.set_prop`). 게임 자신의 setter(속성 객체 vtable +0x18)를 화면 스레드에서 불러요. 정수·불리언·실수만 되고, 기록되고 앱에서 되돌릴 수 있어요.
 
 - **safe** (56개): 쓰기 → 화면 → 하루 진행 → 저장 뒤 다시 불러오기까지 확인했어요 (M71).
-- **tested** (174개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
-- **쓰지 않는 코드**: `DELE`, `duni`, `dsha`, `noni`, `nsss`, `rdui`, `Ptyp` (`Ptyp`는 사람 종류를 바꿔서 게임이 객체를 새로 만들어요).
+- **tested** (221개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
+- **쓰지 않는 코드**: `DELE`, `duni`, `dsha`, `noni`, `nsss`, `rdui`, `Ptyp`, `Dftd`, `Ndfm`, `Nspf`, `PbvE`, `Pgoa`, `Pmgp`, `Snew` (`Ptyp`는 사람 종류를 바꿔서 게임이 객체를 새로 만들어요).
 
 | 코드 | 종류 | 범위 | 뜻 |
 |---|---|---|---|
@@ -308,19 +308,20 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 
 <details><summary><b>tested 코드</b> (종류별)</summary>
 
-- **award** (14): `AWap` `AWbr` `AWdr` `AWfo` `AWmg` `AWnp` `AWpo` `AWrb` `AWre` `AWrt` `AWty` `AWvf` `AWwh` `AWwr`
-- **club** (44): `C2at` `C2lp` `C2pf` `C2rp` `C2ty` `C2un` `C2xa` `C3at` `C3xa` `CScP` `Cafo` `Catd` `Ccda` `Ccdr` `Ccpc` `Cdfo` `Cect` `Cels` `Cemn` `Cemx` `Cepr` `Cetl` `Chsd` `Chti` `Clpn` `Clps` `Cmle` `Cmna` `Cmtm` `Cmxa` `Cnsb` `Cntb` `Cown` `Cpfa` `Cpfr` `Cprs` `Csaf` `Csdl` `Csly` `CteA` `Cyfn` `Cyim` `TCng` `TCoi`
-- **comp** (15): `CTty` `Ccre` `LAUC` `Pchd` `Pctd` `cmnl` `cmnw` `cmxl` `cmxw` `csso` `cuae` `dbty` `levl` `wben` `wbst`
-- **contract** (4): `Csda` `Csts` `PSJO` `Cabo`
-- **human** (12): `HSbr` `Hcit` `MHSP` `MHTY` `MREP` `MRSP` `MTSP` `Nnat` `mdty` `mibh` `mmCA` `mrCA`
+- **award** (16): `AWap` `AWbr` `AWdr` `AWfo` `AWmg` `AWnp` `AWpo` `AWrb` `AWre` `AWrt` `AWty` `AWvf` `AWwh` `AWwr` `AWop` `AWus`
+- **club** (52): `C2at` `C2lp` `C2pf` `C2rp` `C2ty` `C2un` `C2xa` `C3at` `C3xa` `CScP` `Cafo` `Catd` `Ccda` `Ccdr` `Ccpc` `Cdfo` `Cect` `Cels` `Cemn` `Cemx` `Cepr` `Cetl` `Chsd` `Chti` `Clpn` `Clps` `Cmle` `Cmna` `Cmtm` `Cmxa` `Cnsb` `Cntb` `Cown` `Cpfa` `Cpfr` `Cprs` `Csaf` `Csdl` `Csly` `CteA` `Cyfn` `Cyim` `TCng` `TCoi` `CASt` `CIns` `Cadm` `Casp` `Cedp` `Cf10` `CnCV` `Csot`
+- **comp** (18): `CTty` `Ccre` `LAUC` `Pchd` `Pctd` `cmnl` `cmnw` `cmxl` `cmxw` `csso` `cuae` `dbty` `levl` `wben` `wbst` `cext` `culn` `cusn`
+- **contract** (12): `Csda` `Csts` `PSJO` `Cabo` `CGCC` `CIRC` `CMCR` `CMHE` `CWCM` `Circ` `Clec` `Crdc`
+- **human** (23): `HSbr` `Hcit` `MHSP` `MHTY` `MREP` `MRSP` `MTSP` `Nnat` `mdty` `mibh` `mmCA` `mrCA` `PCDB` `Pife` `Preg` `dnPO` `istu` `mgen` `mmAR` `mmCR` `mrAR` `mrCR` `vnsA`
 - **media** (3): `Mper` `Mscp` `Msty`
-- **staff** (26): `Ndep` `Ndir` `Necc` `Nfla` `Nflx` `Nhat` `Nint` `Npaf` `Npcs` `Npdf` `Nppf` `Npre` `Npsf` `Npvr` `Nrot` `Ntem` `Nwid` `Phes` `Pwes` `SPDm` `SPaf` `SPan` `SPdn` `SPdt` `SPpd` `Spdl`
-- **country** (4): `Necf` `Ngct` `Nsod` `Nygn`
-- **player** (20): `Pamc` `Paml` `Pamr` `Pdce` `Pdls` `Pdmc` `Pdrs` `Phes` `Pirr` `Pjad` `Plcp` `Pmce` `Pmrs` `PnrI` `Porl` `Prid` `Psnu` `Pwbl` `Pwbr` `Pwes`
-- **stadium** (25): `Sbld` `Scov` `Scpy` `Sdah` `Sdcy` `Sdtr` `Secy` `Senv` `Slat` `Slon` `Snft` `Soty` `Sovl` `Sprr` `Sptc` `Spty` `Srbd` `Srrf` `Sscy` `SsfT` `Sste` `Su19` `Su21` `Sunt` `Sush`
+- **staff** (29): `Ndep` `Ndir` `Necc` `Nfla` `Nflx` `Nhat` `Nint` `Npaf` `Npcs` `Npdf` `Nppf` `Npre` `Npsf` `Npvr` `Nrot` `Ntem` `Nwid` `Phes` `Pwes` `SPDm` `SPaf` `SPan` `SPdn` `SPdt` `SPpd` `Spdl` `PCDB` `Pife` `Preg`
+- **country** (6): `Necf` `Ngct` `Nsod` `Nygn` `Neec` `Nndn`
+- **player** (25): `Pamc` `Paml` `Pamr` `Pdce` `Pdls` `Pdmc` `Pdrs` `Phes` `Pirr` `Pjad` `Plcp` `Pmce` `Pmrs` `PnrI` `Porl` `Prid` `Psnu` `Pwbl` `Pwbr` `Pwes` `PCDB` `Preg` `NEUI` `Pdfn` `Phnp`
+- **stadium** (35): `Sbld` `Scov` `Scpy` `Sdah` `Sdcy` `Sdtr` `Secy` `Senv` `Slat` `Slon` `Snft` `Soty` `Sovl` `Sprr` `Sptc` `Spty` `Srbd` `Srrf` `Sscy` `SsfT` `Sste` `Su19` `Su21` `Sunt` `Sush` `Nucf` `Sext` `Sitg` `Smnl` `Smnw` `Smxl` `Smxw` `Spln` `Spwd` `Wucf`
 - **nation** (6): `Tlpn` `Tlpo` `Tlps` `Tolp` `Tpvr` `Ttyp`
 - **team** (6): `Tlpn` `Tlpo` `Tlps` `Tolp` `Tpvr` `Ttyp`
 - **injury** (3): `icla` `inSr` `iscl`
+- **loan** (1): `Circ`
 
 </details>
 

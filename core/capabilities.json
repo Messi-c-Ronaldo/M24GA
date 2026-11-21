@@ -757,7 +757,7 @@
         "*"
       ],
       "title": "속성 코드로 게임 값 쓰기",
-      "desc": "api.setProp(대상, '코드', 값, {expect, reason, tested})로 게임 속성 값을 게임 자신의 setter(속성 객체 vtable +0x18)로 바꿔요. 화면 메뉴처럼 게임 층이 먼저 처리하고 값 자르기·바뀜 알림도 게임이 해요. core/properties.json의 write.codes에 있는 코드만 되고(api.propInfo(코드).writable), safe(쓰기·화면·하루 진행·저장 뒤 다시 불러오기까지 확인한 29개: 구단 잔고·이적/주급/스카우트 예산·시설, 선수 CA·PA·명성·성격 일부·키·몸무게·사기·체력, 팀·대회 명성 …)는 그냥, tested(+1·되돌리기만 확인한 200개)는 {tested: true}가 있어야 해요. 정수·불리언·실수·날짜('YYYY-MM-DD')가 되고, api.setProps(대상, {코드: 값})는 여러 개를 한 번에 쓰고 하나라도 실패하면 앞의 것을 되돌려요. 쓴 뒤 게임이 객체를 바꾸거나 다른 값으로 자르면 실패로 알려요(자른 경우는 원래 값으로 되돌림). 화면 스레드에서 돌아서 Promise {ok, before, after, code, key(대상 dref), error}. 1분 600번까지, 모든 쓰기를 기록하고 앱 정보 탭에서 이 세이브에서 바꾼 값을 되돌릴 수 있어요. 게임을 저장하면 세이브에 남아요. Python 모드: ctx.set_prop(대상, 코드, 값, expect=None, reason='', tested=False)",
+      "desc": "api.setProp(대상, '코드', 값, {expect, reason, tested})로 게임 속성 값을 게임 자신의 setter(속성 객체 vtable +0x18)로 바꿔요. 화면 메뉴처럼 게임 층이 먼저 처리하고 값 자르기·바뀜 알림도 게임이 해요. core/properties.json의 write.codes에 있는 코드만 되고(api.propInfo(코드).writable), safe(쓰기·화면·하루 진행·저장 뒤 다시 불러오기까지 확인한 56개: 구단 잔고·예산·시설, 선수 CA·PA·명성·숨은 성향·키·몸무게·사기, 스태프 능력치, 팀·대회 명성, 계약 만료일 …)는 그냥, tested(+1·되돌리기와 부작용 검사만 한 221개)는 {tested: true}가 있어야 해요. 정수·불리언·실수·날짜('YYYY-MM-DD')가 되고, api.setProps(대상, {코드: 값})는 여러 개를 한 번에 쓰고 하나라도 실패하면 앞의 것을 되돌려요. 쓴 뒤 게임이 객체를 바꾸거나 다른 값으로 자르면 실패로 알려요(자른 경우는 원래 값으로 되돌림). 화면 스레드에서 돌아서 Promise {ok, before, after, code, key(대상 dref), error}. 1분 600번까지, 모든 쓰기를 기록하고 앱 정보 탭에서 이 세이브에서 바꾼 값을 되돌릴 수 있어요. 게임을 저장하면 세이브에 남아요. Python 모드: ctx.set_prop(대상, 코드, 값, expect=None, reason='', tested=False)",
       "uses": [
         "api.setProp",
         "api.setProps",

@@ -383,7 +383,7 @@ api.setProp('myclub', 'Ctfc', 300000000, { reason: '이사회 추가 예산' }).
 api.propInfo('PCAB').writable   // 'safe' | 'tested' | 'deny' | false
 ```
 
-- 쓸 수 있는 코드: [`PROPERTIES.md`](PROPERTIES.md)의 "쓰기" 절. **safe** 29개(재정·시설·선수 CA/PA/명성/숨은 성향/키·몸무게·사기·경기 감각, 팀·대회 명성 등)는 그냥, **tested**(+1·되돌리기만 확인)는 `{ tested: true }`를 줘야 써져요.
+- 쓸 수 있는 코드: [`PROPERTIES.md`](PROPERTIES.md)의 "쓰기" 절. **safe** 56개(재정·시설·선수 CA/PA/명성/숨은 성향/키·몸무게·사기·경기 감각, 팀·대회 명성 등)는 그냥, **tested**(+1·되돌리기만 확인)는 `{ tested: true }`를 줘야 써져요.
 - 대상: `api.prop`과 같아요(`'me'`·`'myteam'`·`'myclub'`·객체·`'p123'`). 기록 열쇠는 대상의 dref라서 게임을 다시 불러와도 되돌리기가 돼요.
 - 정수·불리언·실수·날짜가 돼요. 날짜 코드는 `'YYYY-MM-DD'`로 쓰고, 결과 `before`/`after`도 날짜 글이에요.
 - **계약**: 대상 `'contract:p123'`(선수) · `'contract:s45'`(스태프의 지금 구단 계약) · `'contract:me'`(= `'myjob'`, 내 감독)로 계약 속성(만료일 `Ceda` 등)을 읽고 써요 (M74). 주급은 setter가 받지 않아서 필드 `player.contract.wage` · `staff.contract.wage` · `human.contract.wage`를 `api.setField`로 써요 (내부 단위, 속성 `Cwwa`와 같음).
