@@ -2417,7 +2417,15 @@ function propInfo(code) {
 // 값 자르기·바뀜 알림도 게임이 한다. 값 버퍼는 get_property가 채운 것의 값 종류 포인터(정적 표)를 그대로 쓰고 값 칸만 바꾼다
 // (스칼라만: 정수·불리언·실수. 묶음·목록·글·링크는 힙 구조라 흉내 내지 않는다, M66). 등록부 write.codes에 있는 코드만,
 // deny(Ptyp 등: 사람 종류를 바꾸면 게임이 객체를 새로 만든다, M71 3절)는 절대 안 쓴다. 화면 스레드에서만 부른다 (runOnUi).
-var PROP_SCALAR = { int: 'i', cc: 'u', u32: 'u', bool: 'b', flt: 'f', dbl: 'd' };
+var PROP_SCALAR = { int: 'i', cc: 'u', u32: 'u', bool: 'b', flt: 'f', dbl: 'd', date: 'u' };   // date = 속성 날짜 u32 (코어 0.42.0 M73)
+// 'YYYY-MM-DD' -> 속성 날짜 u32: 연도 << 17 | 연중 일수 << 8 | 아래 8비트(지금 값의 것을 그대로 둔다, 뜻 모름). propDate의 반대
+function propDateEncode(iso, curRaw) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '')); if (!m) return null;
+  var y = +m[1], mo = +m[2], d = +m[3], t = Date.UTC(y, mo - 1, d), dt = new Date(t);
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d || y < 1901 || y > 2300) return null;
+  var doy = Math.round((t - Date.UTC(y, 0, 1)) / 86400000) + 1;
+  return (((y << 17) | (doy << 8) | ((curRaw || 0) & 0xff)) >>> 0);
+}
 function propRaw(p, code) {   // -> { t, tp, v } (스칼라가 아니면 t만)
   var g = new NativeFunction(p.readPointer().add(0x10).readPointer(), 'uint8', ['pointer', 'uint32', 'pointer']);
   var buf = Memory.alloc(0x40); buf.writePointer(EMPTY_VAL);
@@ -2436,8 +2444,18 @@ function propSetRaw(p, code, r, x) {
 // 객체 -> 쓰기 열쇠 (dref 번호: 세이브를 다시 불러와도 같다 -> 기록·되돌리기에 쓴다)
 function propKey(obj) {
   var o = propResolve(obj); if (!o) return null;
+  if (className(o) === 'db::FULL_CONTRACT') {   // 감독 계약(dref 없음, M73): 'job:<감독 dref>' = 그 감독의 +0x518 계약
+    var hs = humans();
+    for (var i = 0; i < hs.length; i++) { try { if (hs[i].add(0x518).readPointer().equals(o)) { var hd = propGet(hs[i], 'dref'); if (hd && typeof hd.dref === 'number') return 'job:' + (hd.dref >>> 0); } } catch (e) {} }
+    return null;
+  }
   var d = propGet(o, 'dref'); d = d && d.dref;
   return typeof d === 'number' && propDeref(d) ? d >>> 0 : null;
+}
+function propByKey(key) {   // propKey의 반대
+  var m = /^job:(\d+)$/.exec(String(key));
+  if (m) { var h = propDeref(+m[1]); if (!h) return null; var j = h.add(0x518).readPointer(); return j.isNull() ? null : j; }
+  return typeof key === 'number' ? propDeref(key) : null;
 }
 function makePropWriter(code) {
   var w = M24_PROPS.w[code];
@@ -2445,7 +2463,7 @@ function makePropWriter(code) {
     cap: 'write.prop', float: !!(M24_PROPS.p[code] && M24_PROPS.p[code][0] === 'num'), ui: true, prop: true,   // num = 실수 (위도·경기장 크기 등)
     write: function (key, value, expect) {
       if ((M24_PROPS.deny || []).indexOf(code) >= 0) return { ok: false, error: code + '는 쓰면 안 되는 코드예요' };
-      var o = propDeref(key); if (!o) return { ok: false, error: '대상을 찾지 못했어요 (dref ' + key + ')' };
+      var o = propByKey(key); if (!o) return { ok: false, error: '대상을 찾지 못했어요 (' + key + ')' };
       var tg = propTarget(o); if (!tg) return { ok: false, error: '속성 객체가 아니에요' };
       if (!(w[1] & tg.bit)) return { ok: false, error: code + '는 ' + tg.kind + '에 쓰기가 확인되지 않았어요' };
       var r = propRaw(tg.p, code); if (!r) return { ok: false, error: '이 객체가 ' + code + '에 답하지 않아요' };
@@ -2455,13 +2473,15 @@ function makePropWriter(code) {
       if (typeof value !== 'number' || !isFinite(value)) return bad('값은 숫자여야 해요');
       if (PROP_SCALAR[r.t] !== 'f' && PROP_SCALAR[r.t] !== 'd' && value !== Math.floor(value)) return bad('값은 정수여야 해요');
       if (r.t === 'bool' && value !== 0 && value !== 1) return bad('불리언은 true/false(1/0)예요');
-      if (w[2] !== null && (value < w[2] || value > w[3])) return bad(code + '는 ' + w[2] + '~' + w[3] + '이어야 해요');
+      if (r.t === 'date' && typeof w[2] === 'string') {   // 날짜 범위는 'YYYY-MM-DD' 글로 (M73)
+        var iso = propDate(value); if (!iso || iso < w[2] || iso > w[3]) return bad(code + '는 ' + w[2] + '~' + w[3] + ' 사이 날짜여야 해요');
+      } else if (w[2] !== null && (value < w[2] || value > w[3])) return bad(code + '는 ' + w[2] + '~' + w[3] + '이어야 해요');
       if (w[4]) { var lo = propGet(o, w[4]); if (typeof lo === 'number' && value < lo) return bad(code + '는 지금 ' + w[4] + '(' + lo + ')보다 낮을 수 없어요'); }
       if (w[5]) { var hi = propGet(o, w[5]); if (typeof hi === 'number' && value > hi) return bad(code + '는 지금 ' + w[5] + '(' + hi + ')보다 높을 수 없어요'); }
       if (expect !== undefined && expect !== null && cur !== expect) return bad('지금 ' + code + '(' + cur + ')가 예상(' + expect + ')과 달라요');
       if (cur === value) return { ok: true, before: cur, after: cur, same: true };
       var cls0 = className(rttiInfo(o).top), ok = propSetRaw(tg.p, code, r, value), r1 = propRaw(tg.p, code), cls1 = className(rttiInfo(o).top);
-      if (cls1 !== cls0 || propDeref(key) === null || !ptr(propDeref(key)).equals(o))
+      if (cls1 !== cls0 || propByKey(key) === null || !ptr(propByKey(key)).equals(o))
         return { ok: false, before: cur, error: '쓰는 중에 게임이 객체를 바꿨어요 (' + cls0 + ' -> ' + cls1 + '). 이 쓰기는 되돌릴 수 없어요' };
       var after = r1 ? r1.v : undefined;
       var same = (PROP_SCALAR[r.t] === 'f' || PROP_SCALAR[r.t] === 'd') ? Math.abs(after - value) < 1e-3 * Math.max(1, Math.abs(value)) : after === value;
@@ -2478,6 +2498,14 @@ function installPropWriters() {
 }
 installPropWriters();
 M24GA.propKey = propKey;
+// 날짜 코드면 'YYYY-MM-DD'를 지금 값의 아래 8비트를 살려 u32로 (그 밖은 그대로). 화면 스레드에서 부른다
+M24GA.propValueIn = function (target, code, v) {
+  if (typeof v !== 'string') return v;
+  var o = propResolve(target), tg = o && propTarget(o), r = tg && propRaw(tg.p, code);
+  if (!r || r.t !== 'date') return v;
+  var e = propDateEncode(v, r.v); return e === null ? v : e;
+};
+M24GA.propValueOut = function (code, v) { var e = M24_PROPS.p[code]; return (e && e[0] === 'date' && typeof v === 'number') ? propDate(v) : v; };
 M24GA.propWriteTier = function (code) { var w = (M24_PROPS.w || {})[code]; return w ? w[0] : null; };
 M24GA.runOnUi = runOnUi;
 // {dref: 번호} 또는 번호 -> 게임 객체. 위 8비트 = 종류: 0x01 사람, 0x03 구단, 0x18 팀(국가대표 포함), 0x19 대회. 모르는 종류·없는 번호는 null
@@ -3373,6 +3401,7 @@ rpc.exports = {
   // (코어 0.41.0) Python 모드 ctx.actions_for / ctx.action. 확인·횟수 제한·기록은 Python(mods.py)이 한다
   actionsfor: function (spec, opts) { return M24GA.actionsFor(spec, opts || {}); },
   // (코어 0.42.0) Python 모드 ctx.set_prop. 기능(write.prop) 확인은 mods.py가 하고, 범위·기록·되돌리기·1분 제한은 m24gaWrite가 한다
+  propsset: function (id, spec, values, opts) { opts = opts || {}; opts.__py = true; return m24gaSetProps(String(id), spec, values, opts); },   // ctx.set_props
   propset: function (id, spec, code, value, opts) { opts = opts || {}; opts.__py = true; return m24gaSetProp(String(id), spec, code, value, opts); },
   actionrun: function (id, spec, opts) { return M24GA.actionRun(id, spec, opts || {}).then(function (r) { return r && r.error !== undefined && r.ok === undefined ? { ok: false, error: r.error } : r; }); },
   props: function (spec, re, empty) {   // CLI props (M55): 대상이 답하는 속성 전부

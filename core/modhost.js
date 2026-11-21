@@ -50,20 +50,62 @@ function m24gaWrite(id, field, key, value, opts) {
 }
 // 속성 쓰기 (코어 0.42.0, 기능 write.prop, M71): 게임 set_property로 등록부 write.codes의 코드만. 화면 스레드에서 돌아서 Promise.
 // 기록·되돌리기는 m24gaWrite와 같다 (필드 이름 = 'prop.<코드>', key = 대상의 dref 번호). tested 코드는 {tested: true}가 있어야 한다.
+function m24gaPropCheck(code, opts) {   // 단계(safe/tested) 확인. 문제 없으면 null
+  var tier = M24GA.propWriteTier(code);
+  if (!tier) return code + '는 쓰기가 확인된 코드가 아니에요 (api.propInfo(코드).writable)';
+  if (tier === 'tested' && opts.tested !== true) return code + '는 쓰기 시험만 한 코드예요. 쓰려면 {tested: true}를 주세요 (게임에서 결과를 꼭 확인하세요)';
+  return null;
+}
+// 화면 스레드 안에서 코드 하나 쓰기. 날짜 코드는 'YYYY-MM-DD'를 받고 before/after도 날짜 글로 돌려준다 (기록은 u32 그대로 -> 되돌리기 정확)
+function m24gaSetPropUi(id, target, key, code, value, opts) {
+  if (typeof value === 'boolean') value = value ? 1 : 0;
+  var v = M24GA.propValueIn(target, code, value);
+  if (typeof v === 'string') return { ok: false, code: code, error: code + ': 날짜는 YYYY-MM-DD, 그 밖은 숫자여야 해요 (' + value + ')' };
+  var o2 = {}; for (var k in opts) o2[k] = opts[k];
+  if (typeof o2.expect === 'string') o2.expect = M24GA.propValueIn(target, code, o2.expect);
+  var r = m24gaWrite(id, 'prop.' + code, key, v, o2) || { ok: false, error: '쓰기 실패' };
+  r.code = code; r.key = key; r.rawBefore = r.before; r.rawAfter = r.after;
+  r.before = M24GA.propValueOut(code, r.before); r.after = M24GA.propValueOut(code, r.after);
+  return r;
+}
 function m24gaSetProp(id, target, code, value, opts) {
   opts = opts || {};
   code = String(code || '');
   if (!M24GA.propKey || !M24GA.runOnUi) return Promise.resolve({ ok: false, error: '이 코어는 속성 쓰기를 지원하지 않아요' });
-  var tier = M24GA.propWriteTier(code);
-  if (!tier) return Promise.resolve({ ok: false, error: code + '는 쓰기가 확인된 코드가 아니에요 (api.propInfo(코드).writable)' });
-  if (tier === 'tested' && opts.tested !== true) return Promise.resolve({ ok: false, error: code + '는 쓰기 시험만 한 코드예요. 쓰려면 {tested: true}를 주세요 (게임에서 결과를 꼭 확인하세요)' });
-  if (typeof value === 'boolean') value = value ? 1 : 0;
+  var bad = m24gaPropCheck(code, opts); if (bad) return Promise.resolve({ ok: false, code: code, error: bad });
   return M24GA.runOnUi(function () {
     var key = M24GA.propKey(target);
     if (key === null) return { ok: false, error: '대상을 찾지 못했거나 쓸 수 없는 대상이에요: ' + target };
-    var r = m24gaWrite(id, 'prop.' + code, key, value, opts);
-    if (r) { r.code = code; r.key = key; }
-    return r;
+    return m24gaSetPropUi(id, target, key, code, value, opts);
+  }).then(m24gaFix);
+}
+// 여러 코드를 한 번에 (코어 0.42.0, M73): 차례로 쓰다가 하나라도 실패하면 앞에서 바꾼 것을 거꾸로 되돌린다 (되돌림도 기록됨).
+// -> Promise { ok, results: {코드: 결과}, error, rolledBack }
+function m24gaSetProps(id, target, values, opts) {
+  opts = opts || {};
+  if (!M24GA.propKey || !M24GA.runOnUi) return Promise.resolve({ ok: false, error: '이 코어는 속성 쓰기를 지원하지 않아요' });
+  if (!values || typeof values !== 'object') return Promise.resolve({ ok: false, error: '{코드: 값}을 넘기세요' });
+  var codes = Object.keys(values);
+  for (var i = 0; i < codes.length; i++) { var bad = m24gaPropCheck(codes[i], opts); if (bad) return Promise.resolve({ ok: false, error: bad }); }
+  return M24GA.runOnUi(function () {
+    var key = M24GA.propKey(target);
+    if (key === null) return { ok: false, error: '대상을 찾지 못했거나 쓸 수 없는 대상이에요: ' + target };
+    var res = {}, done = [];
+    for (var j = 0; j < codes.length; j++) {
+      var c = codes[j], r = m24gaSetPropUi(id, target, key, c, values[c], opts);
+      res[c] = r;
+      if (!r.ok) {
+        var back = [];
+        for (var b = done.length - 1; b >= 0; b--) {
+          var d = res[done[b]];
+          var rb = m24gaWrite(id, 'prop.' + done[b], key, d.rawBefore, { expect: d.rawAfter, reason: 'setProps 실패로 되돌림' });
+          back.push(done[b] + (rb && rb.ok ? '' : ' (되돌리기 실패: ' + (rb && rb.error) + ')'));
+        }
+        return { ok: false, results: res, error: c + ': ' + r.error, rolledBack: back };
+      }
+      if (!r.same) done.push(c);
+    }
+    return { ok: true, results: res };
   }).then(m24gaFix);
 }
 // 매치엔진 표 (코어 0.31.0, 기능 read.engine·write.engine, DynamicME E04)
@@ -411,6 +453,8 @@ function registerMod(id, init, meta) {   // meta = { caps: [이 모드의 기능
     },
     // setProp(대상, '코드', 값, {expect, reason, tested}) -> Promise {ok, before, after, code, key, error} (기능 write.prop, 코어 0.42.0)
     setProp: function (target, code, value, opts) { return alive ? m24gaSetProp(id, target, code, value, opts) : Promise.resolve({ ok: false, error: '내려간 모드' }); },
+    // setProps(대상, {코드: 값}, opts) -> Promise {ok, results, error, rolledBack}: 하나라도 실패하면 앞의 것을 되돌린다 (코어 0.42.0)
+    setProps: function (target, values, opts) { return alive ? m24gaSetProps(id, target, values, opts) : Promise.resolve({ ok: false, error: '내려간 모드' }); },
     setField: function (obj, name, value, opts) {
       if (!alive) return { ok: false, error: '내려간 모드' };
       var kind = M24GA.fieldKind ? M24GA.fieldKind(name) : null;

@@ -96,7 +96,7 @@ class Props(unittest.TestCase):
             host = f.read()
         for s in ("function makePropWriter(", "add(0x18).readPointer()", "M24GA.propKey = propKey", "propset:"):
             self.assertIn(s, core)
-        for s in ("function m24gaSetProp(", "setProp: function", "w.ui && M24GA.runOnUi"):
+        for s in ("function m24gaSetProp(", "function m24gaSetProps(", "setProp: function", "setProps: function", "w.ui && M24GA.runOnUi"):
             self.assertIn(s, host)
 
     def test_docs_fresh(self):

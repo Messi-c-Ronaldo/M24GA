@@ -385,7 +385,9 @@ api.propInfo('PCAB').writable   // 'safe' | 'tested' | 'deny' | false
 
 - 쓸 수 있는 코드: [`PROPERTIES.md`](PROPERTIES.md)의 "쓰기" 절. **safe** 29개(재정·시설·선수 CA/PA/명성/숨은 성향/키·몸무게·사기·경기 감각, 팀·대회 명성 등)는 그냥, **tested**(+1·되돌리기만 확인)는 `{ tested: true }`를 줘야 써져요.
 - 대상: `api.prop`과 같아요(`'me'`·`'myteam'`·`'myclub'`·객체·`'p123'`). 기록 열쇠는 대상의 dref라서 게임을 다시 불러와도 되돌리기가 돼요.
-- 정수·불리언·실수만 돼요. 범위(`range`)와 관계(PA는 CA 이상, CA는 PA 이하)를 확인하고, 게임이 값을 다르게 자르면 원래 값으로 되돌리고 `ok: false`예요. 쓰는 중에 게임이 객체를 바꾸면(사람 종류 `Ptyp` 같은 코드, 등록부에서 막음) 실패로 알려요.
+- 정수·불리언·실수·날짜가 돼요. 날짜 코드는 `'YYYY-MM-DD'`로 쓰고, 결과 `before`/`after`도 날짜 글이에요.
+- 여러 개를 한 번에: `api.setProps('myclub', { Ctfc: 3e8, Cwwb: 9000000 }, { reason })` → Promise `{ok, results, error, rolledBack}`. 하나라도 실패하면 앞에서 바꾼 것을 거꾸로 되돌려요 (되돌림도 기록돼요). Python `ctx.set_props(대상, {코드: 값})`.
+- 범위(`range`)와 관계(PA는 CA 이상, CA는 PA 이하)를 확인하고, 게임이 값을 다르게 자르면 원래 값으로 되돌리고 `ok: false`예요. 쓰는 중에 게임이 객체를 바꾸면(사람 종류 `Ptyp` 같은 코드, 등록부에서 막음) 실패로 알려요.
 - 화면 스레드에서 돌아서 Promise예요. 기록·되돌리기·1분 600번 제한은 `setField`와 같아요. **저장하면 세이브에 남아요.**
 - Python 모드: `ctx.set_prop('myclub', 'Ctfc', 300000000, reason='...')` (기능 `write.prop` 선언).
 

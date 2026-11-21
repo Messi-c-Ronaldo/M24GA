@@ -660,6 +660,16 @@ class ModContext:
             r = {"ok": False, "error": (r or {}).get("error") if isinstance(r, dict) else "속성 쓰기 실패"}
         return r
 
+    def set_props(self, target, values, reason="", tested=False):
+        """(코어 0.42.0) 여러 속성을 한 번에 {코드: 값}. 하나라도 실패하면 앞에서 바꾼 것을 되돌려요.
+        날짜 코드는 'YYYY-MM-DD'. 반환 {ok, results: {코드: 결과}, error, rolledBack}"""
+        if "write.prop" not in (self.mod.manifest.get("capabilities") or []):
+            return {"ok": False, "error": "mod.json capabilities에 write.prop이 없어요 (사용자 허용 필요)"}
+        r = self._rpc("propsset", self.mod.id, target, dict(values), {"reason": str(reason or "")[:200], "tested": bool(tested)})
+        if not isinstance(r, dict) or r.get("ok") is None:
+            r = {"ok": False, "error": (r or {}).get("error") if isinstance(r, dict) else "속성 쓰기 실패"}
+        return r
+
     def _rpc(self, name, *args):
         fn = RPC.get("fn")
         if not fn:

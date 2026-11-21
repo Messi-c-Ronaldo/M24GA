@@ -58,7 +58,9 @@ interface ModApi {
   /** (코어 0.10.0, 기능 write.field 또는 그 필드의 cap) 필드 등록부에서 write가 safe인 칸을 바꿔요. obj = 게임 객체 또는 그 종류의 key(선수는 UID).
    *  코어가 종류·형식 범위·range·gte/lte·expect·쓰기 전후 신원을 확인하고 기록해요 (앱에서 되돌리기). 목록은 docs/FIELDS.md */
   /** (코어 0.42.0, 기능 write.prop) 속성 코드 값을 게임 setter로 바꿔요. core/properties.json write.codes의 코드만 (tested 코드는 {tested: true}). 기록·되돌리기 됨 */
-  setProp(target: Ptr | string, code: string, value: number | boolean, opts?: { expect?: number; reason?: string; tested?: boolean }): Promise<{ ok: boolean; before?: number; after?: number; code?: string; key?: number; same?: boolean; error?: string }>;
+  setProp(target: Ptr | string, code: string, value: number | boolean | string, opts?: { expect?: number | string; reason?: string; tested?: boolean }): Promise<{ ok: boolean; before?: number | string; after?: number | string; code?: string; key?: number; same?: boolean; error?: string }>;
+  /** (코어 0.42.0) 여러 코드를 한 번에. 하나라도 실패하면 앞에서 바꾼 것을 되돌려요. 날짜 코드는 'YYYY-MM-DD' */
+  setProps(target: Ptr | string, values: Record<string, number | boolean | string>, opts?: { reason?: string; tested?: boolean }): Promise<{ ok: boolean; results?: Record<string, any>; error?: string; rolledBack?: string[] }>;
   setField(obj: Ptr | number | string, name: string, value: number, opts?: { expect?: number; reason?: string }): { ok: boolean; before?: number; after?: number; name?: string; same?: boolean; error?: string };
   /** (코어 0.11.0, 기능 hook.function, 사용자 허용 필요) 함수 등록부(docs/FUNCTIONS.md)의 게임 함수에 끼어들어요. 모드를 내리면 코어가 떼요.
    *  콜백은 게임 스레드에서 불리니 짧게. 반환 { ok, stop(), error } (ok가 false면 error를 보세요: 모르는 함수, 코어 전용, 서명이 다름) */

@@ -49,7 +49,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Ccfa` | team, club | int | 구단 부대 시설(기업 시설) 수준 1~20 (M71) |
 | `Ccww` | team, club | int | 주급 총액 — 내부 단위 (M55 화면 확인: 137.17억) |
 | `Cdiv` | team, club | rec | 소속 리그(대회) {dref} (M56 확인) |
-| `Ceda` | contract, loan | date | 계약 만료일 (계약 객체, M58 내 감독 계약 2038-06-30) |
+| `Ceda` | contract, loan | date | 계약 만료일 (계약 객체, M58 내 감독 계약 2038-06-30); 쓰기 M73: 감독 계약(myjob)은 날짜 글로 씀, 화면 "내 계약 > 계약 세부사항" 확인 |
 | `Cmxp` | team, club, nation, comp, award, country | int | 미디어 예상 순위 — 정수 |
 | `Cnam` | team, club, nation, comp, award, country, city, continent | str | 대륙 이름 (팀·대회에서는 소속 대륙, 예: 유럽) (M56 확인) |
 | `Crcb` | club | int | 유소년 발굴 수준 1~20 (M71) |
@@ -243,8 +243,8 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 
 `api.setProp(대상, '코드', 값, {expect, reason})` → Promise `{ok, before, after, code, key, error}` (Python `ctx.set_prop`). 게임 자신의 setter(속성 객체 vtable +0x18)를 화면 스레드에서 불러요. 정수·불리언·실수만 되고, 기록되고 앱에서 되돌릴 수 있어요.
 
-- **safe** (55개): 쓰기 → 화면 → 하루 진행 → 저장 뒤 다시 불러오기까지 확인했어요 (M71).
-- **tested** (174개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
+- **safe** (56개): 쓰기 → 화면 → 하루 진행 → 저장 뒤 다시 불러오기까지 확인했어요 (M71).
+- **tested** (173개): setter가 받고 +1·되돌리기만 확인했어요. `{tested: true}`를 줘야 써지고, 게임에서 결과를 꼭 확인하세요.
 - **쓰지 않는 코드**: `DELE`, `duni`, `dsha`, `noni`, `nsss`, `rdui`, `Ptyp` (`Ptyp`는 사람 종류를 바꿔서 게임이 객체를 새로 만들어요).
 
 | 코드 | 종류 | 범위 | 뜻 |
@@ -278,6 +278,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 | `Phei` | player | 140~220 | 키 cm (M58 화면 187) |
 | `Pwei` | player | 40~140 | 몸무게 kg (M58 화면 81) |
 | `Pfit` | player | 0~10000 | 경기 감각 0~10000 (M71) |
+| `Ceda` | contract | 1901-01-02~2300-12-31 | 계약 만료일 (계약 객체, M58 내 감독 계약 2038-06-30); 쓰기 M73: 감독 계약(myjob)은 날짜 글로 씀, 화면 "내 계약 > 계약 세부사항" 확인 |
 | `Nbpl` | staff | 1~20 | 스태프: 선수 영입(구매) 1~20 (M72 쓰기 확인) |
 | `Nbus` | staff | 1~20 | 스태프: 사업 수완 1~20 (M72 쓰기 확인) |
 | `Ncra` | staff | 1~200 (≤ Npta) | 스태프 현재 능력 CA 1~200 (M72 쓰기 확인) |
@@ -310,7 +311,7 @@ api.deref(api.prop('myteam', 'Topp')) // {dref} → 객체 (사람·팀·구단�
 - **award** (14): `AWap` `AWbr` `AWdr` `AWfo` `AWmg` `AWnp` `AWpo` `AWrb` `AWre` `AWrt` `AWty` `AWvf` `AWwh` `AWwr`
 - **club** (44): `C2at` `C2lp` `C2pf` `C2rp` `C2ty` `C2un` `C2xa` `C3at` `C3xa` `CScP` `Cafo` `Catd` `Ccda` `Ccdr` `Ccpc` `Cdfo` `Cect` `Cels` `Cemn` `Cemx` `Cepr` `Cetl` `Chsd` `Chti` `Clpn` `Clps` `Cmle` `Cmna` `Cmtm` `Cmxa` `Cnsb` `Cntb` `Cown` `Cpfa` `Cpfr` `Cprs` `Csaf` `Csdl` `Csly` `CteA` `Cyfn` `Cyim` `TCng` `TCoi`
 - **comp** (15): `CTty` `Ccre` `LAUC` `Pchd` `Pctd` `cmnl` `cmnw` `cmxl` `cmxw` `csso` `cuae` `dbty` `levl` `wben` `wbst`
-- **contract** (4): `Ceda` `Csda` `Csts` `PSJO`
+- **contract** (3): `Csda` `Csts` `PSJO`
 - **human** (12): `HSbr` `Hcit` `MHSP` `MHTY` `MREP` `MRSP` `MTSP` `Nnat` `mdty` `mibh` `mmCA` `mrCA`
 - **media** (3): `Mper` `Mscp` `Msty`
 - **staff** (26): `Ndep` `Ndir` `Necc` `Nfla` `Nflx` `Nhat` `Nint` `Npaf` `Npcs` `Npdf` `Nppf` `Npre` `Npsf` `Npvr` `Nrot` `Ntem` `Nwid` `Phes` `Pwes` `SPDm` `SPaf` `SPan` `SPdn` `SPdt` `SPpd` `Spdl`
