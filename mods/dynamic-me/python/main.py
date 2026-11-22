@@ -70,6 +70,10 @@ def _original():
     gd = _ctx.game_dir()
     if not gd:
         raise RuntimeError("게임 설치 폴더를 아직 몰라요 (게임에 한 번 붙은 뒤 다시)")
+    if not os.path.isfile(os.path.join(gd, "data", "simatch.fmf")):
+        raise RuntimeError("게임 원본 엔진 파일이 없어요: %s\n엔진을 설치하면서 simatch.fmf를 지우거나 이름을 바꿨다면 원래대로 돌려 주세요 "
+                           "(Steam: 속성 > 설치된 파일 > 무결성 검사, Epic: 라이브러리 > ... > 관리 > 확인). "
+                           "data\\simatch 폴더는 그대로 둬도 돼요." % os.path.join(gd, "data", "simatch.fmf"))
     if _orig["dir"] != gd or _orig["tables"] is None:
         _orig["tables"] = E.load_game_original(gd)
         _orig["files"] = E.fmf_files(os.path.join(gd, "data", "simatch.fmf"))

@@ -276,9 +276,38 @@ def main():
     win.events.closed += on_closed
     if "--on" in sys.argv:   # 켜자마자 로더 시작 (Claude가 화면 클릭 없이 재시작할 때)
         win.events.loaded += lambda: api.toggle(True)
+    _webview2_fallback()
     webview.start()
     host.stop()
     control.stop()
+
+
+def _webview2_fallback():
+    """pywebview는 레지스트리(EdgeUpdate\\Clients 'pv')로만 WebView2를 찾는다. 런타임은 깔려 있는데 그 값이 없거나 깨진 PC
+    (레지스트리 정리 도구, Edge 제거 도구, 회사 정책 등)에서는 '없다'고 나온다 -> 디스크의 런타임 폴더를 직접 알려 준다 (0.44.3)."""
+    import glob
+    import winreg
+    key = r"Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+    for root, sub in ((winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\\" + key),
+                      (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\\" + key), (winreg.HKEY_CURRENT_USER, r"SOFTWARE\\" + key)):
+        try:
+            with winreg.OpenKey(root, sub) as k:
+                pv = str(winreg.QueryValueEx(k, "pv")[0])
+            if int(pv.split(".")[0]) >= 86:
+                return   # 레지스트리가 정상 -> pywebview 기본 동작
+        except (OSError, ValueError):
+            pass
+    bases = [os.path.join(os.environ.get(v) or "", "Microsoft", "EdgeWebView", "Application")
+             for v in ("ProgramFiles(x86)", "ProgramFiles", "LOCALAPPDATA")]
+    found = [os.path.dirname(p) for b in bases if b for p in glob.glob(os.path.join(b, "*", "msedgewebview2.exe"))]
+
+    def ver(p):
+        try:
+            return tuple(int(x) for x in os.path.basename(p).split("."))
+        except ValueError:
+            return (0,)
+    if found:
+        webview.settings["WEBVIEW2_RUNTIME_PATH"] = max(found, key=ver)
 
 
 if __name__ == "__main__":

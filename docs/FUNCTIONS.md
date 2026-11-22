@@ -1,4 +1,4 @@
-# M24GA 함수 목록 (코어 0.44.2)
+# M24GA 함수 목록 (코어 0.44.3)
 
 > 이 파일은 `core/functions.json`에서 `python -X utf8 tools/m24.py caps`로 만들어요. 직접 고치지 마세요.
 
