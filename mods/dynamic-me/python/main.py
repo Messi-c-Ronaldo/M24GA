@@ -83,9 +83,15 @@ def _original():
 
 def _packs_dir():
     d = (_ctx.settings().get("packs_dir") or "").strip()
-    if not d:
-        d = os.path.join(_documents_dir(), "M24GA", "engines")
-    os.makedirs(d, exist_ok=True)
+    if d:
+        os.makedirs(d, exist_ok=True)
+        return d
+    for d in (os.path.join(_documents_dir(), "M24GA", "engines"), os.path.join(_ctx.data_dir, "engines")):
+        try:   # 문서 폴더 경로가 끊겨 있으면 모드 데이터 폴더로 (0.8.2, 이슈 #2)
+            os.makedirs(d, exist_ok=True)
+            return d
+        except OSError:
+            continue
     return d
 
 

@@ -15,8 +15,49 @@ HERE = os.path.dirname(os.path.abspath(sys.executable)) if getattr(sys, "frozen"
 sys.path.insert(0, HERE)
 
 
+def _unblock_app_files():
+    """zip을 '차단 해제' 없이 풀면 파일마다 '인터넷에서 받음' 표시(Zone.Identifier)가 붙어 .NET이 DLL을 거부할 수 있다 (0.44.4, 이슈 #1).
+    앱 폴더(python, vendor) 파일의 표시만 지운다. 실패해도 그냥 넘어간다."""
+    root = os.path.dirname(HERE)
+    for sub in ("vendor", "python"):
+        for dp, _, fs in os.walk(os.path.join(root, sub)):
+            for f in fs:
+                if f.lower().endswith((".dll", ".pyd", ".exe", ".json")):
+                    try:
+                        os.remove(os.path.join(dp, f) + ":Zone.Identifier")
+                    except OSError:
+                        pass
+
+
+def _dotnet_diag():
+    """pythonnet이 .NET Framework에서 Python.Runtime.dll을 못 불러올 때 진짜 이유를 찾는다 (0.44.4, 이슈 #1).
+    clr_loader는 .NET 예외를 숨기고 'Failed to resolve'만 남기므로, .NET Framework로 도는 PowerShell 5.1에서 같은 DLL을 불러 본다."""
+    out = []
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full") as k:
+            out.append(".NET Framework Release = %s (528040 이상 = 4.8)" % winreg.QueryValueEx(k, "Release")[0])
+    except OSError as e:
+        out.append(".NET Framework 4.x 레지스트리 없음: %s" % e)
+    dll = os.path.join(os.path.dirname(HERE), "vendor", "pythonnet", "runtime", "Python.Runtime.dll")
+    out.append("Python.Runtime.dll 있음 = %s, 인터넷 표시 = %s" % (os.path.isfile(dll), os.path.exists(dll + ":Zone.Identifier")))
+    ps = ("try { $a = [Reflection.Assembly]::LoadFile('%s'); $a.GetType('Python.Runtime.Loader', $true) | Out-Null; 'LoadFile OK' } "
+          "catch { $e = $_.Exception; while ($e) { $e.ToString(); if ($e.LoaderExceptions) { $e.LoaderExceptions | ForEach-Object { $_.ToString() } }; "
+          "$e = $e.InnerException } }") % dll.replace("'", "''")
+    try:
+        import subprocess
+        r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], capture_output=True, text=True,
+                           encoding="oem", errors="replace", timeout=30, creationflags=0x08000000)
+        out.append("PowerShell(.NET Framework) 시험:\n" + ((r.stdout or "") + (r.stderr or "")).strip()[:4000])
+    except Exception as e:  # noqa: BLE001
+        out.append("PowerShell 시험 못 함: %s" % e)
+    return "\n".join(out)
+
+
 def _fatal(err_text):
     """앱이 시작하다 죽을 때 (0.44.1): pythonw(M24GA.bat)는 콘솔이 없어 오류가 안 보이므로 파일로 남기고 알림 창을 띄운다."""
+    if "Python.Runtime.Loader.Initialize" in err_text:
+        err_text += "\n\n=== .NET 진단 (0.44.4) ===\n" + _dotnet_diag()
     path = os.path.join(os.path.expanduser("~"), "m24ga_data", "app_error.txt")
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -25,7 +66,12 @@ def _fatal(err_text):
     except OSError:
         path = "(저장 못 함)"
     low = err_text.lower()
-    if "webview2" in low or "edgechromium" in low or "winforms" in low:
+    if "python.runtime.loader.initialize" in low:
+        hint = (".NET Framework가 프로그램 부품(Python.Runtime.dll)을 불러오지 못했어요.\n"
+                "1) 백신(ESET, V3, 알약 등)에서 M24GA 폴더를 검사 예외로 넣거나 잠시 끈 뒤 다시 실행\n"
+                "2) Windows 업데이트 또는 Microsoft '.NET Framework Repair Tool'로 .NET Framework 4.8 복구\n"
+                "그래도 안 되면 아래 오류 파일(.NET 진단 포함)을 GitHub Issues에 보내 주세요.")
+    elif "webview2" in low or "edgechromium" in low or "winforms" in low:
         hint = ("앱 화면에 필요한 Microsoft Edge WebView2 런타임이 없거나 고장 난 것 같아요.\n"
                 "https://developer.microsoft.com/microsoft-edge/webview2/ 에서 'Evergreen Bootstrapper'를 설치한 뒤 다시 실행해 주세요.")
     elif "clr" in low or "pythonnet" in low or ".net" in low:
@@ -43,6 +89,8 @@ def _fatal(err_text):
         pass
     sys.stderr.write(msg + "\n\n" + err_text)
 
+
+_unblock_app_files()
 
 try:
     import host  # noqa: E402  (frida 경로 설정도 여기서 한다)

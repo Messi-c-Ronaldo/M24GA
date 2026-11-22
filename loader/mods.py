@@ -24,7 +24,7 @@ import zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import caps  # noqa: E402  (기능 등록부, M10)
 
-CORE_VERSION = "0.44.3"
+CORE_VERSION = "0.44.4"
 MOD_EXT = ".24mod"
 FROZEN = getattr(sys, "frozen", False)
 ROOT = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +49,19 @@ def documents_dir():
     return os.path.join(os.path.expanduser("~"), "Documents")
 
 
-USER_MODS = os.path.join(documents_dir(), "M24GA", "mods")
+def _user_mods_dir():
+    r"""사용자 mods 폴더. 문서 폴더 경로가 끊겨 있으면(옮겼다 지운 드라이브 등, 폴더를 못 만듦) m24ga_data\mods로 (0.44.4, 이슈 #2)."""
+    for base in (documents_dir(), os.path.join(os.path.expanduser("~"), "Documents")):
+        d = os.path.join(base, "M24GA", "mods")
+        try:
+            os.makedirs(d, exist_ok=True)
+            return d
+        except OSError:
+            continue
+    return os.path.join(DATA, "mods")
+
+
+USER_MODS = _user_mods_dir()
 
 
 def mod_dirs():

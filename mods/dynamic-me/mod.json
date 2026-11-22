@@ -2,7 +2,7 @@
   "$schema": "../../docs/mod.schema.json",
   "id": "dynamic-me",
   "name": "DynamicME (매치엔진 조정)",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "게임을 켠 채로 매치엔진을 바꿔요. 남이 만든 엔진 팩(simatch 폴더)을 골라 재시작 없이 적용하거나, 선수 속도·슛 세기·선발 성향 같은 값을 직접 조정해요. 파일을 바꾸지 않고 게임 메모리의 엔진 표에 바뀐 값만 써서, 언제든 원본으로 돌아가요.",
   "author": "McR",
   "license": "GPL-3.0-or-later",
